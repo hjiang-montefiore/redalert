@@ -3,9 +3,17 @@
   "team": "pla",
   "name": "Type 055 large destroyer (Renhai class), drawn as Nanchang (101)",
   "category": "ship",
-  "published": { "len": 180, "beam": 20, "draught": 6.6, "source": "en.wikipedia 'Type 055 destroyer'" },
+  "published": {
+    "len": 180,
+    "beam": 20,
+    "draught": 6.6,
+    "source": "en.wikipedia 'Type 055 destroyer'"
+  },
   "len": 180,
-  "nodes": ["turret", "helipad"],
+  "nodes": [
+    "turret",
+    "helipad"
+  ],
   "references": [
     {
       "name": "[A1] Anshan (DDG-103) 2023-06-05, port broadside, level",
@@ -14,11 +22,27 @@
       "view": "side",
       "flip": true,
       "px_per_m": 8.47,
-      "anchor_px": [48, 379],
-      "anchor_m": [90, 0],
+      "anchor_px": [
+        48,
+        379
+      ],
+      "anchor_m": [
+        90,
+        0
+      ],
       "mask": "bg",
-      "mask_opts": { "tolerance": 26, "edge_px": 10, "fill": true, "open_px": 1 },
-      "window_m": [-92, 1.5, 92, 44],
+      "mask_opts": {
+        "tolerance": 26,
+        "edge_px": 10,
+        "fill": true,
+        "open_px": 1
+      },
+      "window_m": [
+        -92,
+        1.5,
+        92,
+        44
+      ],
       "align_m": 1.0,
       "exact": true,
       "note": "A long-lens level broadside: bow x 48, stern x 1576 (180.4 m at 8.47 px/m), waterline rows 376-382. Taken from port, so flipped to the standard starboard profile. The window starts 1.5 m above the waterline to keep the sea and the bow wave out; the photograph is soft, so whip aerials and the ensign staff are lost or thickened. The model may slide 1 m to take up the waterline band."
@@ -39,15 +63,232 @@
     }
   ],
   "must_show": [
-    "one enclosed integrated mast: a faceted tower with four flat array faces, rising from the forward superstructure block",
-    "long forecastle: 130 mm gun, then the 64-cell VLS field, then the 11-barrel CIWS before the bridge",
-    "clean slab-sided hull and superstructure with one continuous knuckle; sides flared out below it, sloped in above",
-    "single funnel block amidships with the 48-cell aft VLS field behind it",
-    "hangar aft with the 24-cell HHQ-10 box on its roof, flight deck to the transom",
-    "raked stem with bulwark; transom stern"
+    "one enclosed integrated mast: a faceted tower x 7.6..17.6 at its foot (top 27.2, cap and ESM drum to 30.4, pole to 34.0), its four broad corner faces carrying the array faces (z 18.8-26.4), rising out of the forward block",
+    "long forecastle: 130 mm gun on x 59.2 (muzzle 68.2), the 64-cell VLS field x 37.4..55.6, the 11-barrel H/PJ-11 CIWS on the forward deckhouse x 28.4..36.8 (roof 9.6, mount at x 32.4) before the bridge",
+    "clean slab-sided hull and superstructure x -63.6..29.5 with one continuous knuckle about 1.7 m under the deck edge (7.1 amidships); sides flared out below it, sloped in above",
+    "single funnel block x -19.4..7.6 (roof 15.2) with its two black uptakes (x -18.6..-14.6 and -6.4..-2.4), the step x -28.8..-19.4 (9.6) and the 48-cell aft VLS field on the main deck x -36.85..-29.2 behind it",
+    "hangar x -63.6..-37.3 (roof 10.4, its front raked aft to -38.2 at the roof) with two doors to the pad at x -63.6; on its roof the HHQ-10 24-cell box at x -59.0 (top about 13.4) and the after deckhouse x -51.7..-38.25 (13.0, two mid-grey recesses per side at x -48.0..-46.5 and -42.5..-41.5) with its second tier x -45.6..-39.15 (14.6), the white radome (centre x -41.6, top 17.0) and the twin poles at x -44.9 (to 21.0); flight deck x -90..-63.6 (4.8) to the transom",
+    "raked stem with bulwark round the bow x 62..90 (stem head 8.4 + bulwark), transom stern at x -90",
+    "dark grey non-skid on every deck and roof (forecastle, flight deck, the forward deckhouse, bridge, funnel, step, hangar and after-deckhouse roofs), clearly darker than the light grey sides [C1][A3], x -90..90"
   ],
   "not_confirmed": [
     "underwater hull form (no reference)",
-    "exact cell-hatch layout of the two VLS fields"
+    "exact cell-hatch layout of the two VLS fields (the after field's 8.5 m gap -37.3..-28.8 is drawn eight along by six across)",
+    "plan widths of the after deckhouse and its second tier on the hangar roof (half widths 5.8 and 3.6 m; [C1] shows them inboard of the hangar's roof edge)",
+    "the HHQ-10's station: [A1] reads -59.6..-56.4, [C1] and [A3] -60.6..-57.2; drawn at -59.0",
+    "the gun house's height (2.9 m drawn; [A1] reads 3.9 on a soft edge: the outline's worst upper edge, -1.26 m at x 54..63)",
+    "the after deckhouse's after face: [A1] reads -51.3 +-0.3 (z 11.2-12.4), [C1] about -52.2; drawn -51.7, between them"
+  ],
+  "landmarks": [
+    {
+      "name": "after deckhouse roof at x -47",
+      "ref": 0,
+      "expect_m": [
+        -47.0,
+        13.1
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "material": "#a6adb1",
+        "in_m": [
+          -50,
+          -7,
+          10.6,
+          -44,
+          7,
+          13.4
+        ],
+        "edge": "upper"
+      },
+      "note": "[A1] column scan: 13.2-13.6 over -47..-45 on a soft edge that reads the hangar roof 0.3 high (10.74 for 10.4); drawn 13.0. tol 0.3 = the photograph's blur (2-3 px at 8.47 px/m)"
+    },
+    {
+      "name": "after deckhouse / hangar front face at z 11",
+      "ref": 0,
+      "expect_m": [
+        -38.4,
+        null
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "material": "#a6adb1",
+        "in_m": [
+          -45,
+          -10,
+          7.2,
+          -34,
+          10,
+          12.9
+        ],
+        "cross": 11.0,
+        "from_h": -34.0,
+        "to_h": -45.0
+      },
+      "note": "[A1] half-intensity edge: -37.8 at z 9, -38.4 at z 11, -38.7 at z 12 - the front rakes aft as it rises; [C1] reads -39.4 at the top on the near side"
+    },
+    {
+      "name": "hangar front face at z 8.6 (above the deck rails)",
+      "ref": 0,
+      "expect_m": [
+        -37.8,
+        null
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "material": "#a6adb1",
+        "in_m": [
+          -45,
+          -10,
+          7.2,
+          -34,
+          10,
+          12.9
+        ],
+        "cross": 8.6,
+        "from_h": -34.0,
+        "to_h": -45.0
+      },
+      "note": "[A1] half-intensity edge at z 9: -37.75"
+    },
+    {
+      "name": "radome top on the after deckhouse",
+      "ref": 0,
+      "expect_m": [
+        -41.6,
+        17.0
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "material": "#cccfcd",
+        "in_m": [
+          -43.2,
+          -1.5,
+          15.0,
+          -40.0,
+          1.5,
+          18.5
+        ],
+        "point": [
+          "mid",
+          "max"
+        ]
+      },
+      "note": "[A1] -41..-40 reads 17.1-17.2 (soft); [C1] the dome spans -43.0..-40.8"
+    },
+    {
+      "name": "hangar roof at x -54",
+      "ref": 0,
+      "expect_m": [
+        -54.0,
+        10.6
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "material": "#a6adb1",
+        "in_m": [
+          -55.5,
+          -9.5,
+          8.0,
+          -52.6,
+          -6.2,
+          10.6
+        ],
+        "edge": "upper"
+      },
+      "note": "[A1] reads 10.74 over -55..-53 (soft, high by about 0.3 like every flat roof on this picture); drawn 10.4"
+    },
+    {
+      "name": "hangar after face (pad step)",
+      "ref": 0,
+      "expect_m": [
+        -63.7,
+        null
+      ],
+      "tol_m": 0.35,
+      "model_at": {
+        "material": "#a6adb1",
+        "in_m": [
+          -66,
+          -10,
+          5.0,
+          -60,
+          10,
+          10.5
+        ],
+        "cross": 8.5,
+        "from_h": -66.0,
+        "to_h": -60.0
+      },
+      "note": "[A1] half-intensity edge at z 9: -63.7 (5.3 at -65, 10.3 at -64 on the column scan); [C1] -63.75. Drawn -63.6"
+    },
+    {
+      "name": "funnel block roof at x -8",
+      "ref": 0,
+      "expect_m": [
+        -8.0,
+        15.2
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "material": "#a6adb1",
+        "in_m": [
+          -9.5,
+          -10,
+          13.0,
+          -7.0,
+          -4.0,
+          15.3
+        ],
+        "edge": "upper"
+      },
+      "note": "header [A1]: funnel block 15.2"
+    },
+    {
+      "name": "bridge roof at x 21",
+      "ref": 0,
+      "expect_m": [
+        21.0,
+        18.4
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "material": "#a6adb1",
+        "in_m": [
+          20,
+          -10,
+          16.0,
+          22.0,
+          -5.0,
+          18.5
+        ],
+        "edge": "upper"
+      },
+      "note": "header [A1]: bridge roof 18.4"
+    },
+    {
+      "name": "tower top",
+      "ref": 0,
+      "expect_m": [
+        13.0,
+        27.2
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "material": "#a6adb1",
+        "in_m": [
+          9.0,
+          -6,
+          24.0,
+          17.0,
+          6,
+          27.25
+        ],
+        "point": [
+          "mid",
+          "max"
+        ]
+      },
+      "note": "header [A1]: the tower's top 27.2 (cap and drum above it)"
+    }
   ]
 }

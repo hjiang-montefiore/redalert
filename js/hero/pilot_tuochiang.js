@@ -35,8 +35,7 @@
      [B2] pgg619_leaving_port.jpg  (the 65 m production ship) the foredeck's
           fall to the sides only.
    PUBLISHED  60.4 m (length on cushion) x 14.0 m, draught 2.3 m.
-   MEASURED   (dump.js) 60.405 x 14.06 x 20.59 m: keel -2.3, pole 18.29; the 0.06 m
-     over the beam is the seam strip standing proud of the chine.  14 261
+   MEASURED   (dump.js) 60.405 x 14.01 x 20.59 m: keel -2.3, pole 18.29.  15 761
      triangles, 13 draw calls.
 
    CORRECTIONS against the model this replaces (js/hero/roc_ships2.js):
@@ -50,6 +49,20 @@
      - (review 2) the bow under the deck edge is a bluff shell: the chine keeps
        4.7 m of half breadth to X +27, outside the deck edge, and the demihull's
        side runs up into it [B1][B2]; plan fill rises to 93.7 % with it;
+     - (round 3) the tunnel under the bow was a shallow V: [N2] (a 1-px column
+       scan of the dark opening, 14.2 px/m) and [B1][B2] show the demihulls' upper
+       bodies ending in a rounded stem at X +19.3 .. +19.65, only the blades running
+       on, and the bow shell hanging as a skirt whose lower edge rises from 1.1 m at
+       X +19.95 to 2.3 at +22.5, 3.1 at +26.8 and 4.15 at the prow, over a side
+       tunnel each side of a deep centre bow (keel 0.3 m to X +25.8, its stem 0.85
+       at +27.5, 3.0 at +29.2); the tunnel roof 3.0 - 3.15 m at the skirt, 3.5 m at
+       the centre bow [B2 bow-on].  The anchor moved down the new stem to 2.65 m
+       ([N2] flukes 1.5 - 2.3 m).  K.bridgingDeck cannot draw the centre bow + side
+       tunnels + skirt, so the bow stays on its own tables (T_ZC, T_ZCH, T_TR);
+     - (round 3) parts the gate found standing off: the kit door's grab bar (6 cm
+       off the wall: local door() puts it on the leaf), the bay cap bars, the draught
+       plates, the yard balls and lamps, seam strips, roof ribbons, decoy and canister
+       rows, the jet housings; flush outlines now stand 3 cm proud with edges;
      - the hull sides were one leaning slab: they flare OUT to a chine 2.6 m up
        and lean in above it, with a second facet line at 6.9 m.
    PAINT  plain light grey over a darker grey lower hull, black boot line, red-
@@ -88,14 +101,30 @@ var HeroPilotTuoChiang = (function () {
               [28.0, 2.9], [29.5, 1.85], [30.2, 1.35]];                           /* deck-edge half breadth [A1][B1] */
   var T_HC = [[12.0, 7.0], [14.0, 6.95], [16.0, 6.75], [18.0, 6.5], [20.0, 6.2], [22.0, 5.8], [24.0, 5.4], [26.0, 4.95],
               [27.0, 4.7], [28.0, 3.95], [29.0, 2.9], [29.8, 1.75], [30.2, 1.2]];   /* half breadth at the chine: [B1] a bluff shell, about 4.6 m as far forward as X 27, then closing to the prow (review 2) */
-  var T_ZCH = [[12.0, 2.6], [26.0, 2.6], [27.5, 2.8], [29.0, 3.4], [29.8, 4.0], [30.2, 4.5]];   /* the chine lifts into the prow */
-  var T_ZC = [[12.0, 2.6], [17.0, 2.6], [20.0, 2.2], [24.0, 1.6], [27.0, 1.5], [28.8, 1.7], [29.64, 2.82], [30.2, 4.1]];   /* centre bow keel */
+  /* the bow shell's lower edge (the chine forward of X 19.3): [N2] 1-px column scan of the dark opening's top, 14.2 px/m,
+     waterline row 646 (round 3).  Abaft X 19.3 it sits on the demihull's top; forward of it the shell hangs as a skirt
+     over the open side tunnel, its edge dipping to the demihull's falling stem at X 19.65 and rising to the prow */
+  var T_ZCH = [[12.0, 2.6], [19.3, 2.6], [19.5, 1.25], [19.65, 0.62], [19.95, 1.13], [20.35, 1.48], [20.8, 1.69], [21.6, 2.04],
+               [22.5, 2.32], [23.3, 2.46], [24.4, 2.61], [25.0, 2.68], [25.8, 2.89], [26.8, 3.1], [27.7, 3.38], [28.5, 3.66],
+               [29.4, 3.94], [29.8, 4.0], [30.2, 4.15]];
+  /* centre bow keel: [N2] the stem's lower edge against the sea X 25.8 .. 30.2 (same scan); abaft X 25.8 the dark opening
+     reaches the water, so the centre bow stands down to about 0.3 m and closes the view through the tunnel [N2][B2 bow-on];
+     it fairs back up into the wet deck between the demihulls (hidden there, not confirmed) */
+  var T_ZC = [[12.0, 2.6], [15.0, 2.6], [17.0, 2.1], [19.0, 0.9], [19.5, 0.5], [20.5, 0.42], [21.5, 0.32], [25.8, 0.32], [26.9, 0.56],
+              [27.5, 0.85], [27.95, 1.3], [28.4, 2.05], [28.8, 2.5], [29.2, 3.0], [29.6, 3.4], [29.9, 3.5], [30.2, 4.1]];
+  /* the side tunnels under the bow [B2 bow-on][B1]: the centre bow's V meets their roof at half breadth hV, height zv;
+     the roof falls outward to zr at the skirt's inner face.  [x, hV, zv, zr] */
+  var T_TR = [[12.0, 2.0, 2.6, 2.6], [15.0, 2.0, 2.6, 2.6], [19.3, 2.3, 2.6, 2.6], [20.5, 2.35, 3.5, 3.0], [26.0, 2.35, 3.55, 3.15],
+              [27.0, 2.3, 3.65, 3.35], [28.0, 2.1, 3.9, 3.7], [29.0, 1.7, 4.15, 4.0], [29.8, 1.1, 4.3, 4.2], [30.2, 0.7, 4.3, 4.25]];
   /* demihull: outer and inner waterline, keel, top */
+  /* the top: 2.6 (under the wet deck) to X 19.3, then the demihull's upper body ends in a rounded stem and only the
+     blade runs on, its top 0.55 - 0.5 m, to the tip [N2: the dark opening's after end, X 19.6 - 19.9][B1][B2] */
   var T_DH = [[-29.55, 6.85, 3.6, -1.15, 2.6], [-28.0, 6.85, 3.6, -1.7, 2.6], [-25.0, 6.85, 3.6, -2.3, 2.6], [12.0, 6.85, 3.6, -2.3, 2.6],
-              [14.0, 6.76, 3.64, -2.3, 2.6], [16.0, 6.6, 3.7, -2.22, 2.6], [20.0, 6.0, 4.0, -2.0, 2.6], [22.0, 5.68, 4.2, -1.7, 2.6],
-              [23.0, 5.47, 4.3, -1.5, 2.6], [24.0, 5.27, 4.4, -1.3, 2.6], [25.5, 4.98, 4.5, -1.0, 2.6], [26.3, 4.82, 4.55, -0.9, 2.6],
-              [27.0, 4.68, 4.6, -0.8, 2.6], [27.5, 4.76, 4.66, -0.7, 2.15], [27.9, 4.8, 4.7, -0.6, 1.5], [28.3, 4.8, 4.71, -0.5, 0.95],
-              [28.7, 4.8, 4.72, -0.4, 0.66], [29.5, 4.775, 4.765, -0.1, 0.5]];
+              [14.0, 6.76, 3.64, -2.3, 2.6], [16.0, 6.6, 3.7, -2.22, 2.6], [19.3, 6.105, 3.948, -2.039, 2.6], [19.5, 6.075, 3.963, -2.028, 1.2],
+              [19.65, 6.053, 3.974, -2.019, 0.55], [20.0, 6.0, 4.0, -2.0, 0.55], [22.0, 5.68, 4.2, -1.7, 0.55],
+              [23.0, 5.47, 4.3, -1.5, 0.55], [24.0, 5.27, 4.4, -1.3, 0.55], [25.5, 4.98, 4.5, -1.0, 0.55], [26.3, 4.82, 4.55, -0.9, 0.55],
+              [27.0, 4.68, 4.6, -0.8, 0.55], [27.5, 4.76, 4.66, -0.7, 0.55], [27.9, 4.8, 4.7, -0.6, 0.54], [28.3, 4.8, 4.71, -0.5, 0.53],
+              [28.7, 4.8, 4.72, -0.4, 0.52], [29.5, 4.775, 4.765, -0.1, 0.5]];
 
   function build(THREE, M, C, key) {
     var HK = HeroKit, lin = HK.lin, V = HK.vec, lerp = V.lerp;
@@ -151,7 +180,7 @@ var HeroPilotTuoChiang = (function () {
                P: [[yi - 0.3 * f, zt], [yi - 0.3 * f * zb / zt, zb], [yi, 0], [yc - b * 0.78, kz * 0.55], [yc, kz], [yc + b * 0.78, kz * 0.55], [yo, 0],
                    [yo + 0.15 * f * zb / zt, zb], [yo + 0.15 * f, zt]] };
     }
-    var DX = HK.stations(XH, 12.0, 3.4, [-28.0, -25.0]).concat([13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 23.6, 24.2, 24.8, 25.4, 25.9, 26.3, 26.65, 27.0, 27.25, 27.5, 27.9, 28.3, 28.7, 29.1, XTIP]);
+    var DX = HK.stations(XH, 12.0, 3.4, [-28.0, -25.0]).concat([13, 14, 15, 16, 17, 18, 19, 19.3, 19.4, 19.5, 19.58, 19.65, 19.8, 20, 21, 22, 23, 23.6, 24.2, 24.8, 25.4, 25.9, 26.3, 26.65, 27.0, 27.25, 27.5, 27.9, 28.3, 28.7, 29.1, XTIP]);
     for (s = -1; s <= 1; s += 2) {
       var SEC = DX.map(dsec), AX = SEC.map(function (q) { return [q.x, s * q.yc, q.zt * 0.4]; });
       var G = function (a, b) { return SEC.map(function (q) { var r = [], j; for (j = a; j <= b; j++) r.push([q.x, s * q.P[j][0], q.P[j][1]]); return r; }); };
@@ -159,10 +188,10 @@ var HeroPilotTuoChiang = (function () {
       K.gridSkin(pBoot, G(1, 2), AX); K.gridSkin(pBoot, G(6, 7), AX);
       K.gridSkin(pBand, G(7, 8), AX);                                /* the outer side, darker grey to the chine */
       K.gridSkin(pTun, G(0, 1), AX);                                 /* the inner side, in the tunnel */
-      /* the top of the blade where it comes out from under the body (X > 21) */
+      /* the top of the stem and the blade where they come out from under the body (X >= 19.3) */
       var top = [], tax = [];
-      SEC.forEach(function (q) { if (q.x >= 20.9) { top.push([[q.x, s * q.P[0][0], q.zt], [q.x, s * q.P[8][0], q.zt]]); tax.push([q.x, s * q.yc, q.zt - 1]); } });
-      K.gridSkin(pBand, top, tax);
+      SEC.forEach(function (q) { if (q.x >= 19.29) { top.push([[q.x, s * q.P[0][0], q.zt], [q.x, s * q.P[8][0], q.zt]]); tax.push([q.x, s * q.yc, q.zt - 1]); } });
+      K.gridSkin(pTun, top, tax);                                    /* in the side tunnel's shade [B1][B2] */
       /* the transom: a fan in the band's colours */
       var q0 = SEC[0], cen = [q0.x, s * q0.yc, 0.6], ref = [q0.x + 1, s * q0.yc, 0.6];
       for (i = 0; i < 9; i++) {
@@ -172,7 +201,7 @@ var HeroPilotTuoChiang = (function () {
       /* the waterjets [M1]: two housings a hull standing out of the transom, the nozzle and its steering bucket */
       [-0.72, 0.72].forEach(function (o) {
         var jy = s * (q0.yc + o), jz = 0.42;
-        K.cylX(pSteel, XH - 0.02, XH - 0.36, jy, jz, 0.56, 12, 0.5);
+        K.cylX(pSteel, XH + 0.03, XH - 0.36, jy, jz, 0.56, 12, 0.5);
         K.tube(pSteel, [XH - 0.36, jy, jz], [XS + 0.1, jy, jz - 0.05], 0.44, 0.36, 12, false);
         K.disc(pInk, [XS + 0.14, jy, jz - 0.05], [-1, 0, 0], 0.34, 12);
         K.box(pSteel, XH - 0.5, XH - 0.02, jy - 0.07, jy + 0.07, jz + 0.5, jz + 0.95);                  /* the bucket's ram */
@@ -202,23 +231,33 @@ var HeroPilotTuoChiang = (function () {
     K.quad(pTun, [XS, 3.25, CH], [XS, 7.0, CH], [XH, 7.0, CH], [XH, 3.25, CH], [0, 0, 5]);                 /* the overhang abaft the hull transoms */
     K.quad(pTun, [XS, -7.0, CH], [XS, -3.25, CH], [XH, -3.25, CH], [XH, -7.0, CH], [0, 0, 5]);
     /* the bow X 12 .. 30.2: centre bow keel -> chine -> deck edge -> crown shoulder -> centre line */
-    var FX = HK.stations(12.0, XB, 1.0, [29.64, 29.9]);
+    /* KIT NOTE: K.bridgingDeck draws one V from the keel straight out to the chine; this bow has a centre bow, two side
+       tunnels and a skirt (round 3), so it stays on these tables */
+    var FX = HK.stations(12.0, XB, 1.0, [19.3, 19.5, 19.65, 19.8, 19.95, 20.35, 20.8, 21.5, 25.8, 26.9, 27.5, 27.95, 28.4, 28.8, 29.2, 29.6, 29.9]);
     function fsec(x) {
-      var hE = lin(T_HE, x)[0], hC = lin(T_HC, x)[0], zs = lin(T_SIL, x)[0], zE = zs - 0.35 * Math.min(1, hE / 3), w = Math.min(1.5, hE * 0.55);
-      return { x: x, zc: lin(T_ZC, x)[0], zch: lin(T_ZCH, x)[0], hC: hC, hE: hE, zE: zE, zs: zs, hS: hE - w };
+      var hE = lin(T_HE, x)[0], hC = lin(T_HC, x)[0], zs = lin(T_SIL, x)[0], zE = zs - 0.35 * Math.min(1, hE / 3), w = Math.min(1.5, hE * 0.55), tr = lin(T_TR, x);
+      return { x: x, zc: lin(T_ZC, x)[0], zch: lin(T_ZCH, x)[0], hC: hC, hE: hE, zE: zE, zs: zs, hS: hE - w, hV: tr[0], zv: tr[1], zr: tr[2] };
+    }
+    /* the underside, centre line -> skirt edge: keel, the centre bow's V, the side tunnel's roof, the skirt's inner face */
+    function under(q, sd) {
+      var zr = Math.max(q.zr, q.zch), zi = Math.min(zr, q.zch + 0.05);
+      return [[q.x, 0, q.zc], [q.x, sd * q.hV * 0.55, lerp(q.zc, q.zv, 0.6)], [q.x, sd * q.hV, q.zv], [q.x, sd * lerp(q.hV, q.hC - 0.2, 0.5), lerp(q.zv, zr, 0.8)],
+              [q.x, sd * (q.hC - 0.2), zr], [q.x, sd * (q.hC - 0.13), zi], [q.x, sd * q.hC, q.zch]];
     }
     var FS = FX.map(fsec);
     for (s = -1; s <= 1; s += 2) {
       var ax = FS.map(function (q) { return [q.x, 0, (q.zch + q.zE) / 2]; });
-      K.gridSkin(pTun, FS.map(function (q) { return [[q.x, 0, q.zc], [q.x, s * q.hC * 0.5, lerp(q.zc, q.zch, 0.62)], [q.x, s * q.hC, q.zch]]; }), ax);       /* the V underside */
+      K.gridSkin(pBand, FS.map(function (q) { return under(q, s).slice(0, 3); }), FS.map(function (q) { return [q.x, 0, q.zE + 2]; }), { flat: true });  /* the centre bow's V, lower-hull grey [B1: lit inside the arch] */
+      K.gridSkin(pTun, FS.map(function (q) { return under(q, s).slice(2, 5); }), FS.map(function (q) { return [q.x, 0, q.zE + 2]; }), { flat: true });   /* the side tunnels' roof */
+      K.gridSkin(pTun, FS.map(function (q) { return under(q, s).slice(4); }), FS.map(function (q) { return [q.x, s * (q.hC + 3), q.zch + 1.5]; }), { flat: true });   /* the skirt's inner face */
       K.gridSkin(pHull, FS.map(function (q) { return [[q.x, s * q.hC, q.zch], [q.x, s * q.hE, q.zE]]; }), ax, { flat: true });                              /* the flank */
       K.gridSkin(pDeck, FS.map(function (q) { return [[q.x, s * q.hE, q.zE], [q.x, s * q.hS, q.zs]]; }), ax, { flat: true });                               /* the turtle deck's side facet */
       K.gridSkin(pDeck, FS.map(function (q) { return [[q.x, s * q.hS, q.zs], [q.x, 0, q.zs]]; }), ax, { flat: true });                                      /* its crown */
     }
-    (function () {                                                    /* the prow's blunt face */
-      var q = FS[FS.length - 1], ref = [q.x - 1, 0, 4.8];
-      var P = [[q.x, 0, q.zc], [q.x, -q.hC, q.zch], [q.x, -q.hE, q.zE], [q.x, -q.hS, q.zs], [q.x, q.hS, q.zs], [q.x, q.hE, q.zE], [q.x, q.hC, q.zch]];
-      for (i = 1; i + 1 < P.length; i++) K.tri(pHull, P[0], P[i], P[i + 1], ref);
+    (function () {                                                    /* the prow's blunt face: a fan round its middle */
+      var q = FS[FS.length - 1], ref = [q.x - 1, 0, 4.8], c = [q.x, 0, 4.7], U = under(q, -1), P = U.slice().reverse();
+      P = P.concat([[q.x, -q.hE, q.zE], [q.x, -q.hS, q.zs], [q.x, q.hS, q.zs], [q.x, q.hE, q.zE]], under(q, 1).slice(1));
+      for (i = 0; i < P.length; i++) K.tri(pHull, c, P[i], P[(i + 1) % P.length], ref);
     })();
     function deckZ(x, y) {                                            /* the foredeck's surface */
       var q = fsec(x), ay = Math.abs(y);
@@ -233,6 +272,13 @@ var HeroPilotTuoChiang = (function () {
     K.part("superstructure");
     function xf(z) { return 12.6 - (z - 6.0) * RAKE; }                 /* the raked face: foot X 12.6 at the 6.0 m deck [N2] */
     function xa(z) { return XA0 + (z - ZF) * 0.088; }                  /* the after face leans forward a little [M1] */
+    /* a watertight door on a faceted house: as B.door, but the grab bar on the leaf (the kit's stands 6 cm off the wall) */
+    function door(B, kf, sx, z0, w, h) {
+      var Lf = B.faceLen(kf, z0) || 1, dw = w / Lf, fr = 0.06 / Lf;
+      B.panel(pDark, kf, sx - fr, sx + dw + fr, z0, z0 + h + 0.06, 0.025);
+      B.panel(pHull, kf, sx, sx + dw, z0 + 0.03, z0 + h, 0.06);
+      K.tube(pMet, B.faceAt(kf, sx + dw * 0.85, z0 + 0.9, 0.07), B.faceAt(kf, sx + dw * 0.85, z0 + 1.4, 0.07), 0.02, 0.02, 3, false);
+    }
     function rect(x0, x1, hw) { return [[x0, -hw], [x1, -hw], [x1, hw], [x0, hw]]; }       /* faces: 0 stbd, 1 front, 2 port, 3 aft */
     var BASE = K.facetedHouse(pHull, [{ z: CH, poly: rect(xa(CH), xf(CH), 7.0) }, { z: ZW, poly: rect(xa(ZW), xf(ZW), hwMid(ZW)) }]);
     var AFTB = K.facetedHouse(pHull, [{ z: ZW, poly: rect(xa(ZW), WX0, hwMid(ZW)) }, { z: ZK, poly: rect(xa(ZK), WX0, hwMid(ZK)) }, { z: ZP, poly: rect(xa(ZP), WX0, hwMid(ZP)) }]);
@@ -262,15 +308,15 @@ var HeroPilotTuoChiang = (function () {
       });
       /* the eyebrow over the windows and the wipers' rail */
       BR.panel(pShade, 2, 0.0, 1.0, ZR - 0.2, ZR - 0.06, 0.16); BR.panel(pShade, 1, 0.0, 1.0, ZR - 0.2, ZR - 0.06, 0.14); BR.panel(pShade, 3, 0.0, 1.0, ZR - 0.2, ZR - 0.06, 0.14);
-      BR.door(0, 0.12, ZT + 0.05, 0.75, 1.3); BR.door(4, 0.8, ZT + 0.05, 0.75, 1.3); BR.door(5, 0.3, ZT + 0.05, 0.75, 1.3);
+      door(BR, 0, 0.12, ZT + 0.05, 0.75, 1.3); door(BR, 4, 0.8, ZT + 0.05, 0.75, 1.3); door(BR, 5, 0.3, ZT + 0.05, 0.75, 1.3);
     })();
     /* the facet line at 6.9 m and the chine: seam strips so both read from the game camera */
     [1, -1].forEach(function (sd) {
       K.ribbon(pLine, [[xa(ZK) + 0.1, sd * hwMid(ZK), ZK], [xf(ZK) - 0.1, sd * hwMid(ZK), ZK]], [0, sd, 0.15], 0.07, 0.02);
-      K.ribbon(pLine, [[XS + 0.1, sd * 7.0, CH + 0.02], [12.0, sd * 7.0, CH + 0.02]], [0, sd, 0.1], 0.07, 0.025);
+      K.ribbon(pLine, [[XS + 0.1, sd * 6.995, CH + 0.04], [12.0, sd * 6.995, CH + 0.04]], [0, sd, 0.128], 0.07, 0.004);
     });
     /* the recess where the bridge face meets the lower face [B1]: a dark sill line across the front */
-    FWDB.panel(pLine, 1, 0.03, 0.97, ZK - 0.04, ZK + 0.04, 0.02);
+    FWDB.panel(pLine, 1, 0.03, 0.97, ZK - 0.04, ZK + 0.04, 0.025);
 
     /* ---- side details on the base and blocks: the louvred shutters, doors, hatches, lights [B1][M1][N2] */
     K.part("side details");
@@ -289,12 +335,12 @@ var HeroPilotTuoChiang = (function () {
     }
     function framed(sd, x0, x1, z0, z1) {                               /* a flush panel outline: four seam strips */
       var w = 0.07;
-      sidePanel(pLine, sd, x0, x1, z0, z0 + w, 0.02); sidePanel(pLine, sd, x0, x1, z1 - w, z1, 0.02);
-      sidePanel(pLine, sd, x0, x0 + w, z0, z1, 0.02); sidePanel(pLine, sd, x1 - w, x1, z0, z1, 0.02);
+      sidePanel(pLine, sd, x0, x1, z0, z0 + w, 0.03); sidePanel(pLine, sd, x0, x1, z1 - w, z1, 0.03);
+      sidePanel(pLine, sd, x0, x0 + w, z0, z1, 0.03); sidePanel(pLine, sd, x1 - w, x1, z0, z1, 0.03);
     }
     function sideDoor(sd, x, z0) {                                      /* a watertight door on the leaning side */
-      sidePanel(pDark, sd, x - 0.06, x + 0.86, z0, z0 + 1.92, 0.02); sidePanel(pHull, sd, x, x + 0.8, z0 + 0.04, z0 + 1.86, 0.06);
-      K.tube(pMet, SP(x + 0.68, z0 + 0.8, sd, 0.1), SP(x + 0.68, z0 + 1.3, sd, 0.1), 0.02, 0.02, 3, false);
+      sidePanel(pDark, sd, x - 0.06, x + 0.86, z0, z0 + 1.92, 0.03); sidePanel(pHull, sd, x, x + 0.8, z0 + 0.04, z0 + 1.86, 0.06);
+      K.tube(pMet, SP(x + 0.68, z0 + 0.8, sd, 0.07), SP(x + 0.68, z0 + 1.3, sd, 0.07), 0.02, 0.02, 3, false);
       [0.3, 1.5].forEach(function (h) { K.box(pSteel, x - 0.03, x + 0.07, SP(x, z0 + h, sd, 0.06)[1] - 0.03, SP(x, z0 + h, sd, 0.06)[1] + 0.03, z0 + h, z0 + h + 0.14); });
     }
     [-1, 1].forEach(function (sd) {
@@ -306,13 +352,13 @@ var HeroPilotTuoChiang = (function () {
       /* upper facet: flush doors, vents, the dark port under the bridge windows [N2] */
       framed(sd, 0.6, 2.4, 7.2, 9.2); framed(sd, -16.0, -14.4, 7.1, 8.3);
       sidePanel(pInk, sd, 5.2, 6.2, 8.5, 8.95, 0.03); sidePanel(pInk, sd, 7.8, 8.25, 8.5, 8.95, 0.03);
-      [-12.0, -6.6, -5.6, -0.9].forEach(function (x) { sidePanel(pLine, sd, x - 0.035, x + 0.035, ZK + 0.1, ZT - 0.1, 0.02); });   /* stiffener lines on the well walls */
+      [-12.0, -6.6, -5.6, -0.9].forEach(function (x) { sidePanel(pLine, sd, x - 0.035, x + 0.035, ZK + 0.1, ZT - 0.1, 0.03); });   /* stiffener lines on the well walls */
       /* deck lights along the block's top edge */
       [-9.0, -3.0, 3.0, 8.0].forEach(function (x) { var q = SP(x, 9.3, sd, 0.03); K.box(K.pen("lamp", "lampWhite"), x - 0.12, x + 0.12, q[1] - 0.04, q[1] + 0.04, 9.25, 9.38); });
     });
     /* the after face of the Phalanx block: the hangar-less step, a door and two lockers [M1] */
-    AFTB.door(3, 0.2, ZW + 0.5, 0.8, 1.8);
-    BASE.door(3, 0.3, ZF + 0.05, 0.8, 1.8); BASE.door(3, 0.66, ZF + 0.05, 0.8, 1.8);
+    door(AFTB, 3, 0.2, ZW + 0.5, 0.8, 1.8);
+    door(BASE, 3, 0.3, ZF + 0.05, 0.8, 1.8); door(BASE, 3, 0.66, ZF + 0.05, 0.8, 1.8);
     BASE.panel(pDark, 3, 0.44, 0.56, ZF + 0.3, ZF + 1.9, 0.05);
     BASE.panel(pShade, 3, 0.05, 0.14, ZF + 0.1, ZF + 1.2, 0.35); BASE.panel(pShade, 3, 0.86, 0.95, ZF + 0.1, ZF + 1.2, 0.35);
 
@@ -325,7 +371,7 @@ var HeroPilotTuoChiang = (function () {
       var el = 0.14, ce = Math.cos(el), se = Math.sin(el), ay = [0, dir * ce, se], up = [0, -dir * se, ce], ex = [1, 0, 0], r, c;
       var base = [xc, -dir * 0.5, ZW + 0.5];
       for (r = 0; r < 2; r++) for (c = 0; c < 2; c++) {
-        var o = V.add(V.add(base, ex, (c - 0.5) * (sec + gapX)), up, sec / 2 + r * (sec + 0.08));
+        var o = V.add(V.add(base, ex, (c - 0.5) * (sec + gapX)), up, sec / 2 + r * (sec + 0.06));
         var cen = V.add(o, ay, 0);
         K.obox(pCan, cen, ex, ay, up, sec, len, sec);
         K.obox(pCanD, V.add(cen, ay, len / 2 + 0.03), ex, ay, up, sec * 0.9, 0.06, sec * 0.9);              /* the muzzle cover */
@@ -347,8 +393,8 @@ var HeroPilotTuoChiang = (function () {
     /* blast deflector plates on the well walls and the ladders down into it [M1] */
     [1, -1].forEach(function (sd) {
       [-10.0, -4.1].forEach(function (x, n) {                           /* the two roofed bays in the wall, abreast the plain boxes [M1][A1] */
-        K.box(pDark, x - 1.25, x + 1.25, sd * 5.2 - 0.03, sd * 5.2 + 0.03, ZW + 0.35, ZT - 0.35);
-        K.box(pMet, x - 1.33, x + 1.33, sd * 5.16 - 0.03, sd * 5.16 + 0.03, ZT - 0.3, ZT - 0.2);
+        K.box(pDark, x - 1.25, x + 1.25, Math.min(sd * 5.16, sd * 5.255), Math.max(sd * 5.16, sd * 5.255), ZW + 0.35, ZT - 0.35);   /* on the wall (inner face 5.25) */
+        K.box(pMet, x - 1.33, x + 1.33, Math.min(sd * 5.12, sd * 5.2), Math.max(sd * 5.12, sd * 5.2), ZT - 0.36, ZT - 0.24);
       });
       K.ship.ladder([WX0 + 0.35, sd * 4.6, ZW + 0.02], [WX0 + 0.06, sd * 4.6, ZT], [0, 1, 0], 0.5);
       K.ship.ladder([WX0 - 0.45, sd * 3.9, ZP + 0.02], [WX0 - 0.2, sd * 3.9, ZT], [0, 1, 0], 0.5);
@@ -382,14 +428,14 @@ var HeroPilotTuoChiang = (function () {
     K.box(pPl, 3.3, 5.35, -1.9, 1.9, 15.56, 15.85);                                               /* the yard platform [N2] */
     [1, -1].forEach(function (sd) {
       K.box(pPl, 3.6, 5.0, sd * 1.9 - (sd > 0 ? 0 : 0.5), sd * 1.9 + (sd > 0 ? 0.5 : 0), 15.6, 15.8);
-      K.sphere(pDome, [4.3, sd * 2.15, 16.05], 0.2, 8, 4);                                        /* the yard's sensor balls [B1] */
-      K.air.lamp([4.3, sd * 2.4, 15.9], 0.07, sd > 0 ? "lampRed" : "lampGreen");
+      K.sphere(pDome, [4.3, sd * 2.15, 15.99], 0.2, 8, 4);                                        /* the yard's sensor balls [B1] */
+      K.air.lamp([4.3, sd * 2.33, 15.86], 0.07, sd > 0 ? "lampRed" : "lampGreen");
       K.box(pSteel, 4.0, 4.6, sd * 1.2 - 0.2, sd * 1.2 + 0.2, 15.85, 16.2);                       /* ESM boxes */
       MAST.panel(pShade, sd > 0 ? 2 : 0, 0.25, 0.8, 12.2, 13.6, 0.05);                            /* flat array faces on the mast's sides [B1] */
-      MAST.panel(pLine, sd > 0 ? 2 : 0, 0.1, 0.9, 14.3, 14.38, 0.02);
+      MAST.panel(pLine, sd > 0 ? 2 : 0, 0.1, 0.9, 14.3, 14.38, 0.025);
     });
-    MAST.panel(pShade, 1, 0.2, 0.8, 12.0, 13.4, 0.05); MAST.panel(pLine, 1, 0.1, 0.9, 14.3, 14.38, 0.02);
-    MAST.door(3, 0.35, ZR + 0.05, 0.7, 1.7);
+    MAST.panel(pShade, 1, 0.2, 0.8, 12.0, 13.4, 0.05); MAST.panel(pLine, 1, 0.1, 0.9, 14.3, 14.38, 0.025);
+    door(MAST, 3, 0.35, ZR + 0.05, 0.7, 1.7);
     K.facetedHouse(pPl, [{ z: 15.85, poly: rect(3.72, 4.68, 0.42) }, { z: 17.1, poly: rect(3.72, 4.64, 0.3) }]);     /* the upper mast */
     K.ship.radar(4.2, 0, 17.1, { type: "bar", w: 2.0, h: 0.2, ped: 0.0, yaw: 0.74 });               /* the navigation radar's bar [N2] */
     K.tube(pMet, [2.95, 0, 15.85], [2.95, 0, 18.2], 0.05, 0.03, 5, false);                         /* the pole abaft the head [N2] */
@@ -416,10 +462,10 @@ var HeroPilotTuoChiang = (function () {
       K.ship.whip(4.0, sd * 4.9, ZR, 6.2); K.ship.whip(1.6, sd * 5.2, ZT, 5.0);
       K.ship.whip(9.6, sd * 2.6, ZR, 2.6, 0.02);
       /* searchlights on the bridge wings */
-      K.cylZ(pMet, 9.3, sd * 4.5, ZR, ZR + 0.4, 0.05, 5); K.cylX(pSteel, 9.15, 9.5, sd * 4.5, ZR + 0.52, 0.17, 8); K.disc(K.pen("lamp", "lampWhite"), [9.51, sd * 4.5, ZR + 0.52], [1, 0, 0], 0.14, 8);
+      K.cylZ(pMet, 9.3, sd * 4.5, ZR, ZR + 0.4, 0.05, 5); K.cylX(pSteel, 9.15, 9.5, sd * 4.5, ZR + 0.52, 0.17, 8); K.disc(K.pen("lamp", "lampWhite"), [9.502, sd * 4.5, ZR + 0.52], [1, 0, 0], 0.14, 8);
       K.air.lamp([9.9, sd * 5.0, ZR - 0.5], 0.08, sd > 0 ? "lampRed" : "lampGreen");
     });
-    K.teamPatch([6.0, -3.0, ZR + 0.005], [1, 0, 0], [0, 1, 0], 1.6, 1.0);
+    K.teamPatch([6.0, -3.0, ZR], [1, 0, 0], [0, 1, 0], 1.6, 1.0);
 
     /* =============================================================== fittings */
     K.part("fittings");
@@ -451,7 +497,7 @@ var HeroPilotTuoChiang = (function () {
       K.box(pShade, -13.95, -13.4, sd * 3.2 - 0.5, sd * 3.2 + 0.5, ZP + 0.02, ZP + 0.9);
       K.ship.hatch(-0.9 + 1.0, sd * 4.9, ZT + 0.02, 0.8, 0.8, 0);
       /* the decoy launchers each side abaft the bridge [M1]: six tubes on a frame */
-      for (i = 0; i < 6; i++) K.tube(pSteel, [1.6 + (i % 3) * 0.3, sd * 3.2, ZT + 0.35 + Math.floor(i / 3) * 0.28], [1.6 + (i % 3) * 0.3, sd * 4.0, ZT + 0.85 + Math.floor(i / 3) * 0.28], 0.11, 0.11, 6, true);
+      for (i = 0; i < 6; i++) K.tube(pSteel, [1.6 + (i % 3) * 0.3, sd * 3.2, ZT + 0.35 + Math.floor(i / 3) * 0.21], [1.6 + (i % 3) * 0.3, sd * 4.0, ZT + 0.85 + Math.floor(i / 3) * 0.21], 0.11, 0.11, 6, true);
       K.box(pSteel, 1.4, 2.4, sd * 3.4 - 0.25, sd * 3.4 + 0.25, ZT + 0.02, ZT + 0.4);
       /* flight-deck edge lights and the stern light */
       [-28.0, -24.5, -21.0].forEach(function (x) { K.box(K.pen("lamp", "lampAmber"), x - 0.1, x + 0.1, sd * 6.05 - 0.08, sd * 6.05 + 0.08, ZF, ZF + 0.07); });
@@ -462,12 +508,12 @@ var HeroPilotTuoChiang = (function () {
       K.ribbon(pLine, kn, [0, sd * 0.2, 1], 0.07, 0.02);
       /* flush panel lines on the flank of the bow, the hawse and the draught marks' plates */
       var fl = [], fn = [];
-      for (x = 13.6; x <= 28.9; x += 1.7) { var q2 = fsec(x), t = 0.55; fl.push([x, sd * lerp(q2.hC, q2.hE, t), lerp(q2.zch, q2.zE, t)]); fn.push(V.unit([0.25, sd, (q2.hC - q2.hE) / (q2.zE - q2.zch)])); }
+      for (x = 13.6; x <= 28.9; x += 1.7) { var q2 = fsec(x), t = 0.55, zc2 = Math.max(q2.zch, CH), hc2 = lerp(q2.hC, q2.hE, (zc2 - q2.zch) / (q2.zE - q2.zch)); fl.push([x, sd * lerp(hc2, q2.hE, t), lerp(zc2, q2.zE, t)]); fn.push(V.unit([0.25, sd, (hc2 - q2.hE) / (q2.zE - zc2)])); }
       K.ribbon(pLine, fl, fn, 0.06, 0.03);
       var qh = fsec(27.6); K.disc(pInk, [27.6, sd * (lerp(qh.hC, qh.hE, 0.7) + 0.03), lerp(qh.zch, qh.zE, 0.7)], [0.3, sd, 0.1], 0.2, 8);
       /* draught marks plates and the rubbing pads on the demihull by the stern */
-      K.box(pSteel, -27.0, -24.0, sd * 6.9 - 0.02, sd * 6.9 + 0.03, 2.0, 2.3);
-      K.box(pSteel, 2.0, 5.0, sd * 6.9 - 0.02, sd * 6.9 + 0.03, 2.0, 2.3);
+      K.box(pSteel, -27.0, -24.0, sd * 6.95 - 0.02, sd * 6.95 + 0.04, 2.0, 2.3);                   /* the side is 6.966 - 6.984 out there */
+      K.box(pSteel, 2.0, 5.0, sd * 6.95 - 0.02, sd * 6.95 + 0.04, 2.0, 2.3);
     });
     K.ship.rail([[XS + 0.12, -hf + 0.14, ZF], [XS + 0.12, hf - 0.14, ZF]], { step: 1.4 });           /* across the stern */
     K.ship.rail([[xa(ZP) + 0.2, -hwMid(ZP) + 0.16, ZP], [xa(ZP) + 0.2, hwMid(ZP) - 0.16, ZP]], { step: 1.5 });
@@ -487,7 +533,7 @@ var HeroPilotTuoChiang = (function () {
     K.bar(pSteel, [24.9, 0, deckZ(25, 0) + 0.05], [28.6, 0, deckZ(28.6, 0) + 0.05], 0.1, 0.06);     /* the anchor chain's run */
     /* the anchor on the centre bow's stem [B1][N2] */
     (function () {
-      var x = 29.45, z = 3.4;
+      var x = 28.9, z = 2.65;                                                                        /* [N2] flukes X 28.6 - 29.4 at 1.5 - 2.3 m, [B1] the pocket about 2.6 m up */
       K.ship.anchor(x, 0, z, [1, 0, -0.25], 0.9);
       K.disc(pInk, [XB + 0.005, 0, 4.75], [1, 0, 0], 0.22, 8);                                        /* the bull-nose fairlead */
     })();
@@ -510,10 +556,10 @@ var HeroPilotTuoChiang = (function () {
     T.revolve(tm, [[0, 0.17], [0.7, 0.15], [0.72, 0.1], [4.25, 0.075], [4.26, 0.1], [4.5, 0.1]], { at: [16.72, 0, 7.02], axis: [Math.cos(0.05), 0, Math.sin(0.05)], seg: 10 });
     T.sphere(T.pen("dull", "canvas"), [16.78, 0, 7.02], [0.22, 0.26, 0.26], 8, 5);
     T.box(tl, 13.22, 13.26, -0.45, 0.45, 6.5, 7.9);                                                  /* the rear access door */
-    T.ribbon(tl, [[13.4, -1.02, 8.07], [13.4, 1.02, 8.07]], [0, 0, 1], 0.06, 0.02);
-    T.ribbon(tl, [[14.0, -1.0, 8.11], [14.0, 1.0, 8.11]], [0, 0, 1], 0.06, 0.02);
+    T.ribbon(tl, [[13.4, -1.0, 8.057], [13.4, 1.0, 8.057]], [0, 0, 1], 0.06, 0.006);
+    T.ribbon(tl, [[14.0, -0.98, 8.1], [14.0, 0.98, 8.1]], [0, 0, 1], 0.06, 0.004);
     T.box(tm, 14.3, 14.9, -0.3, 0.3, 8.02, 8.16);                                                    /* the roof hatch */
-    T.teamPatch([15.3, 0, 7.83], [1, 0, -0.227], [0, 1, 0], 0.9, 0.6);
+    T.teamPatch([15.3, 0, 7.806], [1, 0, -0.227], [0, 1, 0], 0.9, 0.6);
 
     K.node("helipad", [-23.6, 0, ZF]);
     return K.finish();

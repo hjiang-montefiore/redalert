@@ -1,0 +1,271 @@
+{
+ "key": "nato_e00_mlrs",
+ "team": "nato",
+ "name": "M142 HIMARS (FMTV 6x6 with the armoured LSAC cab and one six-rocket pod); js/hero/us_m270_himars.js, HeroUsMlrs, also nato_e00_tel and tel_n",
+ "category": "veh",
+ "published": {
+  "len": 7.0,
+  "span": 2.4,
+  "height": 3.2,
+  "source": "en.wikipedia 'M142 HIMARS' infobox / Lockheed Martin: 7.0 x 2.4 x 3.2 m; 395/85R20 tyres (1.18 m). The model's X extent is 7.08 m (bumper guards to the tail pintle); UNIT_MODELS len 7.08 for all three HIMARS rows; launcher3d_check holds the stowed height <= 3.205 m."
+ },
+ "len": 7.08,
+ "nodes": [
+  "turret",
+  "podelev",
+  "roadwheel"
+ ],
+ "engine_contract": {
+  "rows": "nato_e00_mlrs (turret:true, 6 cells), nato_e00_tel (turret:false, 1 ATACMS cell), tel_n (turret:false, 2 PrSM cells); the NMESIS and Excalibur rows of eras.js borrow tel_n by modelAs",
+  "nodes": "'turret' (module group, x -1.60, z 1.22; unnamed on the turret:false rows) holding 'podelev' (userData.el 35 deg, cells); six 'roadwheel' groups, one a tyre; ord on the UNIT_MODELS entry",
+  "draw_calls": "16"
+ },
+ "references": [
+  {
+   "name": "[D] HIMARS.png, side drawing (port side, nose left), 500 px thumbnail",
+   "image": "ref/nato_e00_mlrs/himars_drawing_500.png",
+   "source": "Wikimedia Commons 'HIMARS.png' (737 x 275; the 500 px Commons thumbnail is used: the original was rate-limited)",
+   "view": "side",
+   "flip": true,
+   "px_per_m": 70.4,
+   "origin_px": [
+    251.2,
+    186.0
+   ],
+   "mask": "alpha",
+   "mask_opts": {
+    "threshold": 128,
+    "fill": true
+   },
+   "exact": false,
+   "note": "THE STATION DRAWING. Scale: bumper front x 2 to the tail x 495 = 493 px = the published 7.0 m, 70.4 px/m; ground y 186. Horizontal stations (trusted): front axle x 85 -> +2.36 m, middle axle x 308 -> -0.83, rear axle x 401 -> -2.16 (tandem 1.33 m apart); the cab's rear wall x 124 -> +1.81; the cab front vertical at x 5.5 -> +3.49 from mid height down, raked back above to x 19 -> +3.30 at the roof; the box behind the cab +1.23..+0.59; the module's main box x 235..488 -> +0.23..-3.37; the stowed boom on the module's top x 303..403 -> -0.74..-2.15, its raised head toward the cab. VERTICALLY the drawing is squashed: its cab roof reads 2.60 m and its module top 2.24 m against 2.96 and 2.57 measured on [SG] with the tyre as yardstick (about 0.88 of true), so heights are not taken from it and the outline is advisory only."
+  },
+  {
+   "name": "[SG] 21651MID The Singapore Army HIMARS, port front quarter",
+   "image": "ref/nato_e00_mlrs/himars_singapore_port.jpg",
+   "source": "Wikimedia Commons '21651MID The Singapore Army The High Mobility Artillery Rocket System HIMARS.jpg', 1280 px thumb",
+   "view": "quarter",
+   "exact": false,
+   "note": "THE HEIGHT PHOTO and the cab front. With the near tyre (1.18 m, 185 px) as yardstick: cab roof over the front axle 2.96 m; with the rear tyre (160 px): module top 2.57 m, module box bottom 1.54 m. The armoured cab: two small windscreens in heavy frames in the raked upper front; a horizontal crease under them; the lower front a big faceted plate tucked in toward the bottom, the grille of horizontal slots low in it; the wide bumper with the round headlamps and amber lamps, a louvred skid plate under it; five amber marker lamps on the roof's front edge; the chamfered front corners; the side window and the door; the mirrors on arms. Wears a registration plate and a flag: not drawn."
+  },
+  {
+   "name": "[HS18] 180614-A-IY962-102, HIMARS firing, port front quarter",
+   "image": "ref/nato_e00_mlrs/himars_hs18_port_q.jpg",
+   "source": "Wikimedia Commons '180614-A-IY962-102 - M142 High Mobility Artillery Rocket System (HIMARS) firing during Saber Strike 18 (Image 4 of 7).jpg' (US Army), 1280 px thumb",
+   "view": "quarter",
+   "exact": false,
+   "note": "The cab's port side and front corner: framed windscreens, the louvred grille on the chamfered corner, the door's hinges and long grab handle, bolt rows, bumper lamps, steps, the front mudguard."
+  },
+  {
+   "name": "[AS] HIMARS 668579 EMILY ROSE, starboard front quarter at an air show",
+   "image": "ref/nato_e00_mlrs/himars_front_q_airshow.jpg",
+   "source": "Wikimedia Commons 'M142 High Mobility Artillery Rocket System (HIMARS) 668579 EMILY ROSE (14992404654).jpg', 1280 px thumb",
+   "view": "quarter",
+   "exact": false,
+   "note": "The cab front from the starboard side: the faceted lower front with its grille, the bumper and lamps, the windscreens; the boxes behind the cab on the starboard side. Has nose art and numbers: not drawn."
+  }
+ ],
+ "must_show": [
+  "three axles: the front at x +2.36, the tandem close-coupled at x -0.83 and -2.16 (1.33 m apart), big lugged 1.18 m tyres ([D] side)",
+  "the armoured cab from x +1.81 to the front, roof z 2.96 ([SG]); flat sides, big chamfered front corners",
+  "the cab front: two small windscreens in heavy armoured frames in the raked upper face (from x 3.30 at the roof to x 3.49 at z 2.2), a centre pillar between them, wipers; a crease across under them; the lower front plate tucked in toward the bottom with the louvred grille low in it (z 1.3-1.65) ([SG][D][AS])",
+  "the wide bumper across the front (x 3.36..3.52, z 0.78..1.08) with the round headlamps and amber lamps, guards, tow shackles, the louvred skid plate under it ([SG][HS18])",
+  "five amber marker lamps on the roof's front edge (x 3.0, z 2.96..3.03), the mirrors on their arms at the front corners (z 2.4..2.8), the door with hinges, grab handle and the small high side window (x 2.55..2.95, z 2.31..2.69) ([SG][HS18])",
+  "behind the cab on the port side the intake tower (x 1.40..1.74, to z 2.96) and the box (x 0.55..1.30); on the starboard side the locker ([D][SG])",
+  "the module over the tandem, x -3.39..+0.20, box bottom z 1.54, top 2.57-2.60, three access panels a side, the stowed boom lying on its top with its raised head ([D][SG])",
+  "one pod face of 3 x 2 tube mouths in the module's end face, elevating to 35 deg about the trunnion at the other end (engine)"
+ ],
+ "not_confirmed": [
+  "POD FACE FORWARD: on the real truck the pod face travels AFT over the tail ([D] and the rear views on Commons); the engine raises the +X end of 'podelev', so the module, its boom and panels are drawn mirrored (traversed 180 degrees), as before",
+  "heights read off the quarter photograph [SG] with a tyre as the yardstick (+-0.08 m); the drawing [D] is squashed vertically",
+  "the published 3.2 m height: the model's highest point is the roof hatch / boom at about 3.08 m",
+  "the cab's plan (the chamfer widths at the front corners) is read off the quarter photographs, not measured on a plan",
+  "the stowage behind the cab (a tarpaulin and two water cans) and the mirror head size",
+  "the underside and the chassis between the frame rails"
+ ],
+ "landmarks": [
+  {
+   "name": "front axle",
+   "ref": 0,
+   "expect_m": [
+    2.36,
+    null,
+    null
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "node": "roadwheel",
+    "index": 0
+   },
+   "note": "[D] x 85 px"
+  },
+  {
+   "name": "middle axle",
+   "ref": 0,
+   "expect_m": [
+    -0.83,
+    null,
+    null
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "node": "roadwheel",
+    "index": 2
+   },
+   "note": "[D] x 308 px; the model before had -0.92"
+  },
+  {
+   "name": "rear axle",
+   "ref": 0,
+   "expect_m": [
+    -2.16,
+    null,
+    null
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "node": "roadwheel",
+    "index": 4
+   },
+   "note": "[D] x 401 px"
+  },
+  {
+   "name": "cab rear wall (starboard side band rises past z 2.7)",
+   "ref": 0,
+   "expect_m": [
+    1.81,
+    2.7
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "cross": 2.7,
+    "from_h": 0.3,
+    "to_h": 3.0,
+    "in_m": [
+     0.3,
+     -1.19,
+     1.0,
+     3.7,
+     -1.14,
+     3.2
+    ]
+   },
+   "note": "[D] x 124 px. Side band y -1.19..-1.14: the cab side (y -1.17) only, clear of the rolled tarpaulin behind the cab (its end at y -1.13, corrected after the first run)"
+  },
+  {
+   "name": "cab lower front face at z 1.9",
+   "ref": 0,
+   "expect_m": [
+    3.49,
+    null,
+    null
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "in_m": [
+     3.0,
+     -0.5,
+     1.75,
+     3.7,
+     0.5,
+     2.05
+    ],
+    "point": [
+     "max",
+     null,
+     null
+    ]
+   },
+   "note": "[D] the front edge x 5.5 px from mid height down; only x is compared (the spec's first version compared the selection's mid z as well: a spec error, corrected)"
+  },
+  {
+   "name": "raked upper front at z 2.6 (outer silhouette)",
+   "ref": 0,
+   "expect_m": [
+    3.39,
+    2.6
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "cross": 2.6,
+    "from_h": 3.7,
+    "to_h": 2.5,
+    "in_m": [
+     2.5,
+     -1.0,
+     2.0,
+     3.8,
+     1.0,
+     3.1
+    ]
+   },
+   "note": "[D] the drawing's outer outline from (3.49, z 2.2) to (3.30, roof): x 3.39 at z 2.6 (heights corrected by 0.88, see the reference note). The outline includes the windscreen frames, so the model's whole width is taken (the first version took a 0.12 m centre band, which holds no triangle centroid of the loft's face: a spec error, corrected)"
+  },
+  {
+   "name": "cab roof at x 2.5",
+   "ref": 1,
+   "view": "side",
+   "expect_m": [
+    2.5,
+    2.96
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     1.9,
+     1.05,
+     2.0,
+     3.0,
+     1.17,
+     3.2
+    ]
+   },
+   "note": "[SG] 2.96 m over the front axle, tyre yardstick"
+  },
+  {
+   "name": "module box bottom at x -1.5",
+   "ref": 1,
+   "view": "side",
+   "expect_m": [
+    -1.5,
+    1.54
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "edge": "lower",
+    "in_m": [
+     -3.0,
+     1.0,
+     1.35,
+     -0.2,
+     1.12,
+     2.8
+    ]
+   },
+   "note": "[SG] rear tyre yardstick; the model before had 1.42"
+  },
+  {
+   "name": "module top at x -1.5",
+   "ref": 1,
+   "view": "side",
+   "expect_m": [
+    -1.5,
+    2.57
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     -3.0,
+     1.0,
+     1.35,
+     -0.2,
+     1.12,
+     2.8
+    ]
+   },
+   "note": "[SG] 2.57 m"
+  }
+ ]
+}

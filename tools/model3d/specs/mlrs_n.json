@@ -1,0 +1,294 @@
+{
+ "key": "mlrs_n",
+ "team": "nato",
+ "name": "M270 MLRS (M993 carrier with the launcher-loader module); the row is the present-day M270A2, drawn with the A1 cab (js/hero/us_m270_himars.js, HeroUsMlrs, shared by 15 rows)",
+ "category": "veh",
+ "published": {
+  "len": 6.85,
+  "span": 2.97,
+  "height": 2.57,
+  "source": "en.wikipedia 'M270 Multiple Launch Rocket System' infobox / Lockheed Martin: 6.85 m long, 2.97 m wide over the tracks, 2.57 m high stowed. The model's X extent is 7.00 m: hull 6.84 m plus the lamp guards, nose shackles and tail pintle (len rule: UNIT_MODELS len = measured X extent; 7.00 is hard-coded by the rows in deu_us_pattern.js, fr_armour2.js, gb_retry.js and must not change). tools/jsc/launcher3d_check.js holds the stowed height <= 2.575 m."
+ },
+ "len": 7.0,
+ "nodes": [
+  "turret",
+  "podelev",
+  "roadwheel"
+ ],
+ "engine_contract": {
+  "rows": "HeroUsMlrs.rows: nato_e80_mlrs, nato_e90_mlrs, mlrs_n, nato_e90_tel (here); deu_e90_mlrs (deu_us_pattern.js), fra_e90_mlrs, fra_e00_mlrs (fr_armour2.js), gbr_e80/e90/e00_mlrs (gb_retry.js: repaints, rehubs, adds B1 fittings at the lamp band x 3.40 z 1.06..1.52 and a box at x 0.72..1.06 y 1.45..1.66), mlrs_g, mlrs_b (eu_land_skirmish.js: an M270A2 cab shell x 1.57..3.49, z 1.10..2.56, raked front (3.49,1.70)-(3.38,2.00)-(3.08,2.56), found as the root's direct-child skin mesh (map, no vertex colours) and dark mesh (#23241f))",
+  "nodes": "'turret' (the module group on the traverse ring, x -1.30, z 1.08) holding 'podelev' (the elevating part, userData.el 35 deg, userData.cells one per round, +X end raised); six 'roadwheel' groups on the axles; UNIT_MODELS entry carries ord",
+  "draw_calls": "16 a row (launcher3d_check)"
+ },
+ "references": [
+  {
+   "name": "[R84] M270 MLRS (1984).JPEG, REFORGER 84, port broadside from a distance, module raised",
+   "image": "ref/mlrs_n/m270_1984_port.jpg",
+   "source": "Wikimedia Commons 'M270 MLRS (1984).JPEG' (US DoD, public domain), 1920 px thumb",
+   "view": "side",
+   "flip": true,
+   "px_per_m": 153.2,
+   "origin_px": [
+    836.0,
+    919.0
+   ],
+   "outline_m": [
+    [
+     0.65,
+     1.1
+    ],
+    [
+     0.65,
+     2.06
+    ],
+    [
+     1.64,
+     2.06
+    ],
+    [
+     1.64,
+     2.49
+    ],
+    [
+     3.09,
+     2.49
+    ],
+    [
+     3.4,
+     1.47
+    ],
+    [
+     3.44,
+     1.47
+    ],
+    [
+     3.44,
+     1.1
+    ]
+   ],
+   "window_m": [
+    0.66,
+    1.12,
+    3.6,
+    2.6
+   ],
+   "ignore_m": [
+    [
+     0.6,
+     2.0,
+     1.7,
+     2.6
+    ],
+    [
+     1.85,
+     2.4,
+     2.65,
+     2.62
+    ]
+   ],
+   "exact": false,
+   "note": "THE MEASURING PHOTO. Taken from far off nearly square to the port side (nose left, flipped): the six road wheels are evenly scaled. Scale: hull nose (lamp band, x 312) to hull rear plate (x 1360) = 1048 px = 6.84 m (the model hull; published 6.85 m), 153.2 px/m; ground (track bottom) y 919. Cross-checks: road-wheel centres x 515 627 784 909 1065 1174 -> +2.10 +1.36 +0.34 -0.48 -1.50 -2.21 m (the model's +2.11 +1.37 +0.35 -0.50 -1.49 -2.20: confirmed); sprocket x 377 -> +3.00 (model 2.96), idler x 1277 -> -2.88 (model -2.98); return rollers 699 974 -> +0.89 -0.90 (model +0.86 -1.00); wheel centres 0.37 m up (model 0.37). Cab: roof y 537 = 2.49 m from x 1.64 (y-edge 584) to 3.09, sloped front down to (3.40, 1.47); the box behind the cab x 0.63..1.64, top y 603 = 2.06 m. The module is raised, so only the cab and the box are traced (hand trace, outline_m; the camouflaged vehicle cannot be masked from the field); the ventilator stack and the antenna bases above the roof and the stowed boom over the box are left out (ignore_m). Advisory: a photograph."
+  },
+  {
+   "name": "[RIAT-B] MLRS (52089424530).jpg, British M270B1, starboard rear quarter, stowed",
+   "image": "ref/mlrs_n/m270_side_stbd.jpg",
+   "source": "Wikimedia Commons 'MLRS (52089424530).jpg', 1920 px thumb",
+   "view": "quarter",
+   "exact": false,
+   "note": "Shows the module stowed with its POD FACES AFT (the model draws them forward: see not_confirmed), the module's rear face flush with the hull's rear plate, the module front ending just behind the box behind the cab, and over that box the stowed boom lying at module-top height. A projective fit on the road wheels (residuals 0.03 m) puts the module front at +0.52 and the box behind the cab at +0.56..+1.57 (on the B1 a louvred radiator grille). The B1 cab is the British armoured cab, not the A1's."
+  },
+  {
+   "name": "[IDF] IDF-M270-MLRS-001.jpg, port front quarter, module raised",
+   "image": "ref/mlrs_n/m270_idf_port.jpg",
+   "source": "Wikimedia Commons 'IDF-M270-MLRS-001.jpg' (Zachi Evenor), 1920 px thumb",
+   "view": "quarter",
+   "exact": false,
+   "note": "The A1-pattern cab: the two louvred armoured shutters on the sloped front, the lamp clusters, the door with its high window, the box behind the cab lower than the cab roof with its access door, handles and hinges; the module raised about its trunnion near the hull rear. Wheel spacing fitted projectively agrees with [R84] within 0.1 m."
+  },
+  {
+   "name": "[G19] M270 MLRS - 190911-A-HE359-0085.jpg, port front quarter, stowed",
+   "image": "ref/mlrs_n/m270a1_g19_front_q.jpg",
+   "source": "Wikimedia Commons 'M270 MLRS - 190911-A-HE359-0085.jpg' (US Army), 1280 px thumb",
+   "view": "quarter",
+   "exact": false,
+   "note": "M270A1 in plain green: three window panes across the sloped cab front with heavy frames and two louvred shutters hinged up over them as hoods, the two lamp clusters in the vertical band, the tow shackles and the nose plate, the door window, the box behind the cab lower than the roof with two doors, the boom girder over it at module-top height, the louvred panel (brown) low on the port side of the module near its front, the return rollers. mlrs_n's present-day M270A2 cab is NOT drawn by this builder (eu_land_skirmish.js draws it for mlrs_b / mlrs_g)."
+  }
+ ],
+ "must_show": [
+  "six dual road wheels a side at x +2.11 +1.37 +0.35 -0.50 -1.49 -2.20, centres z 0.37, paired by uneven spacing (gaps 0.74 1.02 0.85 0.99 0.71 m), the sprocket forward and raised (x +2.96, z 0.62), the idler aft (x -2.98), two return rollers at x +0.86 and -1.00 ([R84], side)",
+  "the full-width crew cab from x +1.64 to the nose, roof at z 2.45-2.49, its upper front sloped back from the lamp band (x 3.40, z 1.5) to the roof edge (x 3.06-3.09); three window panes across the slope in heavy armoured frames, the louvred shutters ([G19][IDF][R84])",
+  "the lamp band under the slope: a lamp cluster at each outer end (y +-0.96..1.32, z 1.20..1.44) in a guard, tow eyes and shackles on the nose plate at y +-0.62 ([G19][IDF])",
+  "the door in each cab side (x 2.34..2.91) with its high window (z 2.08..2.28), hinges, grab handles, a step ([R84][IDF])",
+  "the box behind the cab, full width, x 0.63..1.64, top z 2.0-2.06, lower than the cab roof, with access doors and handles on each side ([R84][IDF][G19])",
+  "the launcher-loader module x -3.38..+0.62, top z 2.47 at most a few cm under the cab roof, plated sides with panel joints, the louvred panel low on the port side near the front (x -0.6..+0.25, mlrs_n only) ([G19])",
+  "the stowed boom: a girder at module-top height (z 2.1..2.5) along each top edge lying forward from the module front (x +0.62) over the box behind the cab to x +1.5, its cross members ([RIAT-B][G19])",
+  "two pod faces of 3 x 2 tube mouths in the module's end face (y +-0.585), the trunnion at the other end (x -3.20), elevating to 35 deg (engine)"
+ ],
+ "not_confirmed": [
+  "POD FACES FORWARD: stowed, the real module's pod faces point AFT over the hull's rear plate ([RIAT-B] and the rear views on Commons); the engine trains and raises the +X end of 'podelev', so the module is drawn as it stands traversed 180 degrees ([R84] shows it so, firing). Showing the travel stow needs a rest yaw in render3d.js (game logic, not done)",
+  "the present-day M270A2 cab of the mlrs_n row: this builder draws the A1 cab for every row; eu_land_skirmish.js lays the A2 shell over it for mlrs_b / mlrs_g only",
+  "the module's height: no stowed side photograph; kept at the old 1.18 m (top 2.47 m) under the 2.57 m published stowed height that launcher3d_check holds, with the boom at 2.56 m",
+  "the deck height: [R84] reads the hull's top edge at 1.14 m, the model keeps 1.08 (its fender lip at 1.04 matches)",
+  "the roof ventilator stack (x 1.9..2.2, to about 2.9 m in [R84]) is not drawn: it stands above the published height the check holds",
+  "a third return roller near the front: [RIAT-B] and [IDF] disagree on its station (x +1.98 vs +2.42) and [R84] shows none: not drawn",
+  "the starboard side of the box behind the cab: the louvred grille in [RIAT-B] is on the British B1; a US A1 photograph of that side was not found, so the grille is drawn as on the B1",
+  "tools on the deck edges and the tow cable placement (no photograph shows them clearly)",
+  "the plan view and the cab's rear wall from above: no top reference"
+ ],
+ "landmarks": [
+  {
+   "name": "road wheel 1 (front)",
+   "ref": 0,
+   "expect_m": [
+    2.1,
+    null,
+    null
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "node": "roadwheel",
+    "index": 0
+   },
+   "note": "[R84] x 515 px"
+  },
+  {
+   "name": "road wheel 6 (rear)",
+   "ref": 0,
+   "expect_m": [
+    -2.21,
+    null,
+    null
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "node": "roadwheel",
+    "index": 5
+   },
+   "note": "[R84] x 1174 px"
+  },
+  {
+   "name": "road wheel 3",
+   "ref": 0,
+   "expect_m": [
+    0.34,
+    null,
+    null
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "node": "roadwheel",
+    "index": 2
+   },
+   "note": "[R84] x 784 px"
+  },
+  {
+   "name": "cab rear wall (the side rises past z 2.2)",
+   "ref": 0,
+   "expect_m": [
+    1.64,
+    2.2
+   ],
+   "tol_m": 0.1,
+   "model_at": {
+    "cross": 2.2,
+    "from_h": 0.45,
+    "to_h": 3.0,
+    "in_m": [
+     0.6,
+     1.4,
+     1.0,
+     3.6,
+     1.47,
+     2.7
+    ]
+   },
+   "note": "[R84] the roof's rear corner x 584 px; the model before had its cab from x 0.70"
+  },
+  {
+   "name": "cab roof height at x 2.6",
+   "ref": 0,
+   "expect_m": [
+    2.6,
+    2.49
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     1.6,
+     1.38,
+     1.0,
+     3.6,
+     1.47,
+     2.7
+    ]
+   },
+   "note": "[R84] roof edge y 537 px = 2.49 m; the outer band of the side, clear of the roof's hatch and rails"
+  },
+  {
+   "name": "box behind the cab, top at x 1.1",
+   "ref": 0,
+   "expect_m": [
+    1.1,
+    2.06
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     0.7,
+     1.38,
+     1.0,
+     1.6,
+     1.47,
+     2.3
+    ]
+   },
+   "note": "[R84] y 603 px = 2.06 m (the stowed boom over it is above z 2.3 and outside the side band)"
+  },
+  {
+   "name": "sloped front at z 2.3",
+   "ref": 0,
+   "expect_m": [
+    3.15,
+    2.3
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "cross": 2.3,
+    "from_h": 3.6,
+    "to_h": 2.0,
+    "in_m": [
+     2.5,
+     1.36,
+     1.0,
+     3.6,
+     1.47,
+     2.7
+    ]
+   },
+   "note": "[R84] slope from (3.09, 2.49) to (3.40, 1.47): x 3.15 at z 2.3"
+  },
+  {
+   "name": "wheel centre height",
+   "ref": 0,
+   "expect_m": [
+    null,
+    null,
+    0.37
+   ],
+   "tol_m": 0.05,
+   "model_at": {
+    "node": "roadwheel",
+    "index": 1
+   },
+   "note": "[R84] y 862 px"
+  }
+ ],
+ "limits": {
+  "length_tolerance": {
+   "value": 0.025,
+   "reason": "the published 6.85 m is the hull (the model's hull is 6.84 m, nose lamp band x +3.42 to rear plate -3.42, measured on [R84]); the X extent adds the nose tow shackles and lamp guards (+0.10) and the tail pintle (-0.06), as photographed, and UNIT_MODELS len 7.00 is hard-coded by nine rows in four other files (deu_us_pattern.js, fr_armour2.js, gb_retry.js, eu_land_skirmish.js 7.01) that build this same vehicle, so the extent cannot move. The override covers the spec len too; the extent matches it to 0.03%."
+  }
+ }
+}

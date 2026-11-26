@@ -26,6 +26,21 @@ reference allows a small "align_m" slide - and reports
 A tower 3 m low shows as upper = -3.0 at its station; a box hull as "fatter"
 at the bow and stern bins.
 
+Per reference, besides crop / rotate (any angle, clockwise) / flip:
+  hide        ["gear", ...] node names whose meshes are left out first (the
+              dump's "meshes" table says which triangles are whose)
+  pitch_deg   turn the model this many degrees NOSE UP about the Y axis through
+              pitch_about_m [x, z] (default the origin) before rasterising: a
+              model stood on its wheels against a drawing in the datum takes
+              the negative of its sit angle
+A picture with transparency is laid on white (an RGBA line drawing used to
+read as solid black). An outline_m polygon needs no px_per_m.
+
+The overlay is the picture in colour at full resolution (enlarged to at least
+1800 px), the fills tinted over it, both outlines, and a metre ruler on both
+axes (the station bins are the short marks under it). For the whole render
+laid over the picture use overlay.py.
+
 Views (model space +X nose, +Y left, +Z up):
   side   horizontal +X (nose right), vertical +Z      - seen from starboard
   top    horizontal +X (nose right), vertical +Y      - port side up
@@ -53,24 +68,45 @@ def font(size):
         return ImageFont.load_default()
 
 
-def prepare_image(ref, base):
-    """-> (RGB(A) image in standard orientation, f(px point in ORIGINAL image) -> point in it)."""
+def load_picture(ref, base):
+    """The reference picture. A picture with transparency is laid on WHITE (a transparent PNG
+    reads as black otherwise); with mask "alpha" the alpha channel is kept."""
     path = ref["image"]
     if not os.path.isabs(path):
         path = os.path.join(base, path)
     img = Image.open(path)
-    img = img.convert("RGBA") if (img.mode in ("RGBA", "LA", "P") and ref.get("mask", "dark") in ("alpha",)) or img.mode in ("RGBA", "LA") else img.convert("RGB")
+    has_alpha = img.mode in ("RGBA", "LA", "PA") or (img.mode == "P" and "transparency" in img.info)
+    if has_alpha:
+        img = img.convert("RGBA")
+        if ref.get("mask", "dark") == "alpha":
+            return img
+        white = Image.new("RGBA", img.size, (255, 255, 255, 255))
+        return Image.alpha_composite(white, img).convert("RGB")
+    return img.convert("RGB")
+
+
+def prepare_image(ref, base):
+    """-> (RGB(A) image in standard orientation, f(px point in ORIGINAL image) -> point in it)."""
+    img = load_picture(ref, base)
     steps = []
     crop = ref.get("crop")
     if crop:
         x0, y0, x1, y1 = [int(v) for v in crop]
         img = img.crop((x0, y0, x1, y1))
         steps.append(lambda p, x0=x0, y0=y0: (p[0] - x0, p[1] - y0))
-    rot = int(ref.get("rotate", 0)) % 360
-    if rot not in (0, 90, 180, 270):
-        raise ValueError("rotate must be 0, 90, 180 or 270 (clockwise)")
+    rot = float(ref.get("rotate", 0)) % 360
     w, h = img.size
-    if rot == 90:
+    if rot not in (0, 90, 180, 270):
+        # any other angle, clockwise, about the picture's centre; the canvas grows to hold it
+        t = math.radians(rot)
+        fill = (255, 255, 255, 0) if img.mode == "RGBA" else (255, 255, 255)
+        img = img.rotate(-rot, expand=True, resample=Image.BICUBIC, fillcolor=fill)
+        W2, H2 = img.size
+        c, sn = math.cos(t), math.sin(t)
+        steps.append(lambda p, w=w, h=h, W2=W2, H2=H2, c=c, sn=sn: (
+            W2 / 2 + (p[0] + 0.5 - w / 2) * c - (p[1] + 0.5 - h / 2) * sn - 0.5,
+            H2 / 2 + (p[0] + 0.5 - w / 2) * sn + (p[1] + 0.5 - h / 2) * c - 0.5))
+    elif rot == 90:
         img = img.transpose(Image.ROTATE_270)
         steps.append(lambda p, h=h: (h - 1 - p[1], p[0]))
     elif rot == 180:
@@ -140,24 +176,19 @@ def edges_of(mask):
     return np.asarray(ImageChops.difference(im, im.filter(ImageFilter.MinFilter(3)))) > 127
 
 
-def compare_one(dump, ref, base, key, idx, out_dir):
-    view = ref["view"]
-    if view not in AXES:
-        raise ValueError("reference view must be side, top or front (got %r)" % view)
-    s = float(ref["px_per_m"])
-    ah, av = AXES[view]
-    tris = dump["tris"]
-    mats = dump["materials"]
-    T = np.array([t[:9] for t in tris], dtype=np.float64).reshape(-1, 3, 3)
-    mi = np.array([t[9] for t in tris], dtype=np.int32)
-    solid = np.array([(m.get("opacity", 1) or 0) >= 0.5 and m.get("visible", True) for m in mats])[mi]
-    T = T[solid]
-    H2 = T[:, :, ah]
-    V2 = T[:, :, av]
-
+def ref_frame(ref, base):
+    """Where a reference puts the model: -> dict(img, tf, s (px per m), ox, oy (pixel of view (0, 0) in the
+    prepared picture), iw, ih, poly (outline_m polygons or None)). to_m(px in ORIGINAL picture) and to_px(m)
+    convert between the picture and view metres."""
     poly_m = ref.get("outline_m")
-    img = None
+    polys = None
+    if poly_m:
+        polys = poly_m if isinstance(poly_m[0][0], (list, tuple)) else [poly_m]
+    img, tf = None, (lambda p: p)
     if ref.get("image"):
+        if "px_per_m" not in ref:
+            raise ValueError("a reference picture needs px_per_m")
+        s = float(ref["px_per_m"])
         img, tf = prepare_image(ref, base)
         if "anchor_px" in ref:
             apx = tf(tuple(ref["anchor_px"]))
@@ -168,14 +199,49 @@ def compare_one(dump, ref, base, key, idx, out_dir):
         ox = apx[0] - am[0] * s
         oy = apx[1] + am[1] * s
         iw, ih = img.size
-    elif poly_m:
-        polys = poly_m if isinstance(poly_m[0][0], (list, tuple)) else [poly_m]
+    elif polys:
         hs = [p[0] for q in polys for p in q]
         vs = [p[1] for q in polys for p in q]
+        # a traced outline needs no scale of its own: it is rasterised at about 1500 px across
+        s = float(ref.get("px_per_m") or 1500.0 / max(1e-6, max(max(hs) - min(hs), max(vs) - min(vs))))
         ox, oy = -min(hs) * s, max(vs) * s
         iw, ih = int(math.ceil((max(hs) - min(hs)) * s)) + 1, int(math.ceil((max(vs) - min(vs)) * s)) + 1
     else:
         raise ValueError("a reference needs an image or an outline_m polygon")
+    fr = {"img": img, "tf": tf, "s": s, "ox": ox, "oy": oy, "iw": iw, "ih": ih, "poly": polys}
+    fr["to_m"] = lambda p: ((tf(tuple(p))[0] - ox) / s, (oy - tf(tuple(p))[1]) / s)
+    fr["to_px"] = lambda m: (ox + m[0] * s, oy - m[1] * s)
+    return fr
+
+
+def model_tris(dump, ref):
+    """The model as the reference sees it: solid triangles, minus the groups in ref "hide", turned nose up
+    by ref "pitch_deg" about ref "pitch_about_m" ([x, z], default the origin)."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import m3dlib
+    T, mi = m3dlib.tri_array(dump)
+    mats = dump["materials"]
+    keep = np.array([(m.get("opacity", 1) or 0) >= 0.5 and m.get("visible", True) for m in mats])[mi] if len(mi) else np.zeros(0, bool)
+    if ref.get("hide"):
+        keep &= ~m3dlib.select_names(dump, ref["hide"])
+    T = T[keep]
+    if ref.get("pitch_deg"):
+        T = m3dlib.pitch_tris(T, float(ref["pitch_deg"]), tuple(ref.get("pitch_about_m", (0.0, 0.0))))
+    return T
+
+
+def compare_one(dump, ref, base, key, idx, out_dir, align_override=None, tag=""):
+    view = ref["view"]
+    if view not in AXES:
+        raise ValueError("reference view must be side, top or front (got %r)" % view)
+    ah, av = AXES[view]
+    T = model_tris(dump, ref)
+    if not len(T):
+        raise ValueError("no model triangles left (hide?)")
+    H2 = T[:, :, ah]
+    V2 = T[:, :, av]
+    fr = ref_frame(ref, base)
+    img, s, ox, oy, iw, ih, poly_m = fr["img"], fr["s"], fr["ox"], fr["oy"], fr["iw"], fr["ih"], fr["poly"]
 
     # one canvas holding both the picture and the whole model
     mh0, mh1, mv0, mv1 = H2.min(), H2.max(), V2.min(), V2.max()
@@ -191,10 +257,9 @@ def compare_one(dump, ref, base, key, idx, out_dir):
 
     refm = np.zeros((Hh, W), dtype=bool)
     if poly_m:
-        polys = poly_m if isinstance(poly_m[0][0], (list, tuple)) else [poly_m]
         im = Image.new("L", (W, Hh), 0)
         d = ImageDraw.Draw(im)
-        for q in polys:
+        for q in poly_m:
             d.polygon([(ox_c + p[0] * s, oy_c - p[1] * s) for p in q], fill=255)
         refm = np.asarray(im) > 127
     else:
@@ -223,25 +288,37 @@ def compare_one(dump, ref, base, key, idx, out_dir):
         ya, yb = sorted((oy_c - v0 * s, oy_c - v1 * s))
         win[max(0, int(round(ya))):max(0, int(round(yb))), max(0, int(round(xa))):max(0, int(round(xb)))] = False
     refm &= win
-    modm &= win
+    modm_all = modm
+    modm = modm & win
 
     def iou(a, b):
         u = np.logical_or(a, b).sum()
         return float(np.logical_and(a, b).sum()) / u if u else 0.0
 
     shift = (0, 0)
-    amax = float(ref.get("align_m", 0))
+    amax = float(ref.get("align_m", 0) if align_override is None else align_override)
     if amax > 0:
         n = int(amax * s)
-        best = (iou(refm, modm), 0, 0)
+        bx = by = 0
+        src = modm
+        if align_override is not None:
+            # the old model on its OWN best fit: start from the shift that lays the two silhouettes'
+            # centroids on each other (an old origin can be metres off), search +-amax round it, and
+            # slide the whole silhouette, not only what the window kept
+            src = modm_all
+            ry, rx = np.nonzero(refm)
+            my, mx = np.nonzero(src & win) if (src & win).any() else np.nonzero(src)
+            if len(rx) and len(mx):
+                bx, by = int(round(rx.mean() - mx.mean())), int(round(ry.mean() - my.mean()))
+        best = (iou(refm, np.roll(np.roll(src, by, axis=0), bx, axis=1) & win), bx, by)
         step = max(1, n // 6)
-        cx = cy = 0
+        cx, cy = bx, by
         while True:
             for dy in range(cy - step * 6, cy + step * 6 + 1, step):
                 for dx in range(cx - step * 6, cx + step * 6 + 1, step):
-                    if abs(dx) > n or abs(dy) > n:
+                    if abs(dx - bx) > n or abs(dy - by) > n:
                         continue
-                    v = iou(refm, np.roll(np.roll(modm, dy, axis=0), dx, axis=1))
+                    v = iou(refm, np.roll(np.roll(src, dy, axis=0), dx, axis=1) & win if src is not modm else np.roll(np.roll(modm, dy, axis=0), dx, axis=1))
                     if v > best[0] + 1e-9:
                         best = (v, dx, dy)
             cx, cy = best[1], best[2]
@@ -249,7 +326,7 @@ def compare_one(dump, ref, base, key, idx, out_dir):
                 break
             step = max(1, step // 3)
         shift = (best[1], best[2])
-        modm = np.roll(np.roll(modm, shift[1], axis=0), shift[0], axis=1) & win
+        modm = np.roll(np.roll(src, shift[1], axis=0), shift[0], axis=1) & win
 
     val = iou(refm, modm)
 
@@ -301,7 +378,8 @@ def compare_one(dump, ref, base, key, idx, out_dir):
         w = max(c, key=lambda x: abs(x[k]))
         return {"bin": w["bin"], "from_m": w["from_m"], "to_m": w["to_m"], "m": w[k]}
     res = {"n": idx, "name": ref.get("name") or os.path.basename(ref.get("image", "outline_m")), "view": view,
-           "exact": bool(ref.get("exact", True)), "px_per_m": s, "iou": round(val, 4),
+           "exact": bool(ref.get("exact", True)), "px_per_m": round(s, 4), "iou": round(val, 4), "align_m": amax,
+           "hide": ref.get("hide") or [], "pitch_deg": ref.get("pitch_deg") or 0,
            "shift_m": [round(shift[0] / s, 3), round(-shift[1] / s, 3)],
            "extent_axes": list(AXN[view]),
            "ref_extent_m": er, "model_extent_m": em,
@@ -309,42 +387,42 @@ def compare_one(dump, ref, base, key, idx, out_dir):
            "worst": {"upper": worst("upper_m"), "lower": worst("lower_m"), "fatter": worst("fatter_m")},
            "stations": stations}
 
-    # ---- the overlay
-    k = max(1, min(4, int(round(1500 / W)))) if W < 1500 else 1
+    # ---- the overlay: the picture in colour at full resolution (small pictures enlarged), the fills
+    # tinted over it, both outlines, and a metre ruler on both axes
+    k = max(1, min(4, int(math.ceil(1800.0 / W)))) if W < 1800 else 1
     if img is not None:
         bgim = Image.new("RGB", (W, Hh), (255, 255, 255))
         bgim.paste(img.convert("RGB"), (-cx0, -cy0))
-        bg = np.asarray(bgim.convert("L").convert("RGB")).astype(np.float32) * 0.45 + 255 * 0.55
+        bg = np.asarray(bgim).astype(np.float32) * 0.80 + 255 * 0.20
     else:
         bg = np.full((Hh, W, 3), 245, dtype=np.float32)
     ov = bg.copy()
 
     def tint(mask, col, a):
         ov[mask] = ov[mask] * (1 - a) + np.array(col, dtype=np.float32) * a
-    tint(np.logical_and(refm, modm), (120, 190, 120), 0.35)       # agree
-    tint(np.logical_and(refm, ~modm), (40, 90, 235), 0.60)        # reference only: model is missing / thinner here
-    tint(np.logical_and(modm, ~refm), (235, 50, 40), 0.60)        # model only: model is fatter / extra here
-    tint(~win, (120, 120, 120), 0.35)
+    tint(np.logical_and(refm, ~modm), (40, 90, 235), 0.45)        # reference only: model is missing / thinner here
+    tint(np.logical_and(modm, ~refm), (235, 50, 40), 0.45)        # model only: model is fatter / extra here
+    tint(~win, (120, 120, 120), 0.30)
     o = Image.fromarray(ov.clip(0, 255).astype(np.uint8))
     if k > 1:
-        o = o.resize((W * k, Hh * k), Image.NEAREST)
+        o = o.resize((W * k, Hh * k), Image.BICUBIC if img is not None else Image.NEAREST)
 
     def big(m):
-        e = Image.fromarray((edges_of(m) * 255).astype(np.uint8))
         if k > 1:
-            e = e.resize((W * k, Hh * k), Image.NEAREST)
-        return e
-    o.paste((10, 40, 170), mask=big(refm))
-    o.paste((180, 10, 10), mask=big(modm))
-    HEAD = 78
-    sheet = Image.new("RGB", (max(o.size[0], 900), o.size[1] + HEAD + 44), (27, 31, 35))
-    sheet.paste(o, (0, HEAD))
+            m = np.asarray(Image.fromarray((m * 255).astype(np.uint8)).resize((W * k, Hh * k), Image.BILINEAR)) > 127
+        return Image.fromarray((edges_of(m) * 255).astype(np.uint8))
+    o.paste((10, 40, 200), mask=big(refm))
+    o.paste((200, 10, 10), mask=big(modm))
+    HEAD, RUL = 78, 46
+    sheet = Image.new("RGB", (max(o.size[0] + RUL, 900), o.size[1] + HEAD + 70), (27, 31, 35))
+    sheet.paste(o, (RUL, HEAD))
     d = ImageDraw.Draw(sheet)
     f1, f2 = font(18), font(13)
-    d.text((8, 6), "%s  %s view vs %s" % (key, view.upper(), res["name"]), fill=(242, 244, 245), font=f1)
-    d.text((8, 30), "IoU %.3f   %s   %.2f px/m   slid %.2f, %.2f m   ref %s  model %s (m: %s0 %s1 %s0 %s1)" % (
-        val, "EXACT (gated)" if res["exact"] else "ADVISORY (perspective / stylised: not gated)", s, res["shift_m"][0], res["shift_m"][1],
-        er, em, AXN[view][0], AXN[view][0], AXN[view][1], AXN[view][1]), fill=(196, 204, 210), font=f2)
+    d.text((8, 6), "%s  %s view vs %s%s" % (key, view.upper(), res["name"], tag), fill=(242, 244, 245), font=f1)
+    extra = ("   hidden: %s" % ",".join(res["hide"]) if res["hide"] else "") + ("   pitched %+.2f deg" % res["pitch_deg"] if res["pitch_deg"] else "")
+    d.text((8, 30), "IoU %.3f   %s   %.2f px/m (x%d here)   slid %.2f, %.2f m   ref %s  model %s (m: %s0 %s1 %s0 %s1)%s" % (
+        val, "EXACT (gated)" if res["exact"] else "ADVISORY (not gated)", s, k, res["shift_m"][0], res["shift_m"][1],
+        er, em, AXN[view][0], AXN[view][0], AXN[view][1], AXN[view][1], extra), fill=(196, 204, 210), font=f2)
     wr = res["worst"]
 
     def wtxt(n, lab):
@@ -352,26 +430,49 @@ def compare_one(dump, ref, base, key, idx, out_dir):
         return "%s %+.2f m at %s %.1f..%.1f" % (lab, w["m"], AXN[view][0], w["from_m"], w["to_m"]) if w else lab + " n/a"
     d.text((8, 50), "worst:  " + wtxt("upper", "upper edge") + "   |   " + wtxt("lower", "lower edge") + "   |   " + wtxt("fatter", "fatter(+)/thinner(-)"),
            fill=(255, 190, 110), font=f2)
-    # station ticks
+    # metre rulers: horizontal along the bottom, vertical down the left, at a step that gives ~ 90 px
+    def nice(px_per_m_shown):
+        for st in (0.1, 0.2, 0.25, 0.5, 1, 2, 5, 10, 20, 50):
+            if st * px_per_m_shown >= 70:
+                return st
+        return 100
+    sk = s * k
+    step = nice(sk)
+    ybase = HEAD + o.size[1]
+    h_lo, h_hi = (-ox_c) / s, (W - ox_c) / s
+    v = math.ceil(h_lo / step) * step
+    while v <= h_hi:
+        x = RUL + (ox_c + v * s) * k
+        major = abs(v / step) % 2 < 1e-6 or step >= 1
+        d.line([(x, ybase), (x, ybase + (9 if major else 5))], fill=(170, 180, 187))
+        d.text((x + 2, ybase + 8), ("%g" % round(v, 3)), fill=(170, 180, 187), font=f2)
+        v += step
+    d.text((RUL + 4, ybase + 24), "%s, metres (model %s; the ruler is the view's own axis)" % (AXN[view][0], AXN[view][0]), fill=(130, 140, 147), font=f2)
+    v_lo, v_hi = (oy_c - Hh) / s, oy_c / s
+    v = math.ceil(v_lo / step) * step
+    while v <= v_hi:
+        y = HEAD + (oy_c - v * s) * k
+        d.line([(RUL - 6, y), (RUL, y)], fill=(170, 180, 187))
+        d.text((2, y - 7), ("%g" % round(v, 3))[:6], fill=(170, 180, 187), font=f2)
+        v += step
+    # station bins (the worst-station numbers refer to them), as short marks under the ruler
     for st in stations:
-        x = (ox_c + st["from_m"] * s) * k
-        d.line([(x, HEAD + o.size[1]), (x, HEAD + o.size[1] + 6)], fill=(170, 180, 187))
-        if st["bin"] % 2 == 0:
-            d.text((x + 2, HEAD + o.size[1] + 6), "%d" % st["bin"], fill=(170, 180, 187), font=f2)
-    y = HEAD + o.size[1] + 24
+        x = RUL + (ox_c + st["from_m"] * s) * k
+        d.line([(x, ybase + 40), (x, ybase + 44)], fill=(110, 120, 127))
+    y = ybase + 48
     x = 8
-    for col, lab in (((10, 40, 170), "reference outline"), ((180, 10, 10), "model outline"), ((95, 125, 240), "reference only (model missing/thinner)"),
-                     ((240, 100, 90), "model only (model fatter/extra)"), ((150, 150, 150), "outside the compared window")):
+    for col, lab in (((10, 40, 200), "reference outline"), ((200, 10, 10), "model outline"), ((95, 125, 240), "reference only (model missing/thinner)"),
+                     ((240, 100, 90), "model only (model fatter/extra)"), ((150, 150, 150), "outside the compared window"), ((110, 120, 127), "station bins")):
         d.rectangle([x, y + 2, x + 12, y + 14], fill=col)
         d.text((x + 18, y), lab, fill=(196, 204, 210), font=f2)
         x += 30 + int(d.textlength(lab, font=f2))
-    png = os.path.join(out_dir, "outline_%s_%d_%s.png" % (key, idx, view))
+    png = os.path.join(out_dir, "outline_%s%s_%d_%s.png" % (key, "_before" if tag else "", idx, view))
     sheet.save(png)
     res["overlay"] = os.path.abspath(png)
     return res
 
 
-def run(dump_path, spec_path, out_dir, only=None):
+def run(dump_path, spec_path, out_dir, only=None, align_override=None, tag=""):
     dump = json.load(open(dump_path))
     spec = json.load(open(spec_path))
     base = os.path.dirname(os.path.abspath(spec_path))
@@ -385,12 +486,15 @@ def run(dump_path, spec_path, out_dir, only=None):
             out.append({"n": i, "name": ref.get("name") or ref.get("image"), "view": ref.get("view"), "skipped": "not an orthographic view"})
             continue
         try:
-            out.append(compare_one(dump, ref, base, key, i, out_dir))
+            a = None
+            if align_override is not None:      # gate --before-align: the old model on its own best fit
+                a = max(float(ref.get("align_m", 0)), float(align_override(ref)))
+            out.append(compare_one(dump, ref, base, key, i, out_dir, align_override=a, tag=tag))
         except Exception as e:  # a missing picture must not hide the other references
             out.append({"n": i, "name": ref.get("name") or ref.get("image"), "view": ref.get("view"), "error": "%s: %s" % (type(e).__name__, e),
                         "exact": bool(ref.get("exact", True))})
     res = {"key": key, "dump": os.path.abspath(dump_path), "spec": os.path.abspath(spec_path), "references": out}
-    json.dump(res, open(os.path.join(out_dir, "outline_%s.json" % key), "w"), indent=1)
+    json.dump(res, open(os.path.join(out_dir, "outline_%s%s.json" % (key, "_before" if tag else "")), "w"), indent=1)
     return res
 
 

@@ -27,16 +27,40 @@
           0.0
         ],
         [
-          26.96,
+          25.8,
           0.0
         ],
         [
-          28.79,
-          1.69
+          26.9,
+          0.56
         ],
         [
-          29.64,
-          2.82
+          27.5,
+          0.85
+        ],
+        [
+          27.95,
+          1.3
+        ],
+        [
+          28.4,
+          2.05
+        ],
+        [
+          28.8,
+          2.5
+        ],
+        [
+          29.2,
+          3.0
+        ],
+        [
+          29.6,
+          3.4
+        ],
+        [
+          29.9,
+          3.5
         ],
         [
           30.13,
@@ -243,6 +267,12 @@
       ],
       "ignore_m": [
         [
+          28.4,
+          1.3,
+          29.7,
+          2.9
+        ],
+        [
           16.8,
           6.4,
           21.6,
@@ -263,7 +293,7 @@
       ],
       "align_m": 0.3,
       "exact": true,
-      "note": "px_per_m 30 is only the raster the traced polygon is compared on; the PHOTOGRAPH is 14.2 px/m. A long-lens, sea-level port broadside (bow to the left, so the traced points are mirrored to the standard starboard profile). Scale 14.2 px/m: prow x 250, gun ring x 460, bridge foot x 500; the same gun and bridge-foot stations come out of the aerial [A1] scaled on the published 60.4 m (15.2 px/m there), which is the cross-check - the stern itself is behind the missile's smoke from x 700 on, so the outline stops at X -1.5 m and the window is the forward 32 m only. Waterline row 646. The outline was traced by hand on a 6x grid (silhouette points every facet corner); error about 1 px = 0.07 m at corners, 0.15 m on the soft mast head. Ignored: the 76 mm barrel (elevated about 14 deg in the photo, at rest in the model), the whip aerials and flag hoists above the bridge roof either side of the mast."
+      "note": "px_per_m 30 is only the raster the traced polygon is compared on; the PHOTOGRAPH is 14.2 px/m. A long-lens, sea-level port broadside (bow to the left, so the traced points are mirrored to the standard starboard profile). Scale 14.2 px/m: prow x 250, gun ring x 460, bridge foot x 500; the same gun and bridge-foot stations come out of the aerial [A1] scaled on the published 60.4 m (15.2 px/m there), which is the cross-check - the stern itself is behind the missile's smoke from x 700 on, so the outline stops at X -1.5 m and the window is the forward 32 m only. Waterline row 646. The outline was traced by hand on a 6x grid (silhouette points every facet corner); error about 1 px = 0.07 m at corners, 0.15 m on the soft mast head. Round 3: the lower edge of the bow X 25.8 .. 30.13 re-read by a 1-px column scan of the hull against the sea (the round-1 trace ran round the anchor, which hangs forward of the stem at X 28.6 - 29.4, z 1.5 - 2.3, and was 0.4 - 0.7 m low at X 28.8 - 29.6); the anchor is an ignore box. Ignored: the 76 mm barrel (elevated about 14 deg in the photo, at rest in the model), the whip aerials and flag hoists above the bridge roof either side of the mast."
     },
     {
       "name": "[N2p] the photograph [N2] was traced from",
@@ -271,7 +301,20 @@
       "source": "as [N2]",
       "view": "quarter",
       "exact": false,
-      "note": "For the reviewer: the picture behind the traced outline (port side, bow left; ship between x 250 and about 1108, waterline row 646)."
+      "overlay": {
+        "view": "side",
+        "px_per_m": 14.2,
+        "anchor_px": [
+          250,
+          646
+        ],
+        "anchor_m": [
+          30.21,
+          0
+        ],
+        "flip": true
+      },
+      "note": "For the reviewer: the picture behind the traced outline (port side, bow left; ship between x 250 and about 1108, waterline row 646). The overlay block lets tools/model3d/overlay.py lay the true render on it at the [N2] scale (14.2 px/m, prow x 250 at model X +30.21, waterline row 646, mirrored); outline.py still skips it."
     },
     {
       "name": "[A1] PGG-618 from the air, starboard quarter above",
@@ -307,10 +350,10 @@
     }
   ],
   "must_show": [
-    "catamaran: two slender wave-piercing demihulls about 3.3 m wide at the waterline, centred y +-5.2 (10.4 m apart), open tunnel between them from the transoms (X -29.55) forward, tunnel roof 2.6 m up (seen from ahead and astern)",
-    "knife stems: each demihull ends forward in a thin blade lying at the waterline (top about 0.5-0.7 m) whose tip is within about 1 m of the prow, X +29.5 at y +-4.8 [B1: tip 0.4 m abaft the prow by the bow-quarter geometry, +-0.7]; above the blade the stem rakes back and the hull proper meets the water near X +27 [N2]",
-    "raised centre bow: the bridging deck runs forward into a blunt prow at X +30.2, 5.2 m above the water, with a V underside (keel 2.8 m up at X +29.6, 1.5-1.7 m at X +24..+28.8) falling back into the wet deck by X +17; an anchor on its stem at X +29.5, about 3 m up",
-    "bluff bow shell [B1][B2]: forward of the bridge the chine (2.6 m up, lifting to 2.8 m at X +27.5 and 4.5 m at the prow) stays WIDER than the deck edge - half breadth 5.4 at X +24, 4.95 at +26, 4.7 at +27 (deck edge 4.8 / 3.95 / 3.45 there), then closes to 2.9 at +29 and 1.2 at the prow; each demihull's outer side runs up into that chine as one shell as far as X +27, where the stem rakes down to the blade (measured on [B1]: far-side outline about 37 px = 1.5-2 m outside the deck-edge corner; +-0.7 m)",
+    "catamaran: two slender wave-piercing demihulls about 3.3 m wide at the waterline, centred y +-5.2 (10.4 m apart), open tunnel between them from the transoms (X -29.55) forward, wet deck 2.6 m up (seen from ahead and astern); forward of X +19.3 each demihull's upper body ends in a rounded stem and the bow shell hangs over an open SIDE TUNNEL each side of the centre bow, roof about 3.0 - 3.15 m up at the skirt, 3.5 m where it meets the centre bow's V (half breadth 2.35) [B2 bow-on: a tall arch each side of a pointed centre V][B1]",
+    "knife stems: forward of the rounded stem (X +19.3 .. +19.65, [N2] the dark opening's after end) each demihull is only a blade lying at the waterline (top 0.5-0.55 m) whose tip is within about 1 m of the prow, X +29.5 at y +-4.8 [B1: tip 0.4 m abaft the prow by the bow-quarter geometry, +-0.7]",
+    "raised centre bow: the bridging deck runs forward into a blunt prow at X +30.2, 5.2 m above the water; under it a deep centre bow with a V underside, its stem rising from the water at X +25.8 (keel 0.56 at X +26.9, 0.85 at +27.5, 2.05 at +28.4, 3.0 at +29.2, 3.4 at +29.6, 4.1 at the prow face) [N2 1-px scan]; abaft X +25.8 the keel stays about 0.3 m up to X +21.5 (the side view shows no light through the tunnel there [N2]; [B2] bow-on keel near the water) and fairs up into the wet deck by X +15; an anchor on its stem, pocket X +28.9 at 2.65 m, flukes down to about 1.5 m [N2][B1]",
+    "bluff bow shell [B1][B2][N2]: forward of the bridge the shell's lower edge (the chine, the skirt over the side tunnel) is 2.6 m up to X +19.3, dips to the demihull's stem at X +19.65 and rises 1.13 at +19.95, 1.48 at +20.35, 2.04 at +21.6, 2.32 at +22.5, 2.61 at +24.4, 2.89 at +25.8, 3.1 at +26.8, 3.38 at +27.7, 3.66 at +28.5, 3.94 at +29.4, 4.15 at the prow ([N2] 1-px scan of the dark opening's top, 14.2 px/m, +-0.07); it stays WIDER than the deck edge - half breadth 5.4 at X +24, 4.95 at +26, 4.7 at +27 (deck edge 4.8 / 3.95 / 3.45 there), then closes to 2.9 at +29 and 1.2 at the prow (measured on [B1]: far-side outline about 37 px = 1.5-2 m outside the deck-edge corner; +-0.7 m)",
     "hull sides flare out from the waterline (half breadth 6.85) to a chine 2.6 m up (7.0, the full 14.0 m beam), then lean in to 6.45 at the 6.9 m facet line and 5.9 at the block top 9.65 m, X -17.0 .. +12.6: no vertical slab side",
     "faceted bridge right across the hull, X +3.4 .. +12.6: raked front (foot X +12.6 at 6.0 m, 0.35 m back per m up), window band 10.05-10.75 m under the roof at 11.1 m",
     "enclosed four-sided mast on the bridge roof: foot X +3.6 .. +7.1, raked leading edge, vertical after edge at X +3.6, yard 15.56-15.85 m reaching X +2.9 .. +6.3, radar bar at 17.1-17.5 m, pole to 18.2 m at X +2.95",
@@ -326,9 +369,9 @@
   "not_confirmed": [
     "everything aft of X -1.5 in the side view is hidden by smoke in [N2]: stations there are from the oblique aerial [A1] and the model photo [M1] (about +-0.7 m)",
     "no orthographic PLAN exists on Commons / Wikipedia: half-breadths are from [A1] and [B1] and the published 14.0 m beam; the top view is not gated",
-    "underwater form of the demihulls and the tunnel roof height (wet deck drawn 2.6 m up); the published 2.3 m draught is taken as the keel",
+    "underwater form of the demihulls; the wet deck between the demihulls (2.6 m) and the side tunnels' roof under the bow (3.0 - 3.15 m at the skirt, 3.5 m at the centre bow, from the far ship in [B2] seen bow-on, a 65 m production ship at about 41 px/m on a 12.4 m skirt-to-skirt width, +-0.3 m); the published 2.3 m draught is taken as the keel",
+    "the centre bow's keel abaft X +25.8 (0.3 m to X +21.5, from [N2]: no light through the tunnel there; [B1] reads about 1.0 m at the forward end of the V, perspective +-0.4) and where it fairs into the wet deck (X +15 drawn: hidden between the demihulls)",
     "stem blade: tip station from ONE oblique photograph [B1] (prow x 1026, tip x 1138, 18.2 px/m along and 25.1 px/m across at 54 deg off the beam, blade taken 4.77 m off the centre line): X +29.5 +-0.7. The traced lower edge of [N2] between X +27 and +30 is sea and spray, not hull",
-    "the centre bow's keel line abaft the anchor",
     "the banks' stations inside the well (+-1 m; the plain-box banks are drawn at X -4.1 and -10.0, the shutters they exhaust through at -2.85 and -8.85: the well may begin about 1 m further forward than drawn), the canisters' elevation, and which of ribbed / plain is HF-2 or HF-3",
     "the flight deck height (4.0 m, from [M1] ratios) and the number of waterjets per hull (two drawn)",
     "the Phalanx block's step (1.1 m, from the [B1] stern crop at about 25 px/m)",
@@ -337,7 +380,264 @@
   "limits": {
     "plan_fill_max": {
       "value": 0.95,
-      "reason": "wave-piercing catamaran: full-width rectangle for its after two thirds, and the bluff bow shell measured on [B1] is wider than the deck edge to X +27; the 0.93 ceiling is meant for box monohulls (reviewed 2026-11 pilot, round 2)"
+      "reason": "wave-piercing catamaran: full-width rectangle for its after two thirds, and the bluff bow shell measured on [B1] is wider than the deck edge to X +27; the 0.93 ceiling is meant for box monohulls. Decided by the spec owner (pilot, 2026-11); round-3 review found it justified on the merits (fill 93.7%)"
     }
-  }
+  },
+  "landmarks": [
+    {
+      "name": "76 mm ring centre x",
+      "ref": 0,
+      "expect_m": [
+        15.4,
+        null,
+        null
+      ],
+      "tol_m": 0.15,
+      "model_at": {
+        "node": "turret"
+      },
+      "note": "[N2] gun ring x 460 at 14.2 px/m: 14.8 m abaft the prow ([A1] agrees)"
+    },
+    {
+      "name": "bridge roof height at x 10",
+      "ref": 0,
+      "expect_m": [
+        10.0,
+        11.1
+      ],
+      "tol_m": 0.15,
+      "model_at": {
+        "edge": "upper"
+      },
+      "note": "[N2] bridge roof; review 1 overlay: on the photo within 0.3 m"
+    },
+    {
+      "name": "director ball top at x 8.7",
+      "ref": 0,
+      "expect_m": [
+        8.7,
+        14.2
+      ],
+      "tol_m": 0.2,
+      "model_at": {
+        "edge": "upper"
+      },
+      "note": "[N2] director on its post (review 1)"
+    },
+    {
+      "name": "launcher well fore end (well wall starts)",
+      "ref": 2,
+      "view": "side",
+      "expect_m": [
+        -0.4,
+        9.6
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "cross": 9.6,
+        "from_h": 3.0,
+        "to_h": -5.0,
+        "material": "hk_deck",
+        "in_m": [
+          -31,
+          -8,
+          0,
+          31,
+          -4,
+          20
+        ]
+      },
+      "note": "[A1] well x 640 = 30.6 m abaft the prow (review 1 table, [M1] 30.5)"
+    },
+    {
+      "name": "step down to the flight deck x",
+      "ref": 2,
+      "view": "side",
+      "expect_m": [
+        -17.0,
+        6.0
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "cross": 6.0,
+        "from_h": -22.0,
+        "to_h": -14.0,
+        "material": "hk_hull",
+        "in_m": [
+          -31,
+          -8,
+          0,
+          31,
+          -4,
+          20
+        ]
+      },
+      "note": "[A1] step x 893 = 47.2 m abaft the prow ([M1] 47.5) (review 1 table)"
+    },
+    {
+      "name": "Phalanx block top (stepped down)",
+      "ref": 3,
+      "view": "side",
+      "expect_m": [
+        -15.0,
+        8.55
+      ],
+      "tol_m": 0.15,
+      "model_at": {
+        "edge": "upper",
+        "material": "hk_hull",
+        "in_m": [
+          -31,
+          -8,
+          0,
+          31,
+          -4,
+          20
+        ]
+      },
+      "note": "[B1] stern crop: the block top 1.1 m below the well walls' 9.65 m (27 px at 25 px/m, review 1 fix 3)"
+    },
+    {
+      "name": "Phalanx top at x -14.7",
+      "ref": 2,
+      "view": "side",
+      "expect_m": [
+        -14.7,
+        13.0
+      ],
+      "tol_m": 0.2,
+      "model_at": {
+        "edge": "upper"
+      },
+      "note": "[A1] Phalanx x 855 = 44.7 m abaft the prow; top 13.0 m after the block's step (review 1 fix 3)"
+    },
+    {
+      "name": "flight deck height",
+      "ref": 2,
+      "view": "side",
+      "expect_m": [
+        null,
+        3.8
+      ],
+      "tol_m": 0.25,
+      "model_at": {
+        "material": "hk_fdeck",
+        "point": [
+          null,
+          "max"
+        ]
+      },
+      "note": "[A1] 3.8 m, [M1] ratio 0.42 of the block top (review 1 table); oblique photographs, hence the tolerance"
+    },
+    {
+      "name": "bow shell lower edge at x 20.35 (after end of the opening)",
+      "ref": 0,
+      "expect_m": [
+        20.35,
+        1.48
+      ],
+      "tol_m": 0.15,
+      "model_at": {
+        "edge": "lower",
+        "material": "hk_hull",
+        "in_m": [
+          -31,
+          -8,
+          0.9,
+          31,
+          -4.6,
+          20
+        ]
+      },
+      "note": "[N2] 1-px column scan, the dark opening's top (round 3)"
+    },
+    {
+      "name": "bow shell lower edge at x 22.5",
+      "ref": 0,
+      "expect_m": [
+        22.5,
+        2.32
+      ],
+      "tol_m": 0.15,
+      "model_at": {
+        "edge": "lower",
+        "material": "hk_hull",
+        "in_m": [
+          -31,
+          -8,
+          0.9,
+          31,
+          -4.6,
+          20
+        ]
+      },
+      "note": "[N2] 1-px column scan (round 3)"
+    },
+    {
+      "name": "bow shell lower edge at x 26.8",
+      "ref": 0,
+      "expect_m": [
+        26.8,
+        3.1
+      ],
+      "tol_m": 0.15,
+      "model_at": {
+        "edge": "lower",
+        "material": "hk_hull",
+        "in_m": [
+          -31,
+          -8,
+          0.9,
+          31,
+          -3.5,
+          20
+        ]
+      },
+      "note": "[N2] 1-px column scan (round 3)"
+    },
+    {
+      "name": "centre bow keel at x 27.5",
+      "ref": 0,
+      "expect_m": [
+        27.5,
+        0.85
+      ],
+      "tol_m": 0.15,
+      "model_at": {
+        "edge": "lower",
+        "material": "hk_hull",
+        "in_m": [
+          -31,
+          -1.5,
+          0.0,
+          31,
+          1.5,
+          20
+        ]
+      },
+      "note": "[N2] the stem against the sea (round 3)"
+    },
+    {
+      "name": "centre bow stem at x 29.2",
+      "ref": 0,
+      "expect_m": [
+        29.2,
+        3.0
+      ],
+      "tol_m": 0.15,
+      "model_at": {
+        "edge": "lower",
+        "material": "hk_hull",
+        "in_m": [
+          -31,
+          -1.5,
+          0.0,
+          31,
+          1.5,
+          20
+        ]
+      },
+      "note": "[N2] the stem against the sea, above the anchor (round 3)"
+    }
+  ]
 }

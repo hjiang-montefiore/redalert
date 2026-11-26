@@ -18,10 +18,20 @@ so a spec still works after the scratchpad is gone.
                                         // X extent to within 1.5%
   "nodes": ["gear", "aar_recept"],      // named Object3Ds the engine looks for; all must exist
   "references": [ ... ],                // below
-  "must_show": ["twin fins standing wide apart ...", "..."],
+  "must_show": ["twin fins standing wide apart, tips at y +-2.9 m ...", "..."],
                                         // the identifying features. The REVIEWER ticks each one:
                                         // present, and in the right place. Write them so that a
                                         // person who knows the type would name it from the list.
+                                        // EVERY item carries its station or position ("x -4.3 ..
+                                        // -1.4", "z 3.45", "at 8 per cent of the length"): the gate
+                                        // WARNs on an item with none, and a reviewer cannot tick
+                                        // "in the right place" against nothing.
+  "landmarks": [ ... ],                 // below: points measured on the references, gated in metres
+  "free_parts": ["rotordisc"],          // optional: node names whose parts may float (rotordisc and
+                                        // flame always may)
+  "overlay_crops": [{"name": "cab", "ref": 0, "box_m": [4.4, 1.6, 7.8, 3.3], "zoom": 4}],
+                                        // optional: zoomed crops for overlay.py (default: one round
+                                        // each landmark of the reference)
   "not_confirmed": ["gear leg lengths ..."]
                                         // what no reference showed. The reviewer does not mark
                                         // these down; the next builder knows where the guesses are.
@@ -39,9 +49,10 @@ so a spec still works after the scratchpad is gone.
                                         // kept for the reviewer, skipped by outline.py)
   "crop": [0, 0, 800, 1145],            // optional: x0, y0, x1, y1 in the ORIGINAL picture -
                                         // one view out of a three-view sheet
-  "rotate": 90,                         // optional: 0/90/180/270 clockwise, applied after crop
+  "rotate": 90,                         // optional: degrees clockwise, any angle (a photo that leans
+                                        // 1.5 deg takes 1.5), applied after crop
   "flip": true,                         // optional: mirror left-right, applied after rotate
-  "px_per_m": 57.08,                    // scale of the picture
+  "px_per_m": 57.08,                    // scale of the picture (not needed with outline_m alone)
   "origin_px": [x, y],                  // where model (0, 0) of this view falls, in ORIGINAL
                                         // picture pixels (before crop/rotate/flip) ... or:
   "anchor_px": [392.5, 14],             // any pixel you can identify ...
@@ -64,6 +75,15 @@ so a spec still works after the scratchpad is gone.
   "ignore_m": [[h0, v0, h1, v1]],       // optional: boxes left out (stores the drawing lacks)
   "align_m": 0.3,                       // optional: the model may slide this far to its best fit
                                         // (reported). Default 0: nothing is fitted.
+  "hide": ["gear"],                     // optional: node names left out of the model first (a
+                                        // gear-up drawing, stores the drawing lacks)
+  "pitch_deg": -3.98,                   // optional: turn the model this far NOSE UP before it is
+  "pitch_about_m": [0, 0],              //   compared, about the Y axis through [x, z]: a model sat
+                                        //   4 deg nose-up against a drawing in its datum takes -4
+  "overlay": { "view": "side", "px_per_m": 14.2, "anchor_px": [250, 646], "anchor_m": [30.21, 0],
+               "flip": true },          // optional: fields that override this reference's own for
+                                        // overlay.py only - a photograph kept as "quarter" (skipped
+                                        // by outline.py) can still have the render laid on it
   "exact": true,                        // true: orthographic and trustworthy - IoU is GATED (0.88)
                                         // false: a photograph with perspective, a painted or
                                         // stylised profile - reported, never gated
@@ -95,6 +115,46 @@ Rules of thumb
 - Run `python3 tools/model3d/outline.py DUMP.json specs/<key>.json --out DIR`
   and LOOK at the overlay before trusting the number: a wrong origin or scale
   shows at once as a uniform offset or a uniform blue/red rim.
+
+## landmarks
+
+A landmark is a point a person measured on a reference, and where the model
+must have it. The gate reports each one's error in metres and FAILs any beyond
+its tolerance; one it cannot evaluate (no triangles selected, no such node) is
+a FAIL marked "spec error". 5-8 per model, from the features an outline cannot
+see: axle stations, a box's ends, a window's sill, a block's stepped top, a
+wheel track.
+
+```json
+{ "name": "raised box aft end",       // how reports call it
+  "ref": 0,                           // the reference it was measured on (index into references)
+  "view": "side",                     // optional: the axes, when the reference is a "quarter"
+  "expect_m": [2.49, 2.95],           // [h, v] in the view's axes (side x,z; top x,y; front y,z),
+                                      // or [x, y, z]; null = not checked. Or instead:
+  "at_px": [714, 354],                //   a pixel of the reference's ORIGINAL picture, turned into
+                                      //   metres with its scale, origin and crop/rotate/flip
+  "tol_m": 0.15,                      // default per category: 0.15 ship, 0.05 air, 0.08 veh
+  "model_at": { ... },                // where the model's point is: below
+  "note": "[T2] review 1: box from x +2.49" }
+```
+
+`model_at` (the triangles are selected first, then a point taken from them):
+
+| key | meaning |
+|---|---|
+| `node: "turret", index: 0` | the world position of a named node (the n-th of that name) |
+| `path: "gear"` | triangles under a named group (a name equals one segment of the mesh path; with `/` or `*` a path pattern) |
+| `material: "hk_glass"` or `"#16242b"` | triangles of a material, by name substring or colour |
+| `in_m: [x0, y0, z0, x1, y1, z1]` | triangles whose centroid lies in this box (`"whole": true`: entirely inside) |
+| `point: ["max", null]` | per expected axis: `min`, `max` or `mid` of the selection's vertices (default `mid`) |
+| `edge: "upper"` / `"lower"` | the selection's silhouette edge at h = expect's h (a crown height, a sill, a deck at a station) |
+| `cross: 2.95, from_h: 1.5, to_h: 4.0` | the first h, scanning from_h -> to_h, where the upper edge rises past 2.95 (a box end, a step, a raked front); only h is compared |
+
+A merged kit model has few named nodes, so most selectors are a material and
+a box: keep the box tight to the feature (one side of the hull, `y < -4`) or
+a rail or a lug standing on it will be what the edge finds. Write the reading
+into `note`; a reviewer who re-measures and disagrees corrects the spec, says
+so, and never loosens a tolerance to pass a model.
 
 ## limits (per-model exceptions)
 

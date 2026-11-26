@@ -66,23 +66,50 @@
        .............................................. js/hero/nato_e90_mbt.js
      one mesh per material per frame, linear vertex colours
        ................................... js/armour3d.js (pack / tint / join)
+     (v2) multihull loft, bridging deck, launcher well, box launchers, CIWS,
+       shutters, stealth shield, flight-deck sheet ... pilot_tuochiang.js;
+       two-colour skins, blunt / cut aerofoil sections, root intake ducts,
+       jet pipes, the ground stance ............... pilot_seahawk.js;
+       arches, mirrors, steps, strut suspension, plain paint .. pilot_df16.js;
+       rotor / disc / tail rotor conventions ..... js/render3d.js rotorShafts,
+       js/hero/de_bo105.js; wingfold userData .... js/render3d.js poseFold
 
    COMPACT REFERENCE
      K = HeroKit.begin(THREE, M, C, { category: "ship"|"sub"|"air"|"vehicle",
-           paint: { name: 0xrrggbb }, len, maxDraw, strict, key })
-     K.material(name, def)   K.pen(material, colour)   K.palette
-     K.group(name, { at, visible, userData })   K.node(name, at)
-     K.contract([names])   K.part(label)   K.finish() -> THREE.Group
+           paint: { name: 0xrrggbb }, len, maxDraw, strict, key,
+           stock: "plain"|"detail", stance: { main, nose|tail } | { about,
+           pitchDeg }, name })
+     K.material(name, def: + opacity, depthWrite, noShadow)
+     K.pen(material, colour)   K.palette
+     K.group(name, { at, visible, userData, rotate: {axis, angle} | [..] })
+     K.node(name, at)   K.contract([names])   K.part(label)
+     K.finish({ stance }) -> THREE.Group (a stance wraps it; report as stood)
+     K.ground(x)  K.groundUp()   the stood ground in the build frame
      primitives (pen first): tri quad box obox boxZ hexa bar tube cylX cylY
-       cylZ disc sphere prism loft gridSkin ribbon blade
-     tables: K.loftHull K.loftSub K.loftBody K.aerofoil K.revolve
-       K.extrudePoly K.facetedHouse
-     paint: K.paintCanvas K.paintSheet K.teamStrip K.teamPatch
+       cylZ disc sphere prism loft (o.penOf, o.capPen) gridSkin ribbon blade
+     tables: K.loftHull (y0, pair: multihulls) K.bridgingDeck K.loftSub
+       K.loftBody (split: two colours, penOf: panels) K.aerofoil (lower,
+       wrap, penOf, rows cutLE / bluntTE, openLE, F.mouth) K.revolve
+       K.extrudePoly K.facetedHouse (well; panel po: across row breaks,
+       plumb, round; plumbS)
+     paint: K.paintCanvas K.paintSheet (areas, demarcation, draw) K.deckSheet
+       (markings lighter than the deck) K.teamStrip K.teamPatch
+       HeroKit.STOCK.plain* (the default stock sheets: no blots)
+     colour: HeroKit.seenAs(hex, "top"|"side")  HeroKit.authorFor(hex)
      K.ship.*  rail toeRail bollard cleat fairlead anchor hatch vent ladder
        boat davit raft scuttles whip latticeMast radar gunHouse door
-     K.air.*   intake nozzle canopy gearLeg pylon seam hoop lamp pitot aerial
-     K.veh.*   trackRun wheels skirt tool towCable lamp stowage hatch
-       visionBlock smoke mudflap handle bolts
+       funnel vls boxLauncher ciws shutter shield shaft screw rudder
+       sonarDome nets
+     K.air.*   intake nozzle jetPipe duct canopy gearLeg pylon seam hoop
+       lamp pitot aerial rotor tailRotor wingfold
+     K.veh.*   trackRun wheels skirt tool towCable lamp (guard "plain")
+       stowage hatch visionBlock smoke mudflap handle bolts archBody mirror
+       steps suspension
+   VERSION 2 adds everything after the slashes above without changing what
+   VERSION 1 calls build: js/hero/pilot_df16.js, pilot_seahawk.js and
+   pilot_tuochiang.js dump byte-identical triangles through either.  The
+   one changed default is the stock sheets (plain, no blots); begin's
+   stock: "detail" gives the old ones back.
    Each function carries its own comment below.  ASCII only.  Needs only
    THREE; load it BEFORE the js/hero files.
 ========================================================================== */
@@ -98,6 +125,7 @@ var HeroKit = (function () {
   function sub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
   function add(a, b, k) { k = k === undefined ? 1 : k; return [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k]; }
   function cross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+  function scaleV(a, k) { return [a[0] * k, a[1] * k, a[2] * k]; }
   function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
   function unit(v) { var l = Math.sqrt(dot(v, v)) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
   function lerp(a, b, t) { return a + (b - a) * t; }
@@ -108,6 +136,11 @@ var HeroKit = (function () {
   function frame(ax) {
     var t = Math.abs(ax[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0], u = unit(cross(ax, t));
     return [u, cross(ax, u)];
+  }
+  /* v turned by angle a about the unit axis ax (Rodrigues) */
+  function rotV(v, ax, a) {
+    var k = unit(ax), c = Math.cos(a), s = Math.sin(a), kv = cross(k, v), d = dot(k, v);
+    return [v[0] * c + kv[0] * s + k[0] * d * (1 - c), v[1] * c + kv[1] * s + k[1] * d * (1 - c), v[2] * c + kv[2] * s + k[2] * d * (1 - c)];
   }
   function rng(seed) {
     var s = (seed >>> 0) || 7;
@@ -183,7 +216,7 @@ var HeroKit = (function () {
     common: { metal: 0x5f666c, steel: 0x6f757a, chrome: 0xb9bec2, dark: 0x25272a, ink: 0x121416, rubber: 0x17181a,
               white: 0xcfd2d0, wood: 0x6b5236, canvas: 0x5d5a45, burnt: 0x5d5751, glass: 0x16242b, seam: 0x4a5054,
               lampWhite: 0xfff2d0, lampRed: 0xc22a20, lampGreen: 0x1f9a4a, lampAmber: 0xd98a1e, rust: 0x5c341e, track: 0x2b2c2b },
-    ship: { hull: 0x8f999f, under: 0x5a1e18, boot: 0x17191b, deck: 0x585f64, plate: 0x959fa5, raft: 0xd4d6d2, boat: 0x7d8589 },
+    ship: { hull: 0x8f999f, under: 0x5a1e18, boot: 0x17191b, deck: 0x585f64, plate: 0x959fa5, raft: 0xd4d6d2, boat: 0x7d8589, tunnel: 0x3b4044 },
     sub: { hull: 0x1c1f22, under: 0x1c1f22, boot: 0x17191b, deck: 0x202326, plate: 0x1f2225, raft: 0xd4d6d2, boat: 0x7d8589 },
     air: { skin: 0x7b858b, radome: 0x6a7378, under: 0x8a9499, frame: 0x565d62, strut: 0xc9ccca },
     vehicle: { paint: 0x4d5638, shade: 0x434c31, light: 0x58613f }
@@ -239,11 +272,17 @@ var HeroKit = (function () {
       return false;
     }
     fx /= l; fy /= l; fz /= l;
-    var V = [a, b, c], Nn = [na, nb, nc], i, q, n, o = K.off, g = K.org, P = bin.P, N = bin.N, U = bin.U, Cc = bin.C, uv = d.uv;
+    var V = [a, b, c], Nn = [na, nb, nc], i, q, n, o = K.off, g = K.org, P = bin.P, N = bin.N, U = bin.U, Cc = bin.C, uv = d.uv, W = K.W;
     for (i = 0; i < 3; i++) {
       q = V[i]; n = Nn[i];
-      P.push(q[0] - o[0], q[1] - o[1], q[2] - o[2]);
-      if (n) N.push(n[0], n[1], n[2]); else N.push(fx, fy, fz);
+      if (W) {                                       /* a rotated frame: model -> the frame's own axes */
+        var dx = q[0] - o[0], dy = q[1] - o[1], dz = q[2] - o[2], nn = n || [fx, fy, fz];
+        P.push(W[0][0] * dx + W[0][1] * dy + W[0][2] * dz, W[1][0] * dx + W[1][1] * dy + W[1][2] * dz, W[2][0] * dx + W[2][1] * dy + W[2][2] * dz);
+        N.push(W[0][0] * nn[0] + W[0][1] * nn[1] + W[0][2] * nn[2], W[1][0] * nn[0] + W[1][1] * nn[1] + W[1][2] * nn[2], W[2][0] * nn[0] + W[2][1] * nn[1] + W[2][2] * nn[2]);
+      } else {
+        P.push(q[0] - o[0], q[1] - o[1], q[2] - o[2]);
+        if (n) N.push(n[0], n[1], n[2]); else N.push(fx, fy, fz);
+      }
       if (Cc) Cc.push(this.col[0], this.col[1], this.col[2]);
       var mx = q[0] + g[0], my = q[1] + g[1], mz = q[2] + g[2];
       if (mz < K.zmin) K.zmin = mz;
@@ -390,7 +429,13 @@ var HeroKit = (function () {
      o: { capA, capB  close the first / last ring with a flat fan,
           flat        facet it (petals, plates) instead of smoothing,
           hard        smooth round each ring but crease between rings,
-          inward      face the axis (the inside of a duct) }
+          inward      face the axis (the inside of a duct),
+          penOf(r, i) the pen of the face between rings r, r + 1 and points
+                      i, i + 1 (a two-colour scheme, panel shades); null
+                      leaves that face open.  Normals stay smooth across a
+                      change of pen, so the colour line is crisp but the
+                      surface is not creased.
+          capPen      the pen of the caps (default p) }
      Rings may collapse to a point (a nose, a stem): the dead triangles are
      dropped without a warning.  (us_ef111a.js Shell.loft)                 */
   function loft(p, rings, o) {
@@ -403,21 +448,22 @@ var HeroKit = (function () {
       cent.push([cx / n, cy / n, cz / n]); Nn.push(row);
     }
     function rad(q) { var s2 = 0, k; for (k = 0; k < n; k++) { var d = sub(rings[q][k], cent[q]); s2 += Math.sqrt(dot(d, d)); } return s2 / n; }
-    function face(ra, ia, rb, ib, rc, ic, mc, od) {
+    function face(ra, ia, rb, ib, rc, ic, mc, od, fp) {
       var a = rings[ra][ia], b = rings[rb][ib], c = rings[rc][ic], f = cross(sub(b, a), sub(c, a));
       if (dot(f, f) < 1.6e-11) { RR.stats.collapsed++; return; }
       var m = od || [(a[0] + b[0] + c[0]) / 3 - mc[0], (a[1] + b[1] + c[1]) / 3 - mc[1], (a[2] + b[2] + c[2]) / 3 - mc[2]];
       var flip = dot(f, m) < 0;
       if (o.inward) flip = !flip;
-      if (flip) { f = [-f[0], -f[1], -f[2]]; T.push([ra, ia, rc, ic, rb, ib, r]); } else T.push([ra, ia, rb, ib, rc, ic, r]);
+      if (flip) { f = [-f[0], -f[1], -f[2]]; T.push([ra, ia, rc, ic, rb, ib, r, fp]); } else T.push([ra, ia, rb, ib, rc, ic, r, fp]);
       [[ra, ia], [rb, ib], [rc, ic]].forEach(function (q) { var v = Nn[q[0]][q[1]]; v[0] += f[0]; v[1] += f[1]; v[2] += f[2]; });
     }
     function flush() {
       var k, t;
       for (k = 0; k < T.length; k++) {
         t = T[k];
-        if (o.flat) p.tri(rings[t[0]][t[1]], rings[t[2]][t[3]], rings[t[4]][t[5]]);
-        else p.tri(rings[t[0]][t[1]], rings[t[2]][t[3]], rings[t[4]][t[5]], unit(Nn[t[0]][t[1]]), unit(Nn[t[2]][t[3]]), unit(Nn[t[4]][t[5]]));
+        var tp = t[7] || p;
+        if (o.flat) tp.tri(rings[t[0]][t[1]], rings[t[2]][t[3]], rings[t[4]][t[5]]);
+        else tp.tri(rings[t[0]][t[1]], rings[t[2]][t[3]], rings[t[4]][t[5]], unit(Nn[t[0]][t[1]]), unit(Nn[t[2]][t[3]]), unit(Nn[t[4]][t[5]]));
       }
       T = [];
     }
@@ -431,16 +477,22 @@ var HeroKit = (function () {
         var tv = r > 0 ? sub(cent[r], cent[r - 1]) : (r + 2 < R ? sub(cent[r + 2], cent[r + 1]) : null);
         if (tv && dot(tv, tv) > 1e-12) od = qb < qa ? tv : [-tv[0], -tv[1], -tv[2]];
       }
-      for (i = 0; i < n; i++) { j = (i + 1) % n; face(r, i, r, j, r + 1, j, mc, od); face(r, i, r + 1, j, r + 1, i, mc, od); }
+      for (i = 0; i < n; i++) {
+        j = (i + 1) % n;
+        var fp = o.penOf ? o.penOf(r, i) : null;
+        if (o.penOf && !fp) continue;
+        face(r, i, r, j, r + 1, j, mc, od, fp); face(r, i, r + 1, j, r + 1, i, mc, od, fp);
+      }
       if (o.hard) { flush(); for (i = 0; i < n; i++) { Nn[r][i] = [0, 0, 0]; Nn[r + 1][i] = [0, 0, 0]; } }
     }
     flush();
+    var cp = o.capPen || p;
     function cap(ring, c, nb) {
       var od = sub(c, nb), k;
       if (o.inward) od = [-od[0], -od[1], -od[2]];
       for (k = 0; k < n; k++) {
         var a = ring[k], b = ring[(k + 1) % n], f = cross(sub(a, c), sub(b, c));
-        if (dot(f, od) < 0) p.tri(c, b, a); else p.tri(c, a, b);
+        if (dot(f, od) < 0) cp.tri(c, b, a); else cp.tri(c, a, b);
       }
     }
     if (o.capA) cap(rings[0], cent[0], cent[1]);
@@ -595,7 +647,12 @@ var HeroKit = (function () {
        deckMarkings  function (g, w, h, m)  drawn last; m.x(metres) /
                 m.y(metres) map deck metres to pixels when spec.plan =
                 { x0, x1, y0, y1 } is given (uv mode "plan"); m.line,
-                m.circle, m.rect take metres.  Lines and shapes only.     */
+                m.circle, m.rect take metres.  Lines and shapes only.
+                LIGHTER-THAN-DECK MARKINGS: the sheet is MULTIPLIED by the
+                pen's vertex colour, so a white line on a sheet tinted dark
+                grey comes out dark grey.  Put the deck's grey in the canvas
+                (base) and draw with a WHITE pen: K.deckSheet does exactly
+                that (pilot_tuochiang.js's flight deck found it by hand). */
   function paintCanvas(THREE, spec) {
     var W = spec.w || 512, H = spec.h || 512;
     return texOf(THREE, "HK_" + spec.key, W, H, function (g, w, h) {
@@ -722,8 +779,23 @@ var HeroKit = (function () {
     /* vehicle paint: 512 px over 2.94 m (0.34 a metre) (redo_pla_roc_ground detailTex) */
     detail: { key: "detail", w: 512, h: 512, seed: 1996, blots: { n: 40, size: [26, 116], alpha: 0.07 },
               panels: { cols: 4, rows: 2, alpha: 0.42, lit: 0.12, width: 2 }, rivets: { step: 15, alpha: 0.45 }, hatches: { n: 6 },
-              streaks: { n: 260, len: [0.016, 0.12], alpha: 0.08 }, grime: { n: 70, alpha: 0.08 }, chips: { n: 180, alpha: 0.22 }, oil: { n: 8 } }
+              streaks: { n: 260, len: [0.016, 0.12], alpha: 0.08 }, grime: { n: 70, alpha: 0.08 }, chips: { n: 180, alpha: 0.22 }, oil: { n: 8 } },
+    /* PLAIN service paint: the same seams, rivets, streaks and chips with
+       NO blots - the blots of the sheets above read as a camouflage pattern
+       at the game camera (pilot_df16.js, pilot_tuochiang.js both had to
+       strip them).  These are the DEFAULT of begin() (o.stock "plain");
+       o.stock "detail" gives the mottled sheets above.                   */
+    plainVehicle: { key: "plainVehicle", w: 512, h: 512, seed: 2016, panels: { cols: 4, rows: 3, alpha: 0.40, lit: 0.12, width: 2 },
+                    rivets: { step: 15, alpha: 0.42 }, hatches: { n: 5 }, streaks: { n: 300, len: [0.02, 0.14], alpha: 0.08 },
+                    grime: { n: 30, alpha: 0.02 }, chips: { n: 200, alpha: 0.22 } },
+    plainHull: { key: "plainHull", w: 512, h: 256, seed: 618, panels: { cols: 7, rows: 4, alpha: 0.24, lit: 0.08, width: 1.4, stagger: 16 },
+                 streaks: { n: 110, len: [0.06, 0.32], alpha: 0.06 }, rust: { n: 22, strength: 0.5 }, grime: { n: 24, alpha: 0.05 } },
+    plainPlate: { key: "plainPlate", w: 256, h: 256, seed: 619, panels: { cols: 3, rows: 3, alpha: 0.22, lit: 0.08, width: 1.4, stagger: 0 },
+                  hatches: { n: 3 }, streaks: { n: 50, len: [0.05, 0.25], alpha: 0.05 }, rust: { n: 12, strength: 0.5 } },
+    plainDeck: { key: "plainDeck", w: 256, h: 256, seed: 621, panels: { cols: 3, rows: 4, alpha: 0.2, lit: 0.05, width: 1, stagger: 30 },
+                 grime: { n: 14, alpha: 0.035 }, streaks: { n: 40, len: [0.04, 0.2], alpha: 0.04 } }
   };
+  STOCK.plain = { vehicle: STOCK.plainVehicle, hull: STOCK.plainHull, plate: STOCK.plainPlate, deck: STOCK.plainDeck };
   /* the aircraft paint SHEET: four bands on 1024 x 2048 - from above (x, y),
      the port side (x, z), the starboard side (x, z), from below (x, y) -
      laid over the skin by projected UVs (uv mode "sheet").
@@ -745,6 +817,34 @@ var HeroKit = (function () {
       function RB(y) { return L.B_BOT + (L.YMAX - y) * L.PY; }
       function RS(z, s) { return (s ? L.B_STBD : L.B_PORT) + (L.ZMAX - z) * L.PZ; }
       g.fillStyle = "#f2f2f2"; g.fillRect(0, 0, L.TW, L.TH);
+      var dm = spec.demarcation;
+      if (dm) {                                       /* a two-colour scheme carried by the sheet (draw with a WHITE pen) */
+        var zl = typeof dm.z === "number" ? function () { return dm.z; } : function (x) { return lin(dm.z, x)[0]; };
+        g.fillStyle = css(dm.above); g.fillRect(0, 0, L.TW, L.B_PORT);
+        g.fillStyle = css(dm.below); g.fillRect(0, L.B_BOT - 2, L.TW, L.TH - L.B_BOT + 2);
+        for (sd = 0; sd < 2; sd++) {
+          var r0 = sd ? L.B_STBD : L.B_PORT, xk;
+          g.fillStyle = css(dm.below); g.fillRect(0, r0 - 2, L.TW, L.SIDEH + 4);
+          g.fillStyle = css(dm.above); g.beginPath(); g.moveTo(0, r0 - 2);
+          for (xk = 0; xk <= 64; xk++) { var xm = L.XMIN + (L.TW / L.PX) * xk / 64; g.lineTo(U(xm), RS(zl(xm), sd)); }
+          g.lineTo(L.TW, r0 - 2); g.closePath(); g.fill();
+        }
+      }
+      (spec.areas || []).forEach(function (ar) {     /* filled colour areas: band "top" | "bot" | "side" | "port" | "stbd" */
+        var bands = ar.band === "side" ? ["port", "stbd"] : [ar.band || "top"], mir = ar.mirror === undefined ? (ar.band === "top" || ar.band === "bot" || !ar.band) && spec.mirror !== false : ar.mirror;
+        g.fillStyle = typeof ar.color === "string" && ar.color.indexOf("rgba") === 0 ? ar.color : rgba(ar.color === undefined ? 0x202224 : ar.color, ar.alpha === undefined ? 1 : ar.alpha);
+        bands.forEach(function (bd) {
+          [1, -1].forEach(function (m, n) {
+            if (n && !(mir && (bd === "top" || bd === "bot"))) return;
+            g.beginPath();
+            ar.poly.forEach(function (q, k) {
+              var px = U(q[0]), py = bd === "top" ? RT(m * q[1]) : bd === "bot" ? RB(m * q[1]) : RS(q[1], bd === "stbd");
+              if (k) g.lineTo(px, py); else g.moveTo(px, py);
+            });
+            g.closePath(); g.fill();
+          });
+        });
+      });
       for (i = 0; i < (spec.grime === undefined ? 160 : spec.grime); i++) {
         g.fillStyle = R() < 0.6 ? "rgba(40,40,40," + (0.03 + R() * 0.04) + ")" : "rgba(255,255,255,0.05)";
         g.beginPath(); g.ellipse(R() * L.TW, R() * L.TH, 4 + R() * 26, 2 + R() * 9, 0, 0, TAU); g.fill();
@@ -791,6 +891,7 @@ var HeroKit = (function () {
         });
         for (sd = 0; sd < 2; sd++) g.fillRect(xb, RS(s[2], sd) - s[4] * L.PZ, xa - xb, 2 * s[4] * L.PZ);
       }
+      if (typeof spec.draw === "function") spec.draw(g, { U: U, top: RT, bot: RB, side: RS, L: L });   /* the free hook (lines and fills only) */
     }, true);
   }
 
@@ -802,8 +903,9 @@ var HeroKit = (function () {
     this.stats = { degenerate: 0, degAt: {}, collapsed: 0, area: 0, teamArea: 0 };
     this.names = {}; this.need = []; this.label = "model"; this.quiet = 0; this.warnings = []; this.done = false;
   }
-  function Ctx(R, parent, node, off, org, name, visible) {
+  function Ctx(R, parent, node, off, org, name, visible, W) {
     this.R = R; this.parent = parent; this.grp = node; this.off = off; this.org = org; this.name = name || "";
+    this.W = W || null;                              /* the frame's axes [ex, ey, ez] in model space (null: unrotated) */
     this.visible = visible !== false; this.bins = {}; this.kids = []; this.zmin = Infinity; this.zmax = -Infinity;
     this.palette = R.P;
     this.ship = bind(this, SHIP); this.air = bind(this, AIR); this.veh = bind(this, VEH);
@@ -824,6 +926,10 @@ var HeroKit = (function () {
      o.len       the published length: finish() warns if the model's X
                  extent is more than 2 % off
      o.maxDraw   draw-call budget (16)      o.strict  warnings throw too
+     o.stock     "plain" (default: seams, rivets, streaks, no mottling) or
+                 "detail" (the older mottled sheets) for the stock maps
+     o.stance    an aircraft's ground stance (see finish)
+     o.name      the root group's name when a stance wraps it
      Stock materials (made only if used): every category has
        dull   vertex-coloured matt paint, double-sided (rubber, ink, seams)
        metal  vertex-coloured bare metal, double-sided (rails, wires, tools)
@@ -833,6 +939,7 @@ var HeroKit = (function () {
      air: skin (give it a sheet with K.paintSheet); vehicle: paint.        */
   function begin(THREE, M, C, o) {
     var R = new Root(THREE, M, C, o), k, cat = R.cat;
+    R.st = R.o.stance ? stanceOf(R.o.stance) : null;
     if (!PALETTE[cat]) throw new Error("HeroKit.begin: category must be ship, sub, air or vehicle, not " + cat);
     [PALETTE.common, PALETTE[cat], R.o.paint || {}].forEach(function (src) { for (k in src) if (src.hasOwnProperty(k)) R.P[k] = hexOf(src[k]); });
     var node = new THREE.Group(), K = new Ctx(R, null, node, [0, 0, 0], [0, 0, 0], "", true);
@@ -842,14 +949,15 @@ var HeroKit = (function () {
     K.material("glass", { color: R.P.glass, rough: 0.12, metal: 0.35, side: "double" });
     K.material("lamp", { vcol: true, rough: 0.3, metal: 0, emissive: 0x333333, emissiveIntensity: 0.6 });
     K.material("team", { color: R.C.team !== undefined ? R.C.team : 0x3f7fd0, rough: 0.7, metal: 0.1, side: "double", team: true });
+    var plain = R.o.stock !== "detail";
     if (cat === "ship" || cat === "sub") {
-      K.material("hull", { vcol: true, rough: 0.86, metal: 0.06, map: STOCK.hull, uv: { mode: "tile", su: 1 / 24, sv: 1 / 8 } });
-      K.material("plate", { vcol: true, rough: 0.86, metal: 0.06, map: STOCK.plate, uv: { mode: "tile", su: 0.25, sv: 0.25 } });
-      K.material("deck", { vcol: true, rough: 0.95, metal: 0.04, map: STOCK.deck, uv: { mode: "tile", su: 0.25, sv: 0.25 } });
+      K.material("hull", { vcol: true, rough: 0.86, metal: 0.06, map: plain ? STOCK.plainHull : STOCK.hull, uv: { mode: "tile", su: 1 / 24, sv: 1 / 8 } });
+      K.material("plate", { vcol: true, rough: 0.86, metal: 0.06, map: plain ? STOCK.plainPlate : STOCK.plate, uv: { mode: "tile", su: 0.25, sv: 0.25 } });
+      K.material("deck", { vcol: true, rough: 0.95, metal: 0.04, map: plain ? STOCK.plainDeck : STOCK.deck, uv: { mode: "tile", su: 0.25, sv: 0.25 } });
     } else if (cat === "air") {
       K.material("skin", { vcol: true, rough: 0.82, metal: 0.08, side: "double" });
     } else {
-      K.material("paint", { vcol: true, rough: 0.9, metal: 0.05, map: STOCK.detail, uv: { mode: "tile", su: 0.34, sv: 0.34 } });
+      K.material("paint", { vcol: true, rough: 0.9, metal: 0.05, map: plain ? STOCK.plainVehicle : STOCK.detail, uv: { mode: "tile", su: 0.34, sv: 0.34 } });
     }
     return K;
   }
@@ -859,7 +967,9 @@ var HeroKit = (function () {
        rough, metal, side: "double", emissive, emissiveIntensity,
        map: a texture, or a paintCanvas spec,
        uv: { mode: "tile", su, sv } | { mode: "side", tileX, z0, z1 } |
-           { mode: "plan", x0, x1, y0, y1 } }
+           { mode: "plan", x0, x1, y0, y1 },
+       opacity: 0..1 makes it transparent (depthWrite false unless
+           depthWrite: true): a rotor disc; noShadow: casts no shadow }
      Every material used costs one draw call per frame it is used in.      */
   CP.material = function (name, def) {
     var R = this.R;
@@ -875,6 +985,7 @@ var HeroKit = (function () {
     if (d.vcol) o.vertexColors = true;
     if (f.side === "double") o.side = T.DoubleSide;
     if (f.emissive !== undefined) { o.emissive = f.emissive; o.emissiveIntensity = f.emissiveIntensity === undefined ? 1 : f.emissiveIntensity; }
+    if (f.opacity !== undefined) { o.transparent = true; o.opacity = f.opacity; o.depthWrite = !!f.depthWrite; }
     var m = new T.MeshStandardMaterial(o);
     if (map && !map.isTexture) map = paintCanvas(T, map);
     if (map) m.map = map; else d.uv = null;           /* no document: plain paint, no UVs */
@@ -909,19 +1020,36 @@ var HeroKit = (function () {
      frame's origin in MODEL coordinates (a turret's ring centre, an axle,
      a hinge); everything drawn through the returned context is still given
      in model coordinates - the kit moves it into the frame.  o.visible:
-     false for the pose that starts hidden; o.userData is copied on.       */
+     false for the pose that starts hidden; o.userData is copied on.
+     o.rotate { axis: [x, y, z] in model space, angle } (or a list of them,
+     applied in order) turns the frame's
+     own axes (a mast leaning forward, a tail rotor canted, a rotor head
+     whose shaft points DOWN so the engine turns it clockwise from above).
+     Geometry is still given in model coordinates; the kit expresses it in
+     the frame's axes.  Groups nest; a rotated parent is allowed.          */
   CP.group = function (name, o) {
     o = o || {};
-    var R = this.R, T = R.THREE, at = o.at || [this.off[0], this.off[1], this.off[2]], g = new T.Group();
+    var R = this.R, T = R.THREE, at = o.at || [this.off[0], this.off[1], this.off[2]], g = new T.Group(), Wc = this.W;
     if (name) {
       g.name = name; R.names[name] = (R.names[name] || 0) + 1;
       if (!ENGINE_NAMES[name] && name.indexOf("aar_") !== 0) this.warn("group '" + name + "' is not a name the engine animates: it only costs draw calls");
     }
-    g.position.set(at[0] - this.off[0], at[1] - this.off[1], at[2] - this.off[2]);
+    var d0 = [at[0] - this.off[0], at[1] - this.off[1], at[2] - this.off[2]];
+    if (this.W) d0 = [dot(this.W[0], d0), dot(this.W[1], d0), dot(this.W[2], d0)];
+    g.position.set(d0[0], d0[1], d0[2]);
+    var RL = o.rotate ? [].concat(o.rotate).filter(function (q) { return q && q.angle; }) : [];
+    if (RL.length) {
+      var Wp = this.W || [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+      Wc = Wp.map(function (e) { RL.forEach(function (q) { e = rotV(e, q.axis, q.angle); }); return e; });
+      /* the child's axes in the parent's frame -> the group's quaternion */
+      var L = Wc.map(function (e) { return [dot(Wp[0], e), dot(Wp[1], e), dot(Wp[2], e)]; });
+      var m4 = new T.Matrix4().set(L[0][0], L[1][0], L[2][0], 0, L[0][1], L[1][1], L[2][1], 0, L[0][2], L[1][2], L[2][2], 0, 0, 0, 0, 1);
+      g.quaternion.setFromRotationMatrix(m4);
+    }
     if (o.visible === false) g.visible = false;
     if (o.userData) for (var k in o.userData) if (o.userData.hasOwnProperty(k)) g.userData[k] = o.userData[k];
     this.grp.add(g);
-    var c = new Ctx(R, this, g, [at[0], at[1], at[2]], [0, 0, 0], name, o.visible !== false && this.visible);
+    var c = new Ctx(R, this, g, [at[0], at[1], at[2]], [0, 0, 0], name, o.visible !== false && this.visible, Wc);
     this.kids.push(c);
     return c;
   };
@@ -929,7 +1057,9 @@ var HeroKit = (function () {
   CP.node = function (name, at) {
     var R = this.R, n = new R.THREE.Object3D();
     n.name = name; n.visible = false;
-    n.position.set(at[0] - this.off[0], at[1] - this.off[1], at[2] - this.off[2]);
+    var d0 = [at[0] - this.off[0], at[1] - this.off[1], at[2] - this.off[2]];
+    if (this.W) d0 = [dot(this.W[0], d0), dot(this.W[1], d0), dot(this.W[2], d0)];
+    n.position.set(d0[0], d0[1], d0[2]);
     this.grp.add(n); R.names[name] = (R.names[name] || 0) + 1;
     return n;
   };
@@ -942,20 +1072,34 @@ var HeroKit = (function () {
     if (R.o.strict) throw new Error("HeroKit[" + R.key + "]: " + msg);
     R.warnings.push(msg);
   };
-  /* finish(): one mesh per material per frame, then the guards.  Returns
+  /* finish(fo): one mesh per material per frame, then the guards.  Returns
      the root THREE.Group; root.userData.heroKit is the report { key, tris,
      drawCalls, meshes, materials, hiddenMeshes, bbox, perMaterial, groups,
-     collapsed, degenerate, teamShare, warnings }.  HeroKit.onReport(report)
-     is called if set (the gate hooks it).                                 */
-  CP.finish = function () {
+     collapsed, degenerate, teamShare, warnings, stance }.
+     HeroKit.onReport(report) is called if set (the gate hooks it).
+     STANCE (aircraft on their wheels).  fo.stance, or begin's o.stance:
+       { main: [x, z], nose: [x, z] }  the two wheel contacts in the build
+           frame (a tail wheel: tail: [x, z]); the airframe is turned about
+           the main contact until both are on z = 0, or
+       { about: [x, z], pitchDeg }     turned nose-up by pitchDeg about the
+           point (x, z), which is set down on z = 0.
+     Build the airframe LEVEL, in the drawing's datum; the returned root
+     holds a "stance" group that does the turn, and bbox / length / the
+     ground checks are reported AS STOOD.  Give the stance in begin() and
+     K.ground(x) / K.groundUp() / K.air.gearLeg stand the wheels on the
+     stood ground (pilot_seahawk.js did this by hand).                    */
+  CP.finish = function (fo) {
     var R = this.R, T = R.THREE, K = this;
     if (this.parent) throw new Error("HeroKit: finish() belongs to the root context");
     if (R.done) throw new Error("HeroKit: finish() called twice");
     R.done = true;
+    fo = fo || {};
+    var st = fo.stance ? stanceOf(fo.stance) : R.st;
     var rep = { key: R.key, category: R.cat, tris: 0, meshes: 0, drawCalls: 0, hiddenMeshes: 0, materials: 0, perMaterial: {}, groups: R.names,
                 collapsed: R.stats.collapsed, degenerate: R.stats.degenerate, warnings: R.warnings };
     var used = {}, bb = { min: [Infinity, Infinity, Infinity], max: [-Infinity, -Infinity, -Infinity] }, gearZ = Infinity, wheelZ = Infinity;
-    (function emit(c) {
+    (function emit(c, inGear) {
+      var gearHere = inGear || c.name === "gear", W = c.W, gz = Infinity;
       R.order.forEach(function (name) {
         var b = c.bins[name];
         if (!b || !b.n) return;
@@ -965,26 +1109,38 @@ var HeroKit = (function () {
         if (b.U) g.setAttribute("uv", new T.BufferAttribute(new Float32Array(b.U), 2));
         if (b.C) g.setAttribute("color", new T.BufferAttribute(new Float32Array(b.C), 3));
         var m = new T.Mesh(g, b.def.mat);
-        m.castShadow = true; m.receiveShadow = true;
+        m.castShadow = !b.def.def.noShadow; m.receiveShadow = true;
         c.grp.add(m);
         used[name] = 1; rep.meshes++; rep.tris += b.n;
         rep.perMaterial[name] = (rep.perMaterial[name] || 0) + b.n;
         if (c.visible) {
           rep.drawCalls++;
-          for (var i = 0; i < b.P.length; i += 3) for (var k = 0; k < 3; k++) {
-            var v = b.P[i + k] + c.off[k];
-            if (v < bb.min[k]) bb.min[k] = v;
-            if (v > bb.max[k]) bb.max[k] = v;
+          var i, k, v;
+          if (!W && !st) {
+            for (i = 0; i < b.P.length; i += 3) for (k = 0; k < 3; k++) {
+              v = b.P[i + k] + c.off[k];
+              if (v < bb.min[k]) bb.min[k] = v;
+              if (v > bb.max[k]) bb.max[k] = v;
+            }
+          } else for (i = 0; i < b.P.length; i += 3) {
+            var q = [b.P[i], b.P[i + 1], b.P[i + 2]];
+            if (W) q = [W[0][0] * q[0] + W[1][0] * q[1] + W[2][0] * q[2], W[0][1] * q[0] + W[1][1] * q[1] + W[2][1] * q[2], W[0][2] * q[0] + W[1][2] * q[1] + W[2][2] * q[2]];
+            q = [q[0] + c.off[0], q[1] + c.off[1], q[2] + c.off[2]];
+            if (st) q = st.apply(q);
+            for (k = 0; k < 3; k++) { if (q[k] < bb.min[k]) bb.min[k] = q[k]; if (q[k] > bb.max[k]) bb.max[k] = q[k]; }
+            if (q[2] < gz) gz = q[2];
           }
         } else rep.hiddenMeshes++;
       });
-      if (c.visible && c.name === "gear" && c.zmin < gearZ) gearZ = c.zmin;
-      if (c.visible && c.name === "roadwheel" && c.zmin < wheelZ) wheelZ = c.zmin;
-      c.kids.forEach(emit);
-    })(this);
+      var zm = st ? gz : c.zmin;
+      if (c.visible && (st ? gearHere : c.name === "gear") && zm < gearZ) gearZ = zm;
+      if (c.visible && c.name === "roadwheel" && zm < wheelZ) wheelZ = zm;
+      c.kids.forEach(function (kc) { emit(kc, gearHere); });
+    })(this, false);
     rep.materials = Object.keys(used).length;
     rep.bbox = bb; rep.length = bb.max[0] - bb.min[0];
     rep.teamShare = R.stats.area > 0 ? R.stats.teamArea / R.stats.area : 0;
+    if (st) rep.stance = { pitchDeg: st.pitch / D2R, about: st.about.slice() };
     /* ---- the guards ---- */
     var maxDraw = R.o.maxDraw || MAX_DRAW, tag = "HeroKit[" + R.key + "]: ";
     if (!rep.tris) throw new Error(tag + "the model is empty");
@@ -1005,12 +1161,40 @@ var HeroKit = (function () {
     } else if (R.cat === "ship" && bb.min[2] > -0.2) K.warn("a ship with nothing below the waterline (z = 0 is the waterline, not the keel)");
     if (R.o.len && Math.abs(rep.length - R.o.len) > 0.02 * R.o.len) K.warn("the model is " + rep.length.toFixed(2) + " m long, the spec says " + R.o.len + " m");
     if (rep.teamShare > 0.06) K.warn("team colour covers " + (rep.teamShare * 100).toFixed(1) + " % of the surface: it goes in small strips");
-    this.grp.userData.heroKit = rep;
+    var out = this.grp;
+    if (st) {                                        /* root > stance (the turn) > the level airframe */
+      var sg = new T.Group(), root = new T.Group();
+      sg.name = "stance"; sg.position.set(st.about[0], 0, 0); sg.rotation.y = -st.pitch;
+      this.grp.position.set(-st.about[0], 0, -st.about[1]);
+      sg.add(this.grp); root.add(sg);
+      root.name = R.o.name || ("hk_" + R.key);
+      out = root;
+    }
+    this.grp.userData.heroKit = rep; out.userData.heroKit = rep;
     api.lastReport = rep;
     if (R.warnings.length && typeof console !== "undefined" && console.warn) R.warnings.forEach(function (w) { console.warn(tag + w); });
     if (typeof api.onReport === "function") api.onReport(rep);
-    return this.grp;
+    return out;
   };
+  /* a stance spec -> { pitch (rad, nose up), about: [x, z], apply(p) build
+     frame -> as stood, ground(x) the stood ground's z in the build frame,
+     up the stood vertical in the build frame }                            */
+  function stanceOf(s) {
+    var ab, th;
+    if (s.main) {
+      var o = s.nose || s.tail, m = s.main;
+      ab = [m[0], m[1]];
+      th = o[0] > m[0] ? -Math.atan2(o[1] - m[1], o[0] - m[0]) : Math.atan2(o[1] - m[1], m[0] - o[0]);
+    } else { ab = [s.about[0], s.about[1]]; th = s.pitch !== undefined ? s.pitch : (s.pitchDeg || 0) * D2R; }
+    var c = Math.cos(th), sn = Math.sin(th);
+    return { pitch: th, about: ab, up: [sn, 0, c],
+             apply: function (p) { var dx = p[0] - ab[0], dz = p[2] - ab[1]; return [ab[0] + dx * c - dz * sn, p[1], dx * sn + dz * c]; },
+             ground: function (x) { return ab[1] - (x - ab[0]) * Math.tan(th); } };
+  }
+  /* ground(x): the z, in the build frame, of the ground the model will
+     stand on (0 without a stance).  groundUp(): its normal there.        */
+  CP.ground = function (x) { return this.R.st ? this.R.st.ground(x) : 0; };
+  CP.groundUp = function () { return this.R.st ? this.R.st.up.slice() : [0, 0, 1]; };
   /* the primitives as methods: K.box(pen, ...) */
   var PRIM = { tri: tri, quad: quad, solid: solid, hexa: hexa, box: box, obox: obox, boxZ: boxZ, bar: bar, tube: tube, cylX: cylX, cylY: cylY,
                cylZ: cylZ, disc: disc, sphere: sphere, loft: loft, gridSkin: gridSkin, ribbon: ribbon, blade: blade, prism: prism };
@@ -1021,7 +1205,18 @@ var HeroKit = (function () {
      above / below (mirrored), side: [[x, z]], rivets, walk, soot: [[x, y,
      z, length, halfWidth]], seam: darkness, grime: blots, key, seed }) -
      and makes it the map of material `mat` ("skin").  Call before the
-     first skin pen.                                                       */
+     first skin pen.  Colour on the sheet (it MULTIPLIES the pen colour):
+       areas  [{ band: "top" | "bot" | "side" | "port" | "stbd", poly:
+              [[x, y]] (top / bot, mirrored) or [[x, z]] (sides), color:
+              hex or "rgba(..)", alpha }]  filled panels, walkways, a
+              darker anti-glare panel, a painted intake lip
+       demarcation { z: height or [[x, z], ...], above: hex, below: hex }
+              a soft two-colour scheme drawn ON the sheet: top band
+              `above`, bottom band `below`, the sides split at z.  Draw
+              the skin with a WHITE pen then.  For a crisp line in the
+              geometry use loftBody's o.split instead.
+       draw(g, map)  a free hook after the lines: map.U(x) column,
+              map.top(y) / map.bot(y) / map.side(z, starboard) rows.     */
   CP.paintCanvas = function (spec) { return paintCanvas(this.R.THREE, spec); };
   CP.paintSheet = function (spec, mat) {
     var R = this.R, L = sheetLayout(spec.bounds), old = R.mats[mat || "skin"];
@@ -1036,6 +1231,22 @@ var HeroKit = (function () {
      teamPatch(c, ex, ey, lx, ly): a flat patch, centre c, in the plane of
      the unit vectors ex / ey, 15 mm proud.  Keep them SMALL: finish()
      warns over 6 % of the surface.                                        */
+  /* deckSheet(name, spec) -> a WHITE pen on a new plan-mapped deck
+     material whose canvas carries the deck's own grey, so markings can be
+     LIGHTER than the deck (see paintCanvas).  spec: { plan: { x0, x1, y0,
+     y1 } metres, color: the deck's sRGB grey, markings(g, w, h, m), w, h,
+     key, seed, and any paintCanvas field (panels, grime, oil ...) }.
+     Remember the renderer lifts colours (HeroKit.seenAs): author the grey
+     darker than it should look.                                          */
+  CP.deckSheet = function (name, spec) {
+    var mp = {}, k;
+    for (k in spec) if (spec.hasOwnProperty(k) && k !== "color" && k !== "markings") mp[k] = spec[k];
+    mp.key = spec.key || name; mp.base = css(spec.color === undefined ? 0x585f64 : spec.color);
+    mp.deckMarkings = spec.markings; mp.plan = spec.plan;
+    if (!mp.panels) mp.panels = { cols: 5, rows: 5, alpha: 0.18, lit: 0.04, width: 1, stagger: 20 };
+    this.material(name, { vcol: true, rough: 0.95, metal: 0.04, uv: { mode: "plan", x0: spec.plan.x0, x1: spec.plan.x1, y0: spec.plan.y0, y1: spec.plan.y1 }, map: mp });
+    return this.pen(name, 0xffffff);
+  };
   CP.teamStrip = function (pts, nrm, w, lift) { ribbon(this.pen("team"), pts, nrm, w || 0.3, lift === undefined ? 0.015 : lift); };
   CP.teamPatch = function (c, ex, ey, lx, ly) {
     var n = unit(cross(ex, ey));
@@ -1069,6 +1280,12 @@ var HeroKit = (function () {
      spec.deck   false to leave the deck off
      spec.pens   { under, boot, side, deck } (default: the hull material in
                  the palette's under / boot / hull, the deck in "deck")
+     spec.y0     MULTIHULLS: the hull's centre line is at y = y0 (a demihull
+                 or an outrigger float); spec.pair: true draws its mirror
+                 at -y0 too.  A demihull usually has deck: false and its
+                 sheer at the wet deck; K.bridgingDeck joins the pair.
+                 H's accessors are for the hull at +y0 (side +1 is its
+                 outboard side when y0 > 0).
      A beam of 0 at the last station closes the stem; a stern with beam is
      closed by a transom.  Bands (bottom, boot, side, upper strake, bulwark)
      are separate skins, so the waterline, knuckle and deck edge are crisp
@@ -1111,7 +1328,7 @@ var HeroKit = (function () {
     }
     var step = spec.step || (x1 - x0) / 60;
     var xs = stationsOf(x0, x1, step, st.map(function (s) { return s.x; }).concat(stationsOf(x1 - (x1 - x0) * 0.08, x1, step / 3)), step * 0.15);
-    var Q = xs.map(sec), P = spec.pens || {};
+    var Q = xs.map(sec), P = spec.pens || {}, Y0 = spec.y0 || 0, copies = spec.pair ? [Y0, -Y0] : [Y0];
     var pUnder = P.under || K.pen("hull", "under"), pBoot = P.boot || K.pen("hull", "boot"), pSide = P.side || K.pen("hull", "hull");
     function cl(q, z) { return clamp(z, q.zb, q.zd); }
     /* each band: pen, rows, z(q, f) for f = 0..1 */
@@ -1128,34 +1345,36 @@ var HeroKit = (function () {
     bands.push([pBoot, 1, function (q, f) { return lerp(cl(q, 0), Math.min(cl(q, BOOT), Math.max(q.zk, q.zb)), f); }]);
     bands.push([pSide, 3, function (q, f) { return lerp(Math.min(cl(q, BOOT), Math.max(q.zk, q.zb)), Math.max(q.zk, q.zb), f); }]);
     bands.push([pSide, 1, function (q, f) { return lerp(Math.max(q.zk, q.zb), q.zd, f); }]);
+    function hd(q) { return Math.max(0, q.bDk - (q.bul > 0.02 ? Math.min(0.12, q.bDk * 0.4) : 0)); }
     K.R.quiet++;
+    copies.forEach(function (yc) {
+    function Y(v) { return yc ? yc + v : v; }
     bands.forEach(function (b) {
       var s, e;
       for (s = -1; s <= 1; s += 2) {
         var G = [], A = [];
         for (i = 0; i < Q.length; i++) {
           var q = Q[i], row = [];
-          for (j = 0; j <= b[1]; j++) { var z = b[2](q, j / b[1]); row.push([q.x, s * Wq(q, z), z]); }
-          G.push(row); A.push([q.x, 0, (b[2](q, 0) + b[2](q, 1)) / 2 + 0.3]);
+          for (j = 0; j <= b[1]; j++) { var z = b[2](q, j / b[1]); row.push([q.x, Y(s * Wq(q, z)), z]); }
+          G.push(row); A.push([q.x, yc, (b[2](q, 0) + b[2](q, 1)) / 2 + 0.3]);
         }
         gridSkin(b[0], G, A);
       }
       /* the ends: a transom (or a blunt stem) in the band's own colour */
       for (e = 0; e < 2; e++) {
-        var qe = Q[e ? Q.length - 1 : 0], ref = [qe.x + (e ? -1 : 1), 0, (qe.zb + qe.zd) / 2];
+        var qe = Q[e ? Q.length - 1 : 0], ref = [qe.x + (e ? -1 : 1), yc, (qe.zb + qe.zd) / 2];
         for (j = 0; j < b[1]; j++) {
           var za = b[2](qe, j / b[1]), zb2 = b[2](qe, (j + 1) / b[1]), wa = Wq(qe, za), wb = Wq(qe, zb2);
-          quad(b[0], [qe.x, -wa, za], [qe.x, wa, za], [qe.x, wb, zb2], [qe.x, -wb, zb2], ref);
+          quad(b[0], [qe.x, Y(-wa), za], [qe.x, Y(wa), za], [qe.x, Y(wb), zb2], [qe.x, Y(-wb), zb2], ref);
         }
       }
     });
-    function hd(q) { return Math.max(0, q.bDk - (q.bul > 0.02 ? Math.min(0.12, q.bDk * 0.4) : 0)); }
     if (spec.deck !== false) {
       var pDeck = P.deck || K.pen("deck"), cam = spec.camber || 0;
       for (i = 0; i + 1 < Q.length; i++) {
         var a = Q[i], b2 = Q[i + 1], ha = hd(a), hb = hd(b2), up = [0, 0, 1];
-        var a0 = [a.x, -ha, a.zd], a1 = [a.x, 0, a.zd + cam * ha], a2 = [a.x, ha, a.zd];
-        var c0 = [b2.x, -hb, b2.zd], c1 = [b2.x, 0, b2.zd + cam * hb], c2 = [b2.x, hb, b2.zd];
+        var a0 = [a.x, Y(-ha), a.zd], a1 = [a.x, yc, a.zd + cam * ha], a2 = [a.x, Y(ha), a.zd];
+        var c0 = [b2.x, Y(-hb), b2.zd], c1 = [b2.x, yc, b2.zd + cam * hb], c2 = [b2.x, Y(hb), b2.zd];
         [[a0, c0, c1], [a0, c1, a1], [a1, c1, c2], [a1, c2, a2]].forEach(function (t) {
           var f = cross(sub(t[1], t[0]), sub(t[2], t[0]));
           if (dot(f, up) < 0) pDeck.tri(t[0], t[2], t[1]); else pDeck.tri(t[0], t[1], t[2]);
@@ -1167,34 +1386,35 @@ var HeroKit = (function () {
       var qa = Q[i], qb = Q[i + 1];
       if (qa.bul < 0.02 && qb.bul < 0.02) continue;
       for (j = -1; j <= 1; j += 2) {
-        var oa = [qa.x, j * qa.bDk, qa.zd], ob = [qb.x, j * qb.bDk, qb.zd], ta = [qa.x, j * qa.bDk, qa.zd + qa.bul], tb = [qb.x, j * qb.bDk, qb.zd + qb.bul];
-        var ia = [qa.x, j * hd(qa), qa.zd], ib = [qb.x, j * hd(qb), qb.zd], ua = [qa.x, j * hd(qa), qa.zd + qa.bul], ub = [qb.x, j * hd(qb), qb.zd + qb.bul];
-        var inn = [(qa.x + qb.x) / 2, j * (qa.bDk + qb.bDk + hd(qa) + hd(qb)) / 4, (qa.zd + qb.zd) / 2 + 0.2];
+        var oa = [qa.x, Y(j * qa.bDk), qa.zd], ob = [qb.x, Y(j * qb.bDk), qb.zd], ta = [qa.x, Y(j * qa.bDk), qa.zd + qa.bul], tb = [qb.x, Y(j * qb.bDk), qb.zd + qb.bul];
+        var ia = [qa.x, Y(j * hd(qa)), qa.zd], ib = [qb.x, Y(j * hd(qb)), qb.zd], ua = [qa.x, Y(j * hd(qa)), qa.zd + qa.bul], ub = [qb.x, Y(j * hd(qb)), qb.zd + qb.bul];
+        var inn = [(qa.x + qb.x) / 2, Y(j * (qa.bDk + qb.bDk + hd(qa) + hd(qb)) / 4), (qa.zd + qb.zd) / 2 + 0.2];
         quad(pSide, oa, ob, tb, ta, inn); quad(pSide, ia, ib, ub, ua, inn); quad(pSide, ta, tb, ub, ua, inn);
       }
     }
+    });
     K.R.quiet--;
     var H = {
-      x0: x0, x1: x1, xs: xs, sec: sec,
+      x0: x0, x1: x1, xs: xs, sec: sec, y0: Y0,
       deckZ: function (x) { return sec(x).zd; },
       halfDeck: function (x) { return hd(sec(x)); },
       W: function (x, z) { return Wq(sec(x), z); },
       /* a point on the shell at (x, z), side +1 port / -1 starboard, pushed
          `off` out along the shell's normal                                */
       pt: function (x, z, side, off) {
-        var p = [x, side * Wq(sec(x), z), z];
+        var p = [x, Y0 + side * Wq(sec(x), z), z];
         return off ? add(p, H.normal(x, z, side), off) : p;
       },
       normal: function (x, z, side) {
-        var d = 0.25, a = [x - d, side * Wq(sec(x - d), z), z], b = [x + d, side * Wq(sec(x + d), z), z];
-        var q = sec(x), c = [x, side * Wq(q, z - d), z - d], e = [x, side * Wq(q, z + d), z + d];
+        var d = 0.25, a = [x - d, Y0 + side * Wq(sec(x - d), z), z], b = [x + d, Y0 + side * Wq(sec(x + d), z), z];
+        var q = sec(x), c = [x, Y0 + side * Wq(q, z - d), z - d], e = [x, Y0 + side * Wq(q, z + d), z + d];
         var n = unit(cross(sub(b, a), sub(e, c)));
         return n[1] * side < 0 ? [-n[0], -n[1], -n[2]] : n;
       },
       edge: function (xa, xb, o) {
         o = o || {};
         var s = o.side || 1, n = Math.max(1, Math.ceil(Math.abs(xb - xa) / (o.step || 2))), out = [], k;
-        for (k = 0; k <= n; k++) { var x = xa + (xb - xa) * k / n, q = sec(x); out.push([x, s * Math.max(0, hd(q) - (o.inset === undefined ? 0.15 : o.inset)), q.zd + (o.dz || 0)]); }
+        for (k = 0; k <= n; k++) { var x = xa + (xb - xa) * k / n, q = sec(x); out.push([x, Y0 + s * Math.max(0, hd(q) - (o.inset === undefined ? 0.15 : o.inset)), q.zd + (o.dz || 0)]); }
         return out;
       },
       line: function (xa, xb, z, o) {
@@ -1205,6 +1425,71 @@ var HeroKit = (function () {
       }
     };
     return H;
+  };
+
+  /* bridgingDeck(spec) -> D: the cross structure of a CATAMARAN (or a
+     trimaran's centre body) over two demihulls made with loftHull({ y0,
+     pair: true, deck: false }) - the tunnel roof (wet deck), a centre bow
+     where there is one, the flared flanks out to the deck edge, a flat or
+     turtle deck, and the two end faces.  (pilot_tuochiang.js hand-built
+     these four as gridSkin bands.)
+     spec.stations [{ x, wet, keel, chine, bCh, sheer, bDk, crown, shoulder }]
+       wet      z of the tunnel roof between the demihulls
+       keel     z of a centre bow's keel on the centre line (default wet):
+                below wet the underside is a V from it out to the chine
+       chine    z of the flank's foot (default wet), bCh its half breadth
+       sheer    z of the deck edge, bDk the half breadth there
+       crown    z of the deck on the centre line (default sheer): above
+                sheer the deck is a TURTLE deck rising to a shoulder
+                `shoulder` m inboard of the edge (default min(1.5, .55 bDk))
+     spec.pens  { under, side, deck } (hull "tunnel", hull "hull", "deck")
+     spec.step  station spacing (1.0); spec.ends: false leaves the end
+                faces open; spec.interp "fair" for Catmull-Rom rows
+     D: { x0, x1, sec(x), deckZ(x, y), edge(x, side, inset) a deck-edge
+          point, flank(x, t, side) a point t of the way up the flank with
+          its outward normal { p, n } }                                    */
+  CP.bridgingDeck = function (spec) {
+    var K = this, st = spec.stations.slice().sort(function (a, b) { return a.x - b.x; }), P = spec.pens || {};
+    var rows = st.map(function (q) {
+      var wet = q.wet, ch = q.chine === undefined ? wet : q.chine, cr = q.crown === undefined ? q.sheer : q.crown;
+      return [q.x, wet, q.keel === undefined ? wet : q.keel, ch, q.bCh, q.sheer, q.bDk, cr, q.shoulder === undefined ? -1 : q.shoulder];
+    });
+    var pick = spec.interp === "fair" ? tab : lin, x0 = rows[0][0], x1 = rows[rows.length - 1][0];
+    function sec(x) {
+      var v = pick(rows, x), sh = v[7] < 0 ? Math.min(1.5, v[5] * 0.55) : v[7];
+      return { x: x, wet: v[0], keel: Math.min(v[1], v[0]), zch: v[2], hC: Math.max(0, v[3]), zE: v[4], hE: Math.max(0, v[5]), zs: Math.max(v[6], v[4]), hS: Math.max(0, v[5] - sh) };
+    }
+    var xs = stationsOf(x0, x1, spec.step || 1.0, st.map(function (q) { return q.x; })), Q = xs.map(sec), s;
+    var pU = P.under || K.pen("hull", "tunnel"), pS = P.side || K.pen("hull", "hull"), pD = P.deck || K.pen("deck");
+    K.R.quiet++;
+    for (s = -1; s <= 1; s += 2) {
+      var ax = Q.map(function (q) { return [q.x, 0, (q.zch + q.zE) / 2]; });
+      gridSkin(pU, Q.map(function (q) { return [[q.x, 0, q.keel], [q.x, s * q.hC * 0.5, lerp(q.keel, q.zch, 0.62)], [q.x, s * q.hC, q.zch]]; }), ax);
+      gridSkin(pS, Q.map(function (q) { return [[q.x, s * q.hC, q.zch], [q.x, s * q.hE, q.zE]]; }), ax, { flat: true });
+      if (Q.some(function (q) { return q.zs > q.zE + 0.01; })) {
+        gridSkin(pD, Q.map(function (q) { return [[q.x, s * q.hE, q.zE], [q.x, s * q.hS, q.zs]]; }), ax, { flat: true });
+        gridSkin(pD, Q.map(function (q) { return [[q.x, s * q.hS, q.zs], [q.x, 0, q.zs]]; }), ax, { flat: true });
+      } else gridSkin(pD, Q.map(function (q) { return [[q.x, s * q.hE, q.zE], [q.x, 0, q.zE]]; }), ax, { flat: true });
+    }
+    if (spec.ends !== false) [0, Q.length - 1].forEach(function (e) {
+      var q = Q[e], ref = [q.x + (e ? -1 : 1), 0, (q.keel + q.zs) / 2], m = lerp(q.keel, q.zch, 0.62);
+      var F = [[q.x, 0, q.keel], [q.x, -q.hC * 0.5, m], [q.x, -q.hC, q.zch], [q.x, -q.hE, q.zE], [q.x, -q.hS, q.zs], [q.x, q.hS, q.zs], [q.x, q.hE, q.zE], [q.x, q.hC, q.zch], [q.x, q.hC * 0.5, m]], i;
+      for (i = 1; i + 1 < F.length; i++) tri(e ? pS : pS, F[0], F[i], F[i + 1], ref);
+    });
+    K.R.quiet--;
+    var D = {
+      x0: x0, x1: x1, xs: xs, sec: sec,
+      deckZ: function (x, y) {
+        var q = sec(x), ay = Math.abs(y || 0);
+        return ay <= q.hS ? q.zs : lerp(q.zs, q.zE, Math.min(1, (ay - q.hS) / Math.max(0.05, q.hE - q.hS)));
+      },
+      edge: function (x, side, inset) { var q = sec(x); return [x, (side || 1) * (q.hE - (inset === undefined ? 0.14 : inset)), q.zE + 0.02]; },
+      flank: function (x, t, side) {
+        var q = sec(x), sd = side || 1, dz = q.zE - q.zch, dy = q.hE - q.hC;
+        return { p: [x, sd * lerp(q.hC, q.hE, t), lerp(q.zch, q.zE, t)], n: unit([0, sd * dz, -dy]) };
+      }
+    };
+    return D;
   };
 
   /* loftSub(spec) -> S: a submarine - a round pressure hull with the casing
@@ -1286,7 +1571,21 @@ var HeroKit = (function () {
        upper / lower half (2).  A section with w = 0 closes to a point.
      o: { n: points round (20), step: resampling spacing (length / 40),
           interp: "linear", capA / capB: close the aft / forward end,
-          inward, flat }
+          inward, flat,
+          split: { z: height or function (x), below: pen, minDeg, maxDeg,
+                   hold: x, nBelow }  TWO-COLOUR SKIN: the upper pen down
+                to a demarcation at height z (clamped to minDeg..maxDeg
+                below the widest line, default -80..80); forward of `hold`
+                the line keeps the angle it has at hold (a nose cap).  Two
+                ring points lie exactly on the line each side, so it is
+                straight, not a sawtooth.  nBelow: segments under the line
+                (n / 3).  (pilot_seahawk.js's lineA / ringA / skin)
+          penOf(i, k, f)  per-panel pens: f = { x, a: the face's mid angle,
+                below: under the split line, pen: what it would get };
+                return a pen, or null to leave the face open }
+     B also: lineA(x) the split line's angle below the widest line,
+          ringAngle(x, k) the angle of ring point k, demarcation(side, xa,
+          xb, m) -> { pts, nrm } along the line (a seam or a fine stripe)
      B: { sec(x), pt(x, a, push) the skin point at angle a (radians from +Y
           through the top) pushed out by push, nrm(x, a), hoop(x, a0, a1, n)
           and line(a, xa, xb, n) -> { pts, nrm } for seams and strips }
@@ -1302,11 +1601,45 @@ var HeroKit = (function () {
       var v = pick(rows, x);
       return { x: x, w: Math.max(0, v[0]), top: v[1], bot: Math.min(v[2], v[1]), zw: clamp(v[3], Math.min(v[2], v[1]), v[1]), y: v[4], eU: Math.max(1, v[5]), eL: Math.max(1, v[6]) };
     }
-    var xs = stationsOf(x0, x1, o.step || (x1 - x0) / 40, st.map(function (s) { return s.x; }));
-    var rings = xs.map(function (x) { var q = sec(x); return ringSE(x, q.y, q.w, q.top, q.bot, q.zw, q.eU, q.eL, n); });
-    loft(pen, rings, { capA: o.capA, capB: o.capB, inward: o.inward, flat: o.flat });
+    var xs = stationsOf(x0, x1, o.step || (x1 - x0) / 40, st.map(function (s) { return s.x; }).concat(o.extra || []));
+    var SP = o.split, nB = SP ? Math.max(2, Math.round(SP.nBelow || n / 3)) : 0;
+    function lineA(x) {
+      if (!SP) return PI / 2;
+      if (SP.hold !== undefined && x > SP.hold) x = SP.hold;
+      var q = sec(x), zl = typeof SP.z === "function" ? SP.z(x) : SP.z, a;
+      if (zl <= q.zw) a = Math.asin(clamp((q.zw - zl) / Math.max(q.zw - q.bot, 1e-6), 0, 1));
+      else a = -Math.asin(clamp((zl - q.zw) / Math.max(q.top - q.zw, 1e-6), 0, 1));
+      return clamp(a, (SP.minDeg === undefined ? -80 : SP.minDeg) * D2R, (SP.maxDeg === undefined ? 80 : SP.maxDeg) * D2R);
+    }
+    /* ring point k: k = 0 on the port line, 0..n - nB over the top to the
+       starboard line, then nB segments under the line back to port       */
+    function ringAngle(x, k) {
+      var a = lineA(x), nU = n - nB, tp = -a, ts = PI + a;
+      return k <= nU ? tp + (ts - tp) * k / nU : ts + (tp + TAU - ts) * (k - nU) / nB;
+    }
+    var rings = xs.map(function (x) {
+      var q = sec(x);
+      if (!SP) return ringSE(x, q.y, q.w, q.top, q.bot, q.zw, q.eU, q.eL, n);
+      var r = [], k;
+      for (k = 0; k < n; k++) r.push(sePt(x, q.y, q.w, q.top, q.bot, q.zw, q.eU, q.eL, ringAngle(x, k)));
+      return r;
+    });
+    var lo = { capA: o.capA, capB: o.capB, inward: o.inward, flat: o.flat };
+    if (SP || o.penOf) lo.penOf = function (i, k) {
+      var xm = (xs[i] + xs[i + 1]) / 2, below = SP ? k >= n - nB : false, pn = below ? SP.below : pen;
+      if (!o.penOf) return pn;
+      var am = SP ? (ringAngle(xm, k) + ringAngle(xm, k + 1)) / 2 : (k + 0.5) / n * TAU;
+      return o.penOf(i, k, { x: xm, a: am, below: below, pen: pn });
+    };
+    loft(pen, rings, lo);
     var B = {
-      x0: x0, x1: x1, xs: xs, sec: sec,
+      x0: x0, x1: x1, xs: xs, sec: sec, lineA: lineA, ringAngle: ringAngle,
+      demarcation: function (side, xa, xb, m) {
+        var pts = [], nr = [], k;
+        m = m || 24;
+        for (k = 0; k <= m; k++) { var x = xa + (xb - xa) * k / m, a = side > 0 ? -lineA(x) : PI + lineA(x); pts.push(B.pt(x, a)); nr.push(B.nrm(x, a)); }
+        return { pts: pts, nrm: nr };
+      },
       pt: function (x, a, push) {
         var q = sec(x), p = sePt(x, q.y, q.w, q.top, q.bot, q.zw, q.eU, q.eL, a);
         return push ? add(p, B.nrm(x, a), push) : p;
@@ -1352,7 +1685,20 @@ var HeroKit = (function () {
           both: true for twin fins)
           y: a fin's distance off the centre line; cantDeg: outward lean
           section: "naca" | "biconvex" | "slab";  k: points per surface (9)
-          sub: extra stations between rows (2);  capRoot: false }
+          sub: extra stations between rows (2);  capRoot: false;
+          lower: pen   the lower surface in another pen (two-colour), the
+                       upper pen wrapping under the leading edge to chord
+                       share o.wrap (0);
+          penOf(i, j, f)  per-panel pens, f = { s, u, surf: +1 upper / -1
+                       lower / 0 an end face, le / te, side, pen };
+          openLE: true leave a cut leading edge open (an intake mouth: see
+                       F.mouth and K.air.duct); endPen: the blunt / cut end
+                       faces' pen }
+     row fields for blunt sections (pilot_seahawk.js surfaceOf):
+       cutLE    share of the section's nose cut off (0..0.5): the drawn le
+                is then the lip of a mouth as deep as the section is there
+       bluntTE  half depth (m) of a blunt trailing edge (a jet-pipe
+                fairing's open end)
      F: { sec(s), at(s, u, surf, side) the surface point at chord share u
           (surf +1 upper / outboard face, -1 the other), nrm(surf, side),
           line(u, sa, sb, n, surf, side) -> { pts, nrm } for hinge lines,
@@ -1361,12 +1707,21 @@ var HeroKit = (function () {
   CP.aerofoil = function (pen, rows, o) {
     o = o || {};
     var fin = o.frame === "fin", kind = o.section || "naca", k = o.k || 9, subN = o.sub === undefined ? 2 : o.sub;
-    var tb = rows.map(function (r) { return [r.s, r.le, r.c, r.t, r.z || 0]; }).sort(function (a, b) { return a[0] - b[0]; });
+    var tb = rows.map(function (r) { return [r.s, r.le, r.c, r.t, r.z || 0, r.cutLE || 0, r.bluntTE || 0]; }).sort(function (a, b) { return a[0] - b[0]; });
     var s0 = tb[0][0], s1 = tb[tb.length - 1][0], cant = Math.tan((o.cantDeg || 0) * D2R), y0 = o.y || 0;
     var sides = o.side ? [o.side] : (fin && !o.both ? [1] : [1, -1]);
-    function sec(s) { var v = lin(tb, clamp(s, s0, s1)); return { s: s, le: v[0], c: v[1], t: v[2], z: v[3] }; }
+    var ends = tb.some(function (r) { return r[5] > 0 || r[6] > 0; });
+    function sec(s) { var v = lin(tb, clamp(s, s0, s1)); return { s: s, le: v[0], c: v[1], t: v[2], z: v[3], cut: v[4], blunt: v[5] }; }
+    /* u is the share of the DRAWN chord from the drawn leading edge (with
+       cutLE that is the lip of an intake mouth; the section's own nose,
+       cut off, lies ahead of it) */
     function at(s, u, surf, side) {
-      var q = sec(s), th = foilT(kind, q.t, clamp(u, 0, 1)) * q.c * (surf < 0 ? -1 : 1), x = q.le - u * q.c;
+      var q = sec(s), uc = clamp(u, 0, 1), th;
+      if (q.cut > 0 || q.blunt > 0) {
+        var cv = q.c / (1 - q.cut);
+        th = (foilT(kind, q.t, q.cut + (1 - q.cut) * uc) * cv + q.blunt * uc * uc * uc) * (surf < 0 ? -1 : 1);
+      } else th = foilT(kind, q.t, uc) * q.c * (surf < 0 ? -1 : 1);
+      var x = q.le - u * q.c;
       side = side || sides[0];
       if (fin) return [x, side * (y0 + cant * (s - s0)) + th, s];
       return [x, side * s, q.z + th];
@@ -1374,23 +1729,61 @@ var HeroKit = (function () {
     var ss = [], i, j;
     for (i = 0; i + 1 < tb.length; i++) for (j = 0; j <= subN; j++) ss.push(lerp(tb[i][0], tb[i + 1][0], j / (subN + 1)));
     ss.push(s1);
+    var U = [], m;
+    for (m = 0; m <= k; m++) U.push((1 - Math.cos(PI * m / k)) / 2);
+    /* the ring: upper surface LE -> TE (points 0..k), then the lower TE ->
+       LE.  Without cut or blunt rows the lower runs k-1..1 (the edges are
+       shared points: 2k in all); with them it runs k..0 (2k + 2: segment k
+       is the blunt trailing edge, segment 2k + 1 the cut leading edge)    */
+    function segInfo(jj) {
+      var N = ends ? 2 * k + 2 : 2 * k;
+      if (jj < k) return { surf: 1, u: (U[jj] + U[jj + 1]) / 2 };
+      if (ends) {
+        if (jj === k) return { surf: 0, te: true, u: 1 };
+        if (jj === N - 1) return { surf: 0, le: true, u: 0 };
+        var mm = 2 * k + 1 - jj;                      /* lower point index of ring point jj */
+        return { surf: -1, u: (U[mm] + U[mm - 1]) / 2 };
+      }
+      var m0 = 2 * k - jj;                            /* point jj is lower m0 (m0 = k at jj = k) */
+      return { surf: -1, u: (U[m0] + U[m0 - 1]) / 2 };
+    }
+    var useP = !!(o.penOf || o.lower || (ends && (o.openLE || o.endPen)));
     sides.forEach(function (side) {
       var rings = ss.map(function (s) {
-        var ring = [], m;
-        for (m = 0; m <= k; m++) ring.push(at(s, (1 - Math.cos(PI * m / k)) / 2, 1, side));
-        for (m = k - 1; m >= 1; m--) ring.push(at(s, (1 - Math.cos(PI * m / k)) / 2, -1, side));
+        var ring = [];
+        for (m = 0; m <= k; m++) ring.push(at(s, U[m], 1, side));
+        if (ends) for (m = k; m >= 0; m--) ring.push(at(s, U[m], -1, side));
+        else for (m = k - 1; m >= 1; m--) ring.push(at(s, U[m], -1, side));
         return ring;
       });
-      loft(pen, rings, { capA: o.capRoot !== false, capB: true });
+      var lo = { capA: o.capRoot !== false, capB: true };
+      if (useP) lo.penOf = function (ri, jj) {
+        var f = segInfo(jj), sm = (ss[ri] + ss[ri + 1]) / 2, q = sec(sm);
+        f.s = sm; f.side = side;
+        var pn = pen;
+        if (f.le) { if (o.openLE && q.cut > 0) return null; pn = o.endPen || pen; }
+        else if (f.te) pn = q.blunt > 0 ? (o.endPen || pen) : pen;
+        else if (f.surf < 0 && o.lower && !(o.wrap && f.u < o.wrap)) pn = o.lower;
+        f.pen = pn;
+        return o.penOf ? o.penOf(ri, jj, f) : pn;
+      };
+      loft(pen, rings, lo);
     });
     var F = {
-      s0: s0, s1: s1, sec: sec, at: at,
+      s0: s0, s1: s1, sec: sec, at: at, stations: ss,
       nrm: function (surf, side) { side = side || sides[0]; return fin ? [0, surf < 0 ? -1 : 1, 0] : [0, 0, surf < 0 ? -1 : 1]; },
       line: function (u, sa, sb, n, surf, side) {
-        var pts = [], m;
+        var pts = [], mm;
         n = n || 6;
-        for (m = 0; m <= n; m++) pts.push(at(lerp(sa, sb, m / n), u, surf || 1, side));
+        for (mm = 0; mm <= n; mm++) pts.push(at(lerp(sa, sb, mm / n), u, surf || 1, side));
         return { pts: pts, nrm: F.nrm(surf || 1, side) };
+      },
+      /* the lips of a cut leading edge (an intake mouth) at the stations
+         where cutLE > 0: { up: [...], lo: [...] } for K.air.duct          */
+      mouth: function (side) {
+        var up = [], dn = [];
+        ss.forEach(function (sx) { if (sec(sx).cut > 0) { up.push(at(sx, 0, 1, side)); dn.push(at(sx, 0, -1, side)); } });
+        return { up: up, lo: dn };
       }
     };
     return F;
@@ -1442,11 +1835,23 @@ var HeroKit = (function () {
                                            in by `side`, the front set back
                                            `front`, the after face `aft`
      Every row needs the same number of corners.
-     o: { bottom: true to close the underside, y: lateral offset }
+     o: { bottom: true to close the underside, y: lateral offset,
+          well: { x0, x1, hw, hwF, ca, cf | poly, y, floor, pen, floorPen }
+                an opening in the TOP (a launcher well, a hangar's lift
+                pit): the footprint is cut out of the roof, walled down to
+                z = floor and floored there (pilot_tuochiang.js built its
+                well from five houses).  The roof must be star-shaped
+                about the well's centre (any footprint is). }
      B: { rows, z0, z1, faceAt(k, s, z, off) the point on face k at share s
           along it and height z, stood off by off; faceLen(k); normal(k);
-          panel(pen, k, s0, s1, za, zb, off) a raised panel on a face
-          (windows, array faces, louvres, doors); door(k, s, z0, w, h);
+          panel(pen, k, s0, s1, za, zb, off, po) a raised panel on a face
+          (windows, array faces, louvres, doors).  po (optional; giving
+          it, even {}, turns on the new behaviour): the panel FOLLOWS the
+          faces across a row break (a knuckle) instead of cutting
+          through it; po.plumb keeps its edges plumb on a raked or
+          leaning face (s is read at za and held); po.round: corner
+          radius in metres (a rounded hatch or window; one level only);
+          door(k, s, z0, w, h);
           roofEdge(inset, faces) -> polylines for K.ship.rail }
      (pla_destroyers_redo.js frustum / blk / faceAt / panel / door)        */
   CP.facetedHouse = function (pen, rows, o) {
@@ -1473,10 +1878,80 @@ var HeroKit = (function () {
       var k1 = (k + 1) % n, ref = [cen[0], cen[1], (L[i].z + L[i + 1].z) / 2];
       quad(pen, P3(L[i], L[i].poly[k]), P3(L[i], L[i].poly[k1]), P3(L[i + 1], L[i + 1].poly[k1]), P3(L[i + 1], L[i + 1].poly[k]), ref);
     }
-    var top = L[L.length - 1], bot = L[0];
-    earclip(top.poly).forEach(function (t) { tri(pen, P3(top, top.poly[t[0]]), P3(top, top.poly[t[1]]), P3(top, top.poly[t[2]]), cen); });
+    var top = L[L.length - 1], bot = L[0], WL = o.well;
+    if (!WL) earclip(top.poly).forEach(function (t) { tri(pen, P3(top, top.poly[t[0]]), P3(top, top.poly[t[1]]), P3(top, top.poly[t[2]]), cen); });
+    else {
+      var hp = (WL.poly ? WL.poly.map(function (q) { return [q[0], q[1]]; }) : footprint(WL.x0, WL.x1, WL.hw, WL.hwF, WL.ca, WL.cf)).map(function (q) { return [q[0], q[1] + (WL.y || 0)]; });
+      if (area2(hp) < 0) hp.reverse();
+      var hc = [0, 0], nh = hp.length, angs = [], fz = WL.floor === undefined ? bot.z : WL.floor, pw = WL.pen || pen, pf = WL.floorPen || pen;
+      hp.forEach(function (q) { hc[0] += q[0] / nh; hc[1] += q[1] / nh; });
+      function hit(poly, th) {
+        var dx = Math.cos(th), dy = Math.sin(th), best = 0, e;
+        for (e = 0; e < poly.length; e++) {
+          var a = poly[e], b = poly[(e + 1) % poly.length], ex = b[0] - a[0], ey = b[1] - a[1], den = dx * ey - dy * ex;
+          if (Math.abs(den) < 1e-12) continue;
+          var wx = a[0] - hc[0], wy = a[1] - hc[1], t = (wx * ey - wy * ex) / den, u = (wx * dy - wy * dx) / den;
+          if (u >= -1e-9 && u <= 1 + 1e-9 && t > best) best = t;
+        }
+        return [hc[0] + dx * best, hc[1] + dy * best];
+      }
+      hp.concat(top.poly).forEach(function (q) { angs.push(Math.atan2(q[1] - hc[1], q[0] - hc[0])); });
+      angs.sort(function (a, b) { return a - b; });
+      angs = angs.filter(function (a, n2) { return !n2 || a - angs[n2 - 1] > 1e-6; });
+      var below = [hc[0], hc[1] + yo, top.z - 1];
+      for (k = 0; k < angs.length; k++) {
+        var t0 = angs[k], t1 = k + 1 < angs.length ? angs[k + 1] : angs[0] + TAU;
+        var i0 = hit(hp, t0), i1 = hit(hp, t1), o0 = hit(top.poly, t0), o1 = hit(top.poly, t1);
+        quad(pen, P3(top, i0), P3(top, o0), P3(top, o1), P3(top, i1), below);
+      }
+      var fl = { z: fz };
+      for (k = 0; k < nh; k++) {
+        var h0 = hp[k], h1 = hp[(k + 1) % nh], mid = [(h0[0] + h1[0]) / 2, (h0[1] + h1[1]) / 2], out = [mid[0] + (mid[0] - hc[0]), mid[1] + (mid[1] - hc[1]) + yo, (top.z + fz) / 2];
+        quad(pw, P3(fl, h0), P3(fl, h1), P3(top, h1), P3(top, h0), out);
+      }
+      earclip(hp).forEach(function (t) { tri(pf, P3(fl, hp[t[0]]), P3(fl, hp[t[1]]), P3(fl, hp[t[2]]), [hc[0], hc[1] + yo, fz - 1]); });
+    }
     if (o.bottom) earclip(bot.poly).forEach(function (t) { tri(pen, P3(bot, bot.poly[t[0]]), P3(bot, bot.poly[t[1]]), P3(bot, bot.poly[t[2]]), cen); });
     function lev(z) { var q = 0; while (q + 2 < L.length && z > L[q + 1].z) q++; return q; }
+    /* the offset at height z: the face's normal, mitred at a row break */
+    function offAt(kf, z, off) {
+      var q = lev(z), n1 = B.normal(kf, z);
+      if (q + 2 < L.length && Math.abs(z - L[q + 1].z) < 1e-6) {
+        var n2 = B.normal(kf, z + 1e-4), nm = unit(add(n1, n2)), c = dot(nm, n1);
+        return [nm[0] * off / (c || 1), nm[1] * off / (c || 1), nm[2] * off / (c || 1)];
+      }
+      return [n1[0] * off, n1[1] * off, n1[2] * off];
+    }
+    function panel2(pn, kf, sa, sb, za, zb, off, po) {
+      function S(s, z) { return po.plumb ? B.plumbS(kf, s, za, z) : s; }
+      function F(s, z, o2) { var p = B.faceAt(kf, S(s, z), z); return o2 ? add(p, offAt(kf, z, o2)) : p; }
+      var ref = mix(B.faceAt(kf, (sa + sb) / 2, za), B.faceAt(kf, (sa + sb) / 2, zb), 0.5), Lf = B.faceLen(kf, za) || 1, ol, k2;
+      ref = add(ref, B.normal(kf, (za + zb) / 2), -0.5);
+      if (po.round) {                                 /* a rounded outline in (s, z), fanned from its middle */
+        var r = Math.min(po.round, (zb - za) / 2, (sb - sa) * Lf / 2), rs = r / Lf, nn = po.n || 4, C = [[sb - rs, zb - r, 0], [sa + rs, zb - r, 1], [sa + rs, za + r, 2], [sb - rs, za + r, 3]];
+        ol = [];
+        C.forEach(function (c) { for (k2 = 0; k2 <= nn; k2++) { var a = (c[2] + k2 / nn) * PI / 2; ol.push([c[0] + Math.cos(a) * rs, c[1] + Math.sin(a) * r]); } });
+        var cm = F((sa + sb) / 2, (za + zb) / 2, off);
+        for (k2 = 0; k2 < ol.length; k2++) {
+          var q0 = ol[k2], q1 = ol[(k2 + 1) % ol.length];
+          tri(pn, cm, F(q0[0], q0[1], off), F(q1[0], q1[1], off), ref);
+          if (off > 0.02) quad(pn, F(q0[0], q0[1]), F(q1[0], q1[1]), F(q1[0], q1[1], off), F(q0[0], q0[1], off), ref);
+        }
+        return;
+      }
+      var zs = [za];
+      L.forEach(function (l) { if (l.z > za + 1e-6 && l.z < zb - 1e-6) zs.push(l.z); });
+      zs.push(zb);
+      for (k2 = 0; k2 + 1 < zs.length; k2++) {
+        var z0 = zs[k2], z1 = zs[k2 + 1];
+        quad(pn, F(sa, z0, off), F(sb, z0, off), F(sb, z1, off), F(sa, z1, off), ref);
+        if (off > 0.02) {
+          quad(pn, F(sa, z0), F(sa, z1), F(sa, z1, off), F(sa, z0, off), ref);
+          quad(pn, F(sb, z0), F(sb, z1), F(sb, z1, off), F(sb, z0, off), ref);
+        }
+      }
+      if (off > 0.02) { quad(pn, F(sa, za), F(sb, za), F(sb, za, off), F(sa, za, off), ref); quad(pn, F(sa, zb), F(sb, zb), F(sb, zb, off), F(sa, zb, off), ref); }
+    }
     var B = {
       rows: L, z0: bot.z, z1: top.z, centre: cen,
       faceLen: function (kf, z) { var l = L[lev(z === undefined ? bot.z : z)].poly, k2 = (kf + 1) % n; return Math.hypot(l[k2][0] - l[kf][0], l[k2][1] - l[kf][1]); },
@@ -1491,8 +1966,9 @@ var HeroKit = (function () {
         var bx = lerp(lo.poly[k2][0], hi.poly[k2][0], f), by = lerp(lo.poly[k2][1], hi.poly[k2][1], f), p = [ax + (bx - ax) * s, ay + (by - ay) * s + yo, z];
         return off ? add(p, B.normal(kf, z), off) : p;
       },
-      panel: function (pn, kf, sa, sb, za, zb, off) {
+      panel: function (pn, kf, sa, sb, za, zb, off, po) {
         off = off === undefined ? 0.04 : off;
+        if (po) return panel2(pn, kf, sa, sb, za, zb, off, po);
         var a = B.faceAt(kf, sa, za, off), b = B.faceAt(kf, sb, za, off), c = B.faceAt(kf, sb, zb, off), d = B.faceAt(kf, sa, zb, off);
         var a0 = B.faceAt(kf, sa, za), b0 = B.faceAt(kf, sb, za), c0 = B.faceAt(kf, sb, zb), d0 = B.faceAt(kf, sa, zb), ref = mix(a0, c0, 0.5);
         quad(pn, a, b, c, d, ref);
@@ -1506,6 +1982,14 @@ var HeroKit = (function () {
         B.panel(K.pen("dull", "dark"), kf, s - fr, s + dw + fr, z0, z0 + h + 0.06, 0.02);
         B.panel(pen, kf, s, s + dw, z0 + 0.03, z0 + h, 0.06);
         tube(K.pen("metal", "metal"), B.faceAt(kf, s + dw + 2.5 * fr, z0 + 0.9, 0.08), B.faceAt(kf, s + dw + 2.5 * fr, z0 + 1.5, 0.08), 0.02, 0.02, 3, false);
+      },
+      /* the share at height z on face kf that is plumb above share s at zr */
+      plumbS: function (kf, s, zr, z) {
+        var a0 = B.faceAt(kf, 0, zr), b0 = B.faceAt(kf, 1, zr), e = [b0[0] - a0[0], b0[1] - a0[1]], el = Math.hypot(e[0], e[1]) || 1;
+        e = [e[0] / el, e[1] / el];
+        var d = s * el, a = B.faceAt(kf, 0, z), b = B.faceAt(kf, 1, z);
+        var da = (a[0] - a0[0]) * e[0] + (a[1] - a0[1]) * e[1], db = (b[0] - a[0]) * e[0] + (b[1] - a[1]) * e[1];
+        return (d - da) / (db || 1e-9);
       },
       roofEdge: function (inset, faces) {
         var out = [], kf;
@@ -1759,6 +2243,193 @@ var HeroKit = (function () {
         sphere(K.pen("dull", "canvas"), [x0 + 0.05, gy, gz], [cal * 5, cal * 4, cal * 4.5], 8, 5);             /* the blast bag */
       }
       return B;
+    },
+    /* a funnel: a faceted casing from z0 to z1 raked aft by o.rake (m of
+       set-back per m of height), a dark cap band o.cap m deep with an
+       overhanging lip, the exhaust grille and o.pipes uptake pipes.
+       o: { x0, x1, hw, hwF, ca, cf, z0, z1, rake (0.15), taper (side
+       draw-in, 0.1 of hw), y, cap (0.35), pipes (2), pen }.  Returns the
+       house (panel / door for louvres and ladders).                       */
+    funnel: function (K, o) {
+      var pp = o.pen || K.pen("plate"), h = o.z1 - o.z0, rk = (o.rake === undefined ? 0.15 : o.rake) * h, sd = (o.taper === undefined ? 0.1 : o.taper) * o.hw;
+      var capH = o.cap === undefined ? 0.35 : o.cap, y = o.y || 0, pi = K.pen("dull", "ink"), pd = K.pen("dull", "dark"), i;
+      var B = K.facetedHouse(pp, [{ z: o.z0, x0: o.x0, x1: o.x1, hw: o.hw, hwF: o.hwF, ca: o.ca === undefined ? o.hw * 0.4 : o.ca, cf: o.cf === undefined ? o.hw * 0.6 : o.cf },
+        { z: o.z1 - capH, lean: { side: sd * (h - capH) / h, front: -rk * (h - capH) / h, aft: rk * (h - capH) / h } }], { y: y });
+      var top = B.rows[1].poly, c = [0, 0], n = top.length;
+      top.forEach(function (q) { c[0] += q[0] / n; c[1] += q[1] / n; });
+      function grow(d, zz) { return { z: zz, poly: top.map(function (q) { var dx = q[0] - c[0], dy = q[1] - c[1], l = Math.hypot(dx, dy) || 1; return [q[0] + dx / l * d + rk * capH / h, q[1] + dy / l * d]; }) }; }
+      K.facetedHouse(pi, [grow(0.0, o.z1 - capH), grow(0.0, o.z1 - 0.06), grow(0.06, o.z1 - 0.06), grow(0.06, o.z1)], { y: y });
+      var gx = c[0] + rk * capH / h, gl = (o.x1 - o.x0) * 0.55, gw = o.hw * 0.7;
+      for (i = 0; i < 5; i++) K.box(pd, gx - gl / 2, gx + gl / 2, y - gw + i * gw / 2 - 0.02, y - gw + i * gw / 2 + 0.02, o.z1, o.z1 + 0.05);
+      var np = o.pipes === undefined ? 2 : o.pipes;
+      for (i = 0; i < np; i++) {
+        var px = gx + (np > 1 ? (i / (np - 1) - 0.5) * gl * 0.7 : 0);
+        K.cylZ(K.pen("metal", "burnt"), px, y, o.z1 - 0.2, o.z1 + 0.45, Math.min(0.28, o.hw * 0.25), 10);
+        K.disc(pi, [px, y, o.z1 + 0.452], [0, 0, 1], Math.min(0.28, o.hw * 0.25) * 0.8, 10);
+      }
+      return B;
+    },
+    /* a VLS hatch grid: o.rows x o.cols cells of o.cell (0.65 m) pitch on a
+       raised deck plate at (x, y, z), yawed o.yaw; each lid a plate with its
+       dark seam, a hinge bar and a vent plug.  o.pen the plate.           */
+    vls: function (K, x, y, z, o) {
+      o = o || {};
+      var R2 = o.rows || 2, C2 = o.cols || 4, P = o.cell || 0.65, yaw = o.yaw || 0, c = Math.cos(yaw), s = Math.sin(yaw), i, j;
+      var pp = o.pen || K.pen("plate"), pd = K.pen("dull", "dark"), pm = K.pen("metal", "dark"), fw = [c, s, 0], sd = [-s, c, 0], up = [0, 0, 1];
+      var L = C2 * P + 0.3, W = R2 * P + 0.3;
+      obox(pp, [x, y, z + 0.06], fw, sd, up, L, W, 0.12);
+      for (i = 0; i < C2; i++) for (j = 0; j < R2; j++) {
+        var a = (i - (C2 - 1) / 2) * P, b = (j - (R2 - 1) / 2) * P, q = [x + c * a - s * b, y + s * a + c * b, z + 0.12];
+        obox(pd, add(q, up, 0.004), fw, sd, up, P - 0.03, P - 0.03, 0.008);
+        obox(pp, add(q, up, 0.02), fw, sd, up, P - 0.09, P - 0.09, 0.03);
+        obox(pm, add(add(q, fw, -(P / 2 - 0.08)), up, 0.04), fw, sd, up, 0.05, P * 0.7, 0.03);
+        cylZ(pd, q[0] + c * 0.12, q[1] + s * 0.12, z + 0.15, z + 0.17, 0.05, 6);
+      }
+    },
+    /* a bank of box launchers (canisters) at (x, y, z) firing along yaw,
+       elevated o.elev (0.14): o.rows x o.cols boxes of section o.sec
+       (or o.w, o.h) and length o.len, o.gap apart; covers at both ends,
+       o.ribs bands round each box (2), a cradle of two frames under it.
+       (pilot_tuochiang.js bank)                                           */
+    boxLauncher: function (K, x, y, z, o) {
+      o = o || {};
+      var yaw = o.yaw || 0, el = o.elev === undefined ? 0.14 : o.elev, w = o.w || o.sec || 0.9, h = o.h || o.sec || 0.9, len = o.len || 6.0, gap = o.gap === undefined ? 0.12 : o.gap;
+      var nr = o.rows || 2, nc = o.cols || 2, pc = o.pen || K.pen("plate", o.col || "plate"), pd = K.pen("dull", o.dark || "dark"), pm = K.pen("metal", "dark"), r, cc;
+      var ay = [Math.cos(yaw) * Math.cos(el), Math.sin(yaw) * Math.cos(el), Math.sin(el)], ex = [-Math.sin(yaw), Math.cos(yaw), 0], up = unit(cross(ay, ex));
+      if (up[2] < 0) up = [-up[0], -up[1], -up[2]];
+      var lift = len / 2 * Math.sin(el) + 0.35, base = [x, y, z + lift], nrb = o.ribs === undefined ? 2 : o.ribs;
+      for (r = 0; r < nr; r++) for (cc = 0; cc < nc; cc++) {
+        var cen = add(add(base, ex, (cc - (nc - 1) / 2) * (w + gap)), up, h / 2 + r * (h + 0.08));
+        obox(pc, cen, ay, ex, up, len, w, h);
+        obox(pd, add(cen, ay, len / 2 + 0.03), ay, ex, up, 0.06, w * 0.9, h * 0.9);
+        obox(pd, add(cen, ay, -len / 2 - 0.03), ay, ex, up, 0.06, w * 0.8, h * 0.8);
+        for (var b = 0; b < nrb; b++) obox(pd, add(cen, ay, (nrb > 1 ? -0.38 + 0.76 * b / (nrb - 1) : 0) * len), ay, ex, up, 0.09, w + 0.07, h + 0.07);
+      }
+      [-0.3, 0.3].forEach(function (f) {
+        var p = add(base, ay, f * len), hw = nc * (w + gap) / 2 + 0.1, hh = p[2] - z;
+        obox(pm, [p[0], p[1], z + hh / 2], [Math.cos(yaw), Math.sin(yaw), 0], ex, [0, 0, 1], 0.18, hw * 2, hh);
+      });
+    },
+    /* a CIWS mount at (x, y, z), gun along yaw (Phalanx-like): plinth, the
+       turning base, the body and yoke, the radome barrel and cap, the gun
+       cradle and its barrel cluster, the drum.  k scales it (1 = 1.6 m
+       wide, 4.7 m tall).  Call it on a group to train it.  (tuochiang)    */
+    ciws: function (K, x, y, z, o) {
+      o = o || {};
+      var k = o.k || 1, yaw = o.yaw || 0, c = Math.cos(yaw), s = Math.sin(yaw), pw = K.pen("plate", o.col || "white"), pm = K.pen("metal", "dark"), fw = [c, s, 0], sd = [-s, c, 0], up = [0, 0, 1];
+      function Q(a, b, h) { return [x + c * a * k - s * b * k, y + s * a * k + c * b * k, z + h * k]; }
+      if (o.plinth !== false) obox(K.pen("plate"), Q(0, 0, 0.175), fw, sd, up, 2.6 * k, 3.0 * k, 0.35 * k);
+      cylZ(pm, x, y, z + 0.35 * k, z + 0.75 * k, 1.0 * k, 16);
+      obox(pw, Q(-0.1, 0, 1.25), fw, sd, up, 1.3 * k, 1.7 * k, 1.0 * k);
+      obox(pm, Q(-1.0, 0, 1.2), fw, sd, up, 0.5 * k, 1.2 * k, 0.8 * k);
+      [-1, 1].forEach(function (e) { obox(pw, Q(0, e * 0.85, 2.05), fw, sd, up, 0.85 * k, 0.24 * k, 1.7 * k); });
+      cylZ(pw, Q(0, 0, 0)[0], Q(0, 0, 0)[1], z + 2.5 * k, z + 3.75 * k, 0.62 * k, 14);
+      sphere(pw, [x, y, z + 3.75 * k], [0.62 * k, 0.62 * k, 0.8 * k], 14, 5, 0, PI / 2);
+      tube(pw, Q(-0.3, 0, 2.15), Q(0.75, 0, 2.15), 0.42 * k, 0.42 * k, 10, true);
+      K.revolve(pm, [[0, 0.2 * k], [0.5 * k, 0.2 * k], [0.52 * k, 0.13 * k], [1.75 * k, 0.12 * k], [1.76 * k, 0.15 * k], [1.86 * k, 0.15 * k]], { at: Q(0.75, 0, 2.15), axis: fw, seg: 8 });
+      tube(pm, Q(-0.15, 0.85, 2.0), Q(-0.15, 1.25, 2.0), 0.34 * k, 0.34 * k, 10, true);
+    },
+    /* a louvred / roller SHUTTER on face kf of a facetedHouse B: a flush
+       panel a step darker (o.pen, default hull "shade" or plate), o.slats
+       slat lines, a thin dark frame; plumb on a leaning face.  (tuochiang) */
+    shutter: function (K, B, kf, sa, sb, za, zb, o) {
+      o = o || {};
+      var pp = o.pen || K.pen("plate", K.R.P.shade !== undefined ? "shade" : "plate"), pl = o.line || K.pen("dull", K.R.P.line !== undefined ? "line" : "dark");
+      var n = o.slats || 10, h = (zb - za) / n, Lf = B.faceLen(kf, za) || 1, fw = 0.07 / Lf, j, po = { plumb: true };
+      B.panel(pp, kf, sa, sb, za, zb, 0.03, po);
+      for (j = 1; j < n; j++) B.panel(pl, kf, sa + fw, sb - fw, za + j * h - 0.025, za + j * h + 0.025, 0.045, po);
+      B.panel(pl, kf, sa - fw, sb + fw, za - 0.07, za, 0.02, po); B.panel(pl, kf, sa - fw, sb + fw, zb, zb + 0.07, 0.02, po);
+      B.panel(pl, kf, sa - fw, sa, za, zb, 0.02, po); B.panel(pl, kf, sb, sb + fw, za, zb, 0.02, po);
+    },
+    /* a faceted STEALTH gun shield (a wedge: the roof falls toward the
+       muzzle, the front corners cut off) standing on a ring at (x, y, z),
+       gun along +X.  Call it on K.group("turret", { at: [x, y, z] }).
+       o: { len 3.5, w 2.6, hRear 1.9, hFront 1.35, nose: the front face's
+       half width share (0.5), roof: the roof's inset share (0.25), cal,
+       blen, elev, ring, pen }.  Returns { z1: the roof's highest z }.
+       (pilot_tuochiang.js's 76 mm shield)                                 */
+    shield: function (K, x, y, z, o) {
+      o = o || {};
+      var L = o.len || 3.5, w = (o.w || 2.6) / 2, h1 = o.hRear || 1.9, h0 = o.hFront || 1.35, nz = o.nose === undefined ? 0.5 : o.nose, ri = o.roof === undefined ? 0.25 : o.roof;
+      var pp = o.pen || K.pen("plate"), pm = K.pen("metal", "dark"), ring = o.ring || w * 1.15, z0 = z + 0.14, xa = x - L * 0.6, xb = x + L * 0.4, xs = xb - L * 0.16;
+      cylZ(pm, x, y, z, z0, ring, 20);
+      function hz(xx) { return z0 + h1 + (h0 - h1) * (xx - xa) / (xb - xa); }
+      var wt = w * (1 - ri), V = [[xa, y - w, z0], [xs, y - w, z0], [xb, y - w * nz, z0], [xb, y + w * nz, z0], [xs, y + w, z0], [xa, y + w, z0],
+        [xa + 0.05, y - wt, hz(xa)], [xs - L * 0.05, y - wt * 0.9, hz(xs)], [xb - L * 0.04, y - wt * nz * 0.7, hz(xb)], [xb - L * 0.04, y + wt * nz * 0.7, hz(xb)], [xs - L * 0.05, y + wt * 0.9, hz(xs)], [xa + 0.05, y + wt, hz(xa)]];
+      var F = [], i;
+      for (i = 0; i < 6; i++) { var j2 = (i + 1) % 6; F.push([i, j2, j2 + 6], [i, j2 + 6, i + 6]); }
+      F.push([6, 7, 8], [6, 8, 9], [6, 9, 10], [6, 10, 11], [0, 2, 1], [0, 3, 2], [0, 4, 3], [0, 5, 4]);
+      solid(pp, V, F);
+      var cal = o.cal || 0.076, bl = o.blen || 4.5, el = o.elev || 0.05, gz = z0 + h0 * 0.55, ax = [Math.cos(el), 0, Math.sin(el)];
+      box(K.pen("dull", "ink"), xb - 0.05, xb + 0.05, y - cal * 3, y + cal * 3, gz - cal * 3.5, gz + cal * 3.5);
+      K.revolve(pm, [[0, cal * 2.2], [bl * 0.15, cal * 2], [bl * 0.16, cal * 1.3], [bl * 0.94, cal], [bl * 0.95, cal * 1.3], [bl, cal * 1.3]], { at: [xb - 0.03, y, gz], axis: ax, seg: 10 });
+      sphere(K.pen("dull", "canvas"), [xb + 0.06, y, gz], [cal * 3, cal * 3.4, cal * 3.4], 8, 5);
+      return { z1: hz(xa), hz: hz, x0: xa, x1: xb };
+    },
+    /* a propeller shaft from A (where it leaves the hull) to B (the
+       screw), radius r, with an A-bracket at o.bracket (share along, 0.85)
+       up to o.hullZ (the hull's underside z there) and a screw at B
+       (K.ship.screw).  o: { r 0.08, screw: { r, blades, col } | false,
+       hullZ, bracket, y }                                                  */
+    shaft: function (K, A, B, o) {
+      o = o || {};
+      var pm = K.pen("metal", "steel"), r = o.r || 0.08, f = o.bracket === undefined ? 0.85 : o.bracket;
+      tube(pm, A, B, r * 1.4, r, 8, true);
+      if (o.hullZ !== undefined && f > 0) {
+        var q = mix(A, B, f), sp = Math.max(0.25, r * 5);
+        [-1, 1].forEach(function (e) { bar(K.pen("hull", "under"), q, [q[0] - 0.1, q[1] + e * sp, o.hullZ + 0.05], r * 1.1, r * 2.2); });
+        tube(pm, add(q, unit(sub(B, A)), -0.2), add(q, unit(sub(B, A)), 0.2), r * 1.9, r * 1.9, 8, true);
+      }
+      if (o.screw !== false) SHIP.screw(K, B, unit(sub(B, A)), o.screw || {});
+    },
+    /* a screw at hub c on axis ax: o.blades (4) skewed blades of radius
+       o.r (0.9) in bronze, the boss and its cap                           */
+    screw: function (K, c, ax, o) {
+      o = o || {};
+      var n = o.blades || 4, r = o.r || 0.9, pb = K.pen("metal", o.col || 0x8a6a2c), a = unit(ax || [-1, 0, 0]), f = frame(a), i;
+      tube(pb, add(c, a, -r * 0.18), add(c, a, r * 0.2), r * 0.17, r * 0.12, 10, true);
+      for (i = 0; i < n; i++) {
+        var t = i / n * TAU + (o.phase || 0), ra = add(scaleV(f[0], Math.cos(t)), f[1], Math.sin(t)), ch = add(scaleV(f[0], -Math.sin(t)), f[1], Math.cos(t));
+        blade(pb, add(c, ra, r * 0.15), ra, unit(add(ch, a, 0.6)), r * 0.85, r * 0.55, r * 0.4, 0.035 * r + 0.01, r * 0.12);
+      }
+    },
+    /* a spade rudder at (x, y): its stock from zTop down o.h (1.2), chord
+       o.c (0.9), thickness o.t (0.1), in the hull's underwater colour     */
+    rudder: function (K, x, y, zTop, o) {
+      o = o || {};
+      blade(o.pen || K.pen("hull", "under"), [x, y, zTop], [0, 0, -1], [1, 0, 0], o.h || 1.2, o.c || 0.9, (o.c || 0.9) * 0.8, o.t || 0.1, (o.c || 0.9) * 0.05);
+      cylZ(K.pen("metal", "steel"), x + (o.c || 0.9) * 0.2, y, zTop - 0.05, zTop + 0.15, 0.07, 6);
+    },
+    /* a bow SONAR DOME under the keel: a teardrop from x0 (aft) to x1
+       (forward), hanging from zTop (the keel there) to zTop - o.h, half
+       width o.w; o.pen (hull under)                                       */
+    sonarDome: function (K, x0, x1, zTop, o) {
+      o = o || {};
+      var h = o.h || 1.2, w = o.w || 0.7, L = x1 - x0, y = o.y || 0;
+      K.loftBody(o.pen || K.pen("hull", "under"), [
+        { x: x0, w: w * 0.1, top: zTop + 0.1, bot: zTop - h * 0.15, y: y },
+        { x: x0 + L * 0.25, w: w * 0.75, top: zTop + 0.1, bot: zTop - h * 0.8, y: y, eL: 2.2 },
+        { x: x0 + L * 0.6, w: w, top: zTop + 0.1, bot: zTop - h, y: y, eL: 2.2 },
+        { x: x0 + L * 0.88, w: w * 0.8, top: zTop + 0.1, bot: zTop - h * 0.85, y: y },
+        { x: x1, w: 0, top: zTop - h * 0.35, bot: zTop - h * 0.35, y: y }], { n: 14, capA: true });
+    },
+    /* flight-deck safety NETS along the deck edge pts [[x, y, z], ...],
+       side +1 port / -1 starboard: inclined frames every o.step (1.5) out
+       o.out (1.0 m) and down o.drop (0.25), the outer rail and the netting
+       (a grid of wires)                                                   */
+    nets: function (K, pts, side, o) {
+      o = o || {};
+      var pm = K.pen("metal", "metal"), pn = K.pen("dull", o.col || "dark"), out = o.out || 1.0, dr = o.drop === undefined ? 0.25 : o.drop, step = o.step || 1.5, i, k;
+      function O(q, f) { return [q[0], q[1] + side * out * f, q[2] - dr * f]; }
+      for (i = 0; i + 1 < pts.length; i++) {
+        var a = pts[i], b = pts[i + 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(1, Math.round(L / step));
+        tube(pm, O(a, 1), O(b, 1), 0.025, 0.025, 4, false);
+        tube(pm, a, b, 0.02, 0.02, 4, false);
+        for (k = 0; k <= n; k++) { var q = mix(a, b, k / n); tube(pm, q, O(q, 1), 0.022, 0.022, 4, false); }
+        [0.33, 0.66].forEach(function (f) { tube(pn, O(a, f), O(b, f), 0.008, 0.008, 3, false); });
+        var m = Math.max(2, Math.round(L / 0.3));
+        for (k = 1; k < m; k++) { var q2 = mix(a, b, k / m); tube(pn, q2, O(q2, 1), 0.008, 0.008, 3, false); }
+      }
     }
   };
 
@@ -1847,27 +2518,35 @@ var HeroKit = (function () {
        rake: the axle's x offset from the pivot; strut: leg radius (0.05);
        door: { len, h, side } a door plate hanging beside the leg;
        brace: [x, y, z] the airframe end of a drag brace }.
+       With a stance in begin() the wheel stands on the stood ground (the
+       axle is r off it along K.groundUp()), so the same table works on a
+       nose-up sit.
        Draws the leg, the chromed oleo, torque links, the axle, the wheel(s)
        with hubs, the brace and the door.                                  */
     gearLeg: function (K, o) {
       var ps = K.pen("metal", o.col || "strut"), pc = K.pen("metal", "chrome"), pr = K.pen("dull", "rubber"), ph = K.pen("metal", "white");
       var x = o.x, y = o.y || 0, r = o.r, w = o.w || r * 0.6, sr = o.strut || 0.05, ax = [x + (o.rake || 0), y, r], top = [x, y, o.top];
+      if (K.R.st) {                                  /* a stance: the wheel stands on the STOOD ground, which is tilted in the build frame */
+        var gu = K.groundUp(), gx = x + (o.rake || 0) - gu[0] * r;
+        ax = [gx + gu[0] * r, y, K.ground(gx) + gu[2] * r];
+      }
+      var az = ax[2];
       var mid = mix(top, ax, 0.55), sd = o.twin ? 0 : (o.side === undefined ? 1 : o.side), i;
       tube(ps, top, mid, sr, sr, 8, true);
       tube(pc, mid, add(ax, [0, 0, 1], sr * 0.5), sr * 0.62, sr * 0.62, 8, false);
       var kn = add(mix(mid, ax, 0.5), [1, 0, 0], -sr * 3.4);                                        /* torque links */
       bar(ps, add(mid, [0, 0, 1], -sr), kn, sr * 0.5, sr * 0.9); bar(ps, kn, add(ax, [0, 0, 1], sr * 1.2), sr * 0.5, sr * 0.9);
       function wheel(yc) {
-        K.revolve(pr, [[-w / 2, r * 0.62], [-w / 2, r * 0.88], [-w * 0.3, r], [w * 0.3, r], [w / 2, r * 0.88], [w / 2, r * 0.62]], { at: [ax[0], yc, r], axis: "y", seg: 16 });
-        K.revolve(ph, [[-w / 2 - 0.006, r * 0.2], [-w / 2 - 0.006, r * 0.6], [-w * 0.3, r * 0.63], [w * 0.3, r * 0.63], [w / 2 + 0.006, r * 0.6], [w / 2 + 0.006, r * 0.2]], { at: [ax[0], yc, r], axis: "y", seg: 12 });
+        K.revolve(pr, [[-w / 2, r * 0.62], [-w / 2, r * 0.88], [-w * 0.3, r], [w * 0.3, r], [w / 2, r * 0.88], [w / 2, r * 0.62]], { at: [ax[0], yc, az], axis: "y", seg: 16 });
+        K.revolve(ph, [[-w / 2 - 0.006, r * 0.2], [-w / 2 - 0.006, r * 0.6], [-w * 0.3, r * 0.63], [w * 0.3, r * 0.63], [w / 2 + 0.006, r * 0.6], [w / 2 + 0.006, r * 0.2]], { at: [ax[0], yc, az], axis: "y", seg: 12 });
       }
-      if (o.twin) { wheel(y - w * 0.75); wheel(y + w * 0.75); tube(ps, [ax[0], y - w * 1.2, r], [ax[0], y + w * 1.2, r], sr * 0.7, sr * 0.7, 8, true); }
-      else if (sd) { wheel(y + sd * (w * 0.5 + sr * 0.9)); tube(ps, [ax[0], y, r], [ax[0], y + sd * (w + sr), r], sr * 0.7, sr * 0.7, 8, true); }
+      if (o.twin) { wheel(y - w * 0.75); wheel(y + w * 0.75); tube(ps, [ax[0], y - w * 1.2, az], [ax[0], y + w * 1.2, az], sr * 0.7, sr * 0.7, 8, true); }
+      else if (sd) { wheel(y + sd * (w * 0.5 + sr * 0.9)); tube(ps, [ax[0], y, az], [ax[0], y + sd * (w + sr), az], sr * 0.7, sr * 0.7, 8, true); }
       else {
         wheel(y);
-        for (i = -1; i <= 1; i += 2) { bar(ps, [ax[0], y + i * (w / 2 + 0.03), r], [ax[0], y + i * (w / 2 + 0.03), r * 1.9], 0.035, 0.05); }
-        bar(ps, [ax[0], y - w / 2 - 0.03, r * 1.9], [ax[0], y + w / 2 + 0.03, r * 1.9], 0.05, 0.05);
-        tube(pc, [ax[0], y - w / 2 - 0.05, r], [ax[0], y + w / 2 + 0.05, r], 0.02, 0.02, 6, true);
+        for (i = -1; i <= 1; i += 2) { bar(ps, [ax[0], y + i * (w / 2 + 0.03), az], [ax[0], y + i * (w / 2 + 0.03), az + r * 0.9], 0.035, 0.05); }
+        bar(ps, [ax[0], y - w / 2 - 0.03, az + r * 0.9], [ax[0], y + w / 2 + 0.03, az + r * 0.9], 0.05, 0.05);
+        tube(pc, [ax[0], y - w / 2 - 0.05, az], [ax[0], y + w / 2 + 0.05, az], 0.02, 0.02, 6, true);
       }
       if (o.brace) tube(ps, o.brace, mix(top, mid, 0.7), sr * 0.5, sr * 0.5, 6, true);
       if (o.door) {
@@ -1897,7 +2576,118 @@ var HeroKit = (function () {
       tube(p, add(q, d, len * 0.4), add(q, d, len), 0.009, 0.006, 4, true);
     },
     /* a blade aerial standing on q along up: h tall, chord c */
-    aerial: function (K, q, up, h, c, col) { blade(K.pen("dull", col || "dark"), q, up, [1, 0, 0], h || 0.25, c || 0.22, (c || 0.22) * 0.45, 0.02, (c || 0.22) * 0.3); }
+    aerial: function (K, q, up, h, c, col) { blade(K.pen("dull", col || "dark"), q, up, [1, 0, 0], h || 0.25, c || 0.22, (c || 0.22) * 0.45, 0.02, (c || 0.22) * 0.3); },
+    /* the dark DUCT behind an intake mouth whose lips are the point lists
+       up / lo (aerofoil F.mouth(side), or any two matching rows): the duct
+       walls run o.depth (0.4) aft, a darker back, and a thin lip line in
+       o.lipCol ("frame").  (pilot_seahawk.js's root intakes)              */
+    duct: function (K, up, lo, o) {
+      o = o || {};
+      var pi = K.pen("dull", "ink"), pb = pi.tint(o.back || 0x1b1d1f), d = o.depth || 0.4, i, ur = [], lr = [];
+      up.forEach(function (a, k) { var b = lo[k]; ur.push([a[0] - d, a[1], a[2] - (a[2] - b[2]) * 0.05]); lr.push([b[0] - d, b[1], b[2] + (a[2] - b[2]) * 0.05]); });
+      for (i = 0; i + 1 < up.length; i++) {
+        var mid = [up[i][0] + 0.5, up[i][1], (up[i][2] + lo[i][2]) / 2];
+        quad(pi, up[i], up[i + 1], ur[i + 1], ur[i], mid); quad(pi, lo[i], lo[i + 1], lr[i + 1], lr[i], mid);
+        quad(pb, ur[i], ur[i + 1], lr[i + 1], lr[i], mid);
+      }
+      if (o.lip !== false && up.length > 1) {
+        var pf = K.pen("dull", o.lipCol || "frame");
+        ribbon(pf, up, [0.6, 0, 0.8], o.lipW || 0.018, 0.004); ribbon(pf, lo, [0.6, 0, -0.8], o.lipW || 0.018, 0.004);
+      }
+    },
+    /* a plain round JET PIPE (no petals): its exit at (o.x, o.y, o.z)
+       looking aft (o.dir, default [-1, 0, 0]), radius o.r; a sooty lip
+       o.lip (0.09) long, a bright rim, the dark pipe o.depth (0.25) deep,
+       the turbine disc and the exhaust bullet.  (pilot_seahawk.js)        */
+    jetPipe: function (K, o) {
+      var d = unit(o.dir || [-1, 0, 0]), c = [o.x, o.y || 0, o.z], r = o.r, lip = o.lip === undefined ? 0.09 : o.lip, dep = o.depth === undefined ? r * 1.6 : o.depth;
+      var ps = K.pen("metal", o.col || "burnt"), pr = K.pen("metal", "steel"), pi = K.pen("dull", "ink");
+      tube(ps, add(c, d, -lip), add(c, d, -0.003), r * 1.04, r * 1.0, 14, false);
+      tube(pr, add(c, d, -0.003), c, r * 1.0, r * 0.9, 14, false);
+      tube(pi, c, add(c, d, -dep), r * 0.9, r * 0.82, 12, false);
+      disc(pi.tint(0x1c1a18), add(c, d, -dep), d, r * 0.82, 12);
+      if (o.bullet !== false) tube(pr, add(c, d, -dep * 0.95), add(c, d, -dep * 0.2), r * 0.33, r * 0.07, 8, false);
+    },
+    /* a MAIN ROTOR following js/render3d.js rotorShafts(): makes the
+       "rotor" group on the hub (and its "rotordisc"), and returns it.
+       o: { at: [x, y, z] the hub, r: blade radius, blades (4), chord (0.4
+       or r * 0.06), droop (tip droop m, r * 0.012), pitchDeg (6), phase
+       (the first blade's angle from +X, 45 deg), sense: +1 anti-clockwise
+       from above (Bell, Lynx, Bo 105: the frame's own +Z up the mast) or
+       -1 clockwise (Mil, Sud, Westland-Sikorsky... : the frame is turned
+       so its +Z points DOWN the mast, which is how the engine reads the
+       sense), leanDeg: the mast's forward lean, hubR (r * 0.05), mast:
+       { z0 } draws the static mast from z0 up to the hub, blade: pen
+       colour ("dark"), disc: { opacity (0.16), color } | false }.
+       The blades are drawn at rest; the disc is ONE upward face on its own
+       transparent material ("disc", depthWrite off, no shadow), which the
+       engine fades with rpm.  Draw calls: metal + dull in the rotor, one
+       for the disc.  Returns { G: the rotor context, disc: its context }. */
+    rotor: function (K, o) {
+      var at = o.at, r = o.r, nb = o.blades || 4, ch = o.chord || Math.max(0.25, r * 0.06), dr = o.droop === undefined ? r * 0.012 : o.droop;
+      var pt = (o.pitchDeg === undefined ? 6 : o.pitchDeg) * D2R, ph = (o.phase === undefined ? 45 : o.phase) * D2R, sense = o.sense || 1, lean = (o.leanDeg || 0) * D2R;
+      var hr = o.hubR || Math.max(0.12, r * 0.05), i;
+      var upv = [Math.sin(lean), 0, Math.cos(lean)];
+      if (o.mast) tube(K.pen("metal", "dark"), add(at, upv, (o.mast.z0 - at[2]) / Math.cos(lean)), at, hr * 0.55, hr * 0.5, 10, true);
+      var rot = [];
+      if (sense < 0) rot.push({ axis: [1, 0, 0], angle: PI });
+      if (lean) rot.push({ axis: [0, 1, 0], angle: lean });
+      var G = K.group("rotor", { at: at, rotate: rot });
+      var pm = G.pen("metal", "dark"), pb = G.pen("dull", o.blade || "dark"), fr = frame(upv);
+      function L(a, b, h) { return [at[0] + fr[0][0] * a + fr[1][0] * b + upv[0] * h, at[1] + fr[0][1] * a + fr[1][1] * b + upv[1] * h, at[2] + fr[0][2] * a + fr[1][2] * b + upv[2] * h]; }
+      var e1 = unit(sub(L(1, 0, 0), at)), e2 = unit(sub(L(0, 1, 0), at));
+      tube(pm, L(0, 0, -hr * 0.8), L(0, 0, hr * 0.6), hr, hr * 0.9, 12, true);
+      tube(pm, L(0, 0, hr * 0.6), L(0, 0, hr * 1.4), hr * 0.45, hr * 0.2, 8, true);
+      for (i = 0; i < nb; i++) {
+        var a = ph + i / nb * TAU * sense, dv = add(scaleV(e1, Math.cos(a)), e2, Math.sin(a)), cv = add(scaleV(e1, -Math.sin(a) * sense), e2, Math.cos(a) * sense);
+        bar(pm, add(at, dv, hr * 0.6), add(at, dv, hr * 3.2), hr * 0.5, hr * 0.45);
+        var r0 = hr * 3.0, tipZ = -dr, k0 = add(at, dv, r0), k1 = add(add(at, dv, r), upv, tipZ), cw = scaleV(cv, ch / 2), tk = Math.max(0.012, ch * 0.06), lift = scaleV(upv, Math.sin(pt) * ch / 2);
+        /* the blade: a thin slab, leading edge (toward the turn) raised by its pitch */
+        hexa(pb, [sub(sub(k0, cw), lift), add(add(k0, cw), lift), add(add(k1, cw), lift), sub(sub(k1, cw), lift),
+                  add(sub(sub(k0, cw), lift), upv, tk), add(add(add(k0, cw), lift), upv, tk), add(add(add(k1, cw), lift), upv, tk), add(sub(sub(k1, cw), lift), upv, tk)]);
+      }
+      var D = null;
+      if (o.disc !== false) {
+        var dsc = o.disc || {};
+        if (!K.R.mats.disc) K.material("disc", { color: dsc.color === undefined ? 0x2a2c2e : dsc.color, opacity: dsc.opacity === undefined ? 0.16 : dsc.opacity, rough: 0.8, metal: 0, noShadow: true });
+        D = G.group("rotordisc", { at: at });
+        disc(D.pen("disc"), add(at, upv, 0.03), upv, r, 48);
+      }
+      return { G: G, disc: D };
+    },
+    /* a TAIL ROTOR: the "tailrotor" group at the hub (o.at), the disc in
+       the XZ plane, blades o.blades (2) of radius o.r and chord o.chord;
+       o.side: +1 the rotor on the port side of the fin, -1 starboard (the
+       hub axis points outboard); o.sense: +1 / -1 reverses the turn (the
+       engine turns it positively about the frame's own lateral axis);
+       o.cantDeg leans the disc (Black Hawk 20 deg); o.phase (deg).        */
+    tailRotor: function (K, o) {
+      var at = o.at, r = o.r, nb = o.blades || 2, ch = o.chord || Math.max(0.12, r * 0.18), sd = o.side || 1, i;
+      var cant = (o.cantDeg || 0) * D2R, ax = [0, sd * Math.cos(cant), Math.sin(cant)];
+      var rot = [];
+      if ((o.sense || 1) < 0) rot.push({ axis: [0, 0, 1], angle: PI });
+      if (cant) rot.push({ axis: [1, 0, 0], angle: cant });
+      var G = K.group("tailrotor", { at: at, rotate: rot }), pm = G.pen("metal", "dark"), pb = G.pen("dull", o.blade || "dark");
+      var e1 = [1, 0, 0], e2 = unit(cross(ax, e1)), hr = o.hubR || Math.max(0.05, r * 0.08), ph = (o.phase || 0) * D2R;
+      tube(pm, add(at, ax, -hr * 1.5), add(at, ax, hr * 1.2), hr, hr * 0.8, 10, true);
+      for (i = 0; i < nb; i++) {
+        var a = ph + i / nb * TAU, dv = add(scaleV(e1, Math.cos(a)), e2, Math.sin(a)), cv = add(scaleV(e1, -Math.sin(a)), e2, Math.cos(a));
+        var k0 = add(at, dv, hr), k1 = add(at, dv, r), cw = scaleV(cv, ch / 2), tk = scaleV(ax, 0.012);
+        hexa(pb, [sub(sub(k0, cw), tk), add(sub(k0, tk), cw), add(sub(k1, tk), cw), sub(sub(k1, cw), tk), sub(add(k0, tk), cw), add(add(k0, tk), cw), add(add(k1, tk), cw), sub(add(k1, tk), cw)]);
+      }
+      return G;
+    },
+    /* a "wingfold" group as js/render3d.js poseFold expects: origin on the
+       hinge, unrotated at rest (spread, as flown), userData.fold = { axis
+       (its own frame = model axes here), angle (rad) }.  o: { hinge: [x, y,
+       z], axis: the hinge line (unit, model space; outer panel turns
+       positively about it), angle (rad) or angleDeg }.  Draw the folding
+       panel through the returned context; tools/jsc/wingfold_check.js
+       allows fold groups only on the carrier types in its table.          */
+    wingfold: function (K, o) {
+      var ax = unit(o.axis || [1, 0, 0]), ang = o.angle !== undefined ? o.angle : (o.angleDeg || 90) * D2R;
+      return K.group("wingfold", { at: o.hinge, userData: { fold: { axis: ax, angle: ang } } });
+    }
   };
 
   /* =============================================================== VEHICLES
@@ -2095,13 +2885,20 @@ var HeroKit = (function () {
       });
     },
     /* a lamp at q facing dir: housing, lens, and with o.guard a bar guard.
-       o: { r: 0.08, col: "lampWhite" | "lampRed" | "lampAmber", guard }   */
+       o: { r: 0.08, col: "lampWhite" | "lampRed" | "lampAmber", guard:
+       true (the tall cage, 1.25 r up and down) | "plain" (two bars and a
+       rim 0.2 r ahead of the lens, inside the housing's outline) }        */
     lamp: function (K, q, dir, o) {
       o = o || {};
       var d = unit(dir), r = o.r || 0.08, pp = K.pen("paint", o.paint), f = frame(d), i;
       tube(pp, add(q, d, -r * 1.2), q, r * 0.85, r, 10, true);
       disc(K.pen("lamp", o.col || "lampWhite"), add(q, d, 0.004), d, r * 0.86, 10);
-      if (o.guard) {
+      if (o.guard === "plain") {                     /* a flat bar guard just ahead of the lens, inside the housing's outline */
+        var pg = K.pen("metal", "dark"), u0 = f[0], u1 = f[1], g0 = add(q, d, r * 0.18);
+        [-0.4, 0.4].forEach(function (e) { tube(pg, add(add(g0, u1, e * r), u0, -r * 0.9), add(add(g0, u1, e * r), u0, r * 0.9), 0.008, 0.008, 3, false); });
+        tube(pg, add(g0, u1, -r * 0.9), add(g0, u1, r * 0.9), 0.008, 0.008, 3, false);
+        tube(pg, add(q, d, -0.01), add(q, d, r * 0.2), r * 1.0, r * 0.98, 10, false);   /* the guard's rim */
+      } else if (o.guard) {
         var pm = K.pen("metal", "dark"), up = Math.abs(f[1][2]) > Math.abs(f[0][2]) ? f[1] : f[0], sd = cross(d, up);
         for (i = -1; i <= 1; i++) {
           var a = add(add(q, sd, i * r * 0.8), up, -r * 1.25), b = add(add(q, sd, i * r * 0.8), up, r * 1.25);
@@ -2145,7 +2942,11 @@ var HeroKit = (function () {
         r = Math.max(o.lx, o.ly) / 2;
       } else { cylZ(pp, x, y, z, z + 0.04, r + 0.04, 16); cylZ(pp, x, y, z + 0.032, z + 0.075, r, 16, r * 0.92); }
       boxZ(pm, x - c * (o.lx ? o.lx / 2 : r), y - s * (o.lx ? o.lx / 2 : r), z + 0.02, 0.07, 0.22, 0.07, yaw);
-      tube(pm, [x + c * r * 0.4 - s * 0.07, y + s * r * 0.4 + c * 0.07, z + 0.11], [x + c * r * 0.4 + s * 0.07, y + s * r * 0.4 - c * 0.07, z + 0.11], 0.012, 0.012, 4, false);
+      /* the grab handle: a bar on two legs standing on the lid (the bar alone floated 2-3 cm above it) */
+      var lidTop = o.lx ? z + 0.065 : z + 0.075, hA = [x + c * r * 0.4 - s * 0.07, y + s * r * 0.4 + c * 0.07], hB = [x + c * r * 0.4 + s * 0.07, y + s * r * 0.4 - c * 0.07];
+      tube(pm, [hA[0], hA[1], z + 0.11], [hB[0], hB[1], z + 0.11], 0.012, 0.012, 4, false);
+      tube(pm, [hA[0], hA[1], lidTop - 0.004], [hA[0], hA[1], z + 0.11], 0.01, 0.01, 4, false);
+      tube(pm, [hB[0], hB[1], lidTop - 0.004], [hB[0], hB[1], z + 0.11], 0.01, 0.01, 4, false);
       for (i = 0; i < (o.scopes || 0); i++) {
         var a = yaw + (i - (o.scopes - 1) / 2) * 0.62;
         VEH.visionBlock(K, x + Math.cos(a) * (r + 0.13), y + Math.sin(a) * (r + 0.13), z, a, { w: 0.2, h: 0.09 });
@@ -2187,11 +2988,159 @@ var HeroKit = (function () {
       var p = K.pen("metal", "steel"), u = unit(nrm), i;
       for (i = 0; i < n; i++) { var q = mix(A, B, n > 1 ? i / (n - 1) : 0.5); tube(p, q, add(q, u, 0.012), r || 0.014, r || 0.014, 5, true); }
     },
+    /* a faceted BODY WITH WHEEL ARCHES: the side profile between y = -hw
+       and hw (a prism), its bottom edge at z0 with an arch cut up round
+       each wheel.  o: { x0, x1 (aft, fore), hw, z0, top: z or the top
+       edge [[x, z], ...] from x0 to x1, arches: [{ x, z: wheel centre z,
+       r: wheel radius, clear: gap (0.07), shape: "round" | "trap", seg }],
+       lip: true (a lip strip round each arch, o.lipPen), liner: depth of a
+       dark wheel well inboard of each arch (0 none), pen }.  Returns
+       { profile, arch(i) -> [[x, z], ...] the arch's edge }.  (pilot_df16.js
+       bodyProfile with its arch lips; a prism keeps the arches crisp)     */
+    archBody: function (K, o) {
+      var pp = o.pen || K.pen("paint"), A = (o.arches || []).slice().sort(function (a, b) { return a.x - b.x; }), P = [], arcs = [], i;
+      P.push([o.x0, o.z0]);
+      A.forEach(function (a) {
+        var R = a.r + (a.clear === undefined ? 0.07 : a.clear), zc = a.z, h = o.z0 - zc, pts = [], k, n = a.seg || 10;
+        if (a.shape === "trap") {
+          var zt = zc + R, fl = Math.max(0.05, (zt - o.z0) * 0.6);
+          pts = [[a.x - R - fl * 0.4, o.z0], [a.x - R * 0.72, zt], [a.x + R * 0.72, zt], [a.x + R + fl * 0.4, o.z0]];
+        } else {
+          var b = Math.asin(clamp(h / R, -0.99, 0.99));
+          for (k = 0; k <= n; k++) { var t = PI - b - (PI - 2 * b) * k / n; pts.push([a.x + Math.cos(t) * R, zc + Math.sin(t) * R]); }
+        }
+        arcs.push(pts); P.push.apply(P, pts);
+      });
+      P.push([o.x1, o.z0]);
+      var T = typeof o.top === "number" ? [[o.x0, o.top], [o.x1, o.top]] : o.top;
+      for (i = T.length - 1; i >= 0; i--) P.push([T[i][0], T[i][1]]);
+      prism(pp, P, "xz", -o.hw, o.hw);
+      var pl = o.lipPen || K.pen("paint", K.R.P.shade !== undefined ? "shade" : "paint"), pd = K.pen("dull", "dark");
+      arcs.forEach(function (pts, n2) {
+        [1, -1].forEach(function (s) {
+          if (o.lip !== false) for (i = 0; i + 1 < pts.length; i++) bar(pl, [pts[i][0], s * (o.hw + 0.012), pts[i][1]], [pts[i + 1][0], s * (o.hw + 0.012), pts[i + 1][1]], 0.05, 0.03);
+          if (o.liner) {
+            var G2 = pts.map(function (q) { return [[q[0], s * (o.hw - 0.005), q[1]], [q[0], s * (o.hw - o.liner), q[1]]]; }), ax = pts.map(function () { return [A[n2].x, s * o.hw, A[n2].z]; });
+            gridSkin(pd, G2, ax, { inward: true });
+            var c = [A[n2].x, s * (o.hw - o.liner), o.z0];
+            for (i = 0; i + 1 < pts.length; i++) tri(pd, c, [pts[i][0], s * (o.hw - o.liner), pts[i][1]], [pts[i + 1][0], s * (o.hw - o.liner), pts[i + 1][1]], [A[n2].x, 0, A[n2].z]);
+          }
+        });
+      });
+      return { profile: P, arch: function (k) { return arcs[k]; } };
+    },
+    /* a rear-view MIRROR on two arms: o.at the body's corner [x, y, z] (z
+       the lower arm), o.side, o.arm (0.3) out, o.span (0.8) between the
+       arms, a head o.w (0.22) x o.h (0.42) on the post, glass facing aft  */
+    mirror: function (K, o) {
+      var s = o.side || 1, at = o.at, arm = o.arm === undefined ? 0.3 : o.arm, sp = o.span === undefined ? 0.8 : o.span, w = o.w || 0.22, h = o.h || 0.42;
+      var pd = K.pen("dull", "dark"), ph = K.pen("dull", o.col || "dark"), px = at[0] + (o.fwd || 0), py = at[1] + s * arm;
+      tube(pd, [px, py, at[2] - 0.06], [px, py, at[2] + sp + 0.06], 0.016, 0.016, 5, false);
+      tube(pd, at, [px, py, at[2]], 0.014, 0.014, 4, false);
+      tube(pd, [at[0], at[1], at[2] + sp], [px, py, at[2] + sp], 0.014, 0.014, 4, false);
+      var zc = at[2] + sp * 0.55;
+      box(ph, px - 0.03, px + 0.03, py - w / 2, py + w / 2, zc - h / 2, zc + h / 2);
+      box(K.pen("metal", "chrome"), px - 0.034, px - 0.03, py - w / 2 + 0.02, py + w / 2 - 0.02, zc - h / 2 + 0.03, zc + h / 2 - 0.03);
+    },
+    /* a STEP LADDER hanging on a body side: stiles at x0 and x1 on the
+       face y (side s) from zTop down, treads at o.treads [z, ...] each
+       o.depth (0.16) deep, o.pen (metal "steel")                          */
+    steps: function (K, x0, x1, y, zTop, o) {
+      o = o || {};
+      var p = o.pen || K.pen("metal", "steel"), tr = o.treads || [zTop - 0.45, zTop - 0.85], d = o.depth || 0.16, lo = Math.min.apply(null, tr) - 0.02;
+      [x0, x1].forEach(function (lx) { tube(p, [lx, y, zTop], [lx, y, lo], 0.02, 0.02, 5, false); });
+      tr.forEach(function (z) { box(p, x0 - 0.02, x1 + 0.02, y - d / 2, y + d / 2, z - 0.015, z + 0.015); });
+    },
+    /* simple wheeled SUSPENSION, static, for each axle x of o.axles:
+       o.type "leaf" (default): a leaf-spring pack o.len (1.2) long of
+       o.leaves (5) under the frame rail at y = +-o.y, from the axle
+       (o.axleZ) up to the rail (o.frameZ), with its shackles;
+       "strut": upper and lower wishbones from the frame to the hub carrier
+       at y = +-o.hubY and a coil-over strut (pilot_df16.js)               */
+    suspension: function (K, o) {
+      var pd = K.pen("dull", "dark"), pm = K.pen("metal", "steel"), y = o.y, az = o.axleZ, fz = o.frameZ;
+      o.axles.forEach(function (x) {
+        [1, -1].forEach(function (s) {
+          if (o.type === "strut") {
+            var hy = s * (o.hubY || y + 0.35), fy = s * y;
+            [-1, 1].forEach(function (e) {
+              bar(pd, [x + e * 0.22, fy, az + 0.06], [x, hy, az - 0.1], 0.07, 0.05);
+              bar(pd, [x + e * 0.18, fy, az + 0.36], [x, hy, az + 0.24], 0.06, 0.05);
+            });
+            tube(pm, [x, fy + s * 0.06, fz + 0.1], [x, hy - s * 0.06, az - 0.05], 0.055, 0.045, 8, true);
+            box(pd, x - 0.12, x + 0.12, Math.min(hy, hy - s * 0.14), Math.max(hy, hy - s * 0.14), az - 0.2, az + 0.3);
+          } else {
+            var L2 = o.len || 1.2, n = o.leaves || 5, t = 0.022, k;
+            for (k = 0; k < n; k++) {
+              var hl = L2 / 2 * (1 - k * 0.14), zk = az + 0.08 + k * t, arc = 0.05 * (1 - k * 0.12);
+              bar(pd, [x - hl, s * y, zk + arc], [x, s * y, zk], 0.075, t * 0.9);
+              bar(pd, [x, s * y, zk], [x + hl, s * y, zk + arc], 0.075, t * 0.9);
+            }
+            [-1, 1].forEach(function (e) { bar(pm, [x + e * L2 / 2, s * y, az + 0.13], [x + e * L2 / 2, s * y, fz], 0.04, 0.04); });
+            box(pm, x - 0.06, x + 0.06, s * y - 0.06, s * y + 0.06, az - 0.06, az + 0.08 + n * t + 0.04);   /* the U-bolts' plate */
+          }
+        });
+      });
+    },
     tyre: tyre, roadWheel: roadWheel
   };
 
+  /* ============================================================= COLOUR CHECK
+     WHY RENDERS COME OUT LIGHTER THAN THE AUTHORED HEX.  Not prepModel: it
+     converts material colours sRGB -> linear exactly once and the kit's
+     vertex colours are already linear, so the ALBEDO is right.  It is the
+     LIGHT: a face under the game's sun (2.1 at 50.7 deg) plus the 0.5
+     hemisphere and the sky environment receives about 2.5x the light of
+     a white reference on a TOP face (1.6x on a vertical face turned 45 deg
+     to the sun), and three's ACES filmic tone mapping divides by 0.6
+     before its curve.  Measured with tools/model3d/render.js (true
+     renderer) on flat plates of known colour, top / side view, sRGB:
+         authored   top face   vertical face
+         0x202020   0x3c3b3a   -
+         0x303030   0x545351   0x3d3d39
+         0x363c42   0x5f676d   0x464c4f     (the Sea Hawk's final grey)
+         0x4d545b   0x868e95   0x676f73     (its first try: too light)
+         0x606060   0xa1a09e   0x82817c
+         0x808080   0xc5c4c2   0xaaa9a4
+         0xa0a0a0   0xdbdad9   0xc7c6c2
+         0xffffff   0xf3f3f3   0xecebea
+         0x4d5638   0x869164   0x677247     (vehicle olive)
+         0x9eac92   0xdadfd2   0xc6ceb9     (Sky)
+         0x8f999f   0xd1d6d8   0xbac1c1     (ship grey)
+     A fit of seen = sRGB(ACES(linear(authored) x gain)) gives gain 2.53
+     (top) and 1.56 (side) within 7/255 rms; seenAs / authorFor below use
+     the measured GREY RAMP itself, per channel (within 4/255 on the
+     colours above: the sun's warmth is lost, nothing else).  A paint
+     map's near-white canvas (0xf4f4f4) takes another ~10 % off.
+     RULE: pick the colour the model should SHOW at the game camera (a
+     sunlit photograph, a colour that "reads" right) and author
+     HeroKit.authorFor(seen) - authorFor(0x5f676d) = 0x373c3f, the Sea
+     Hawk's final 0x363c42.  A paint chip's value (FS / BS / RAL)
+     authored as is shows as that paint in bright sun: lighter than the
+     chip, as the real thing is.  The PALETTE defaults are unchanged (the
+     pilots build with them); check a new colour with HeroKit.seenAs(hex). */
+  var SEEN = {
+    top: [[0, 0], [0x20, 0x3b], [0x30, 0x53], [0x40, 0x6e], [0x50, 0x88], [0x60, 0xa0], [0x70, 0xb4], [0x80, 0xc4], [0x90, 0xd1],
+          [0xa0, 0xda], [0xb0, 0xe1], [0xc0, 0xe7], [0xd0, 0xeb], [0xe0, 0xef], [0xff, 0xf3]],
+    side: [[0, 0], [0x20, 0x29], [0x30, 0x3c], [0x40, 0x52], [0x50, 0x6a], [0x60, 0x81], [0x70, 0x97], [0x80, 0xa9], [0x90, 0xb9],
+           [0xa0, 0xc6], [0xb0, 0xd0], [0xc0, 0xd8], [0xd0, 0xde], [0xe0, 0xe3], [0xff, 0xeb]]
+  };
+  function chans(h) { h = hexOf(h); return [(h >> 16) & 255, (h >> 8) & 255, h & 255]; }
+  function unch(c) { return (Math.round(clamp(c[0], 0, 255)) << 16) | (Math.round(clamp(c[1], 0, 255)) << 8) | Math.round(clamp(c[2], 0, 255)); }
+  /* seenAs(hex, face): the sRGB the true renderer shows for an authored
+     colour on a sunlit "top" face (default) or a vertical "side" face */
+  function seenAs(hex, face) {
+    var T = SEEN[face === "side" ? "side" : "top"];
+    return unch(chans(hex).map(function (v) { return lin(T, v)[0]; }));
+  }
+  /* authorFor(hex, face): the colour to author so that it shows as hex */
+  function authorFor(hex, face) {
+    var T = SEEN[face === "side" ? "side" : "top"].map(function (r) { return [r[1], r[0]]; });
+    return unch(chans(hex).map(function (v) { return lin(T, v)[0]; }));
+  }
+
   var api = {
-    VERSION: 1, MAX_DRAW: MAX_DRAW, begin: begin, onReport: null, lastReport: null,
+    VERSION: 2, MAX_DRAW: MAX_DRAW, begin: begin, onReport: null, lastReport: null, seenAs: seenAs, authorFor: authorFor, stance: stanceOf,
     tab: tab, lin: lin, stations: stationsOf, footprint: footprint, ringSE: ringSE, linearRGB: linearRGB, css: css,
     earclip: earclip, rng: rng, PALETTE: PALETTE, STOCK: STOCK, ENGINE_NAMES: ENGINE_NAMES,
     vec: { sub: sub, add: add, cross: cross, dot: dot, unit: unit, mix: mix, lerp: lerp, clamp: clamp },

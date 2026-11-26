@@ -37,7 +37,9 @@ metres) with its painted colour. A texture counts as its mean colour, because
 the canvas stub keeps a coarse raster of every painted texture. The JSON also
 lists the named nodes (`turret`, `roadwheel`, `rotor` and the other parts the
 engine animates) and the stats: triangle, mesh, draw-call and material counts,
-the bounding box, and NaN and zero-area triangles. It shows the raw model, as
+the bounding box, and NaN and zero-area triangles. `meshes` (`[{path, t0,
+t1}]`) says which mesh drew which triangles, so a tool can hide the `gear`
+group or pick a part's triangles. It shows the raw model, as
 the builder returns it. The engine's era kit and faction restyling of
 buildings are applied later, in `render3d.js`.
 
@@ -68,3 +70,11 @@ $JSC tools/model3d/dump.js -- unit pact_e80_mbt pact /tmp/before.json --root /Us
 $JSC tools/model3d/dump.js -- unit pact_e80_mbt pact /tmp/after.json          # your tree
 python3 tools/model3d/shot.py /tmp/before.json /tmp/after.json /tmp/t80.png
 ```
+
+## The hero pipeline
+
+`gate.py`, `render.js` (true WebGL render, any view), `outline.py`
+(silhouette against a reference), `overlay.py` (the render laid on a
+reference photograph) and `m3dlib.py` (their shared geometry: parts, gaps,
+landmarks) are the hero-model pipeline: see `HERO_PIPELINE.md`.
+

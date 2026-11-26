@@ -1,0 +1,280 @@
+{
+ "key": "ssbn_f",
+ "team": "fra",
+ "category": "ship",
+ "name": "Le Triomphant (S616), Triomphant-class SSBN (SNLE-NG)",
+ "published": {
+  "len": 138.0,
+  "beam": 12.5,
+  "draught": 10.6,
+  "source": "en.wikipedia 'Triomphant-class submarine' (raw wikitext read 2026-11-12, js/hero/fr_navy_late.js header): 138 x 12.5 m, draught 10.6 m"
+ },
+ "len": 137.6,
+ "nodes": [],
+ "references": [
+  {
+   "name": "[T1] Triomphant class SSBN.svg, starboard silhouette",
+   "image": "ref/ssbn_f/triomphant_class_ssbn.png",
+   "source": "Wikimedia Commons 'Triomphant class SSBN.svg' (en.wikipedia), rendered 1600 px",
+   "view": "side",
+   "px_per_m": 11.57,
+   "anchor_px": [
+    0,
+    254
+   ],
+   "anchor_m": [
+    -69.0,
+    -10.6
+   ],
+   "mask": "alpha",
+   "ignore_m": [
+    [
+     24.0,
+     11.15,
+     34.0,
+     16.0
+    ]
+   ],
+   "exact": true,
+   "note": "Shroud x 0 to bow x 1597 = the published 138 m (11.57 px/m); keel row 254, the waterline the published 10.6 m draught above it: X = px / 11.57 - 69.0, Z = (254 - py) / 11.57 - 10.6. Column scan of the alpha: the hump's top row 91 (3.49) px 500..1060; the sail's after edge px 1060..1075, top row 3 (11.09), front px 1222..1228, the fillet to px 1260; the bow fairing px 1418..1431; the cruciform px 106..150 (upper to row 85, lower to 246, axis row 177); the shroud px 4..68 (rows 138..216). Ignored: the masts and periscopes the model has raised over the sail (the silhouette has them housed)."
+  },
+  {
+   "name": "[T2] Le Temeraire surfaced, from astern and above",
+   "image": "ref/ssbn_f/temeraire_from_astern.jpg",
+   "source": "Wikimedia Commons 'Temeraire1048.jpg'",
+   "view": "quarter",
+   "exact": false,
+   "note": "For the reviewer: the sister boat from astern: the large sail planes high on the sail (about 2.2 m under its top), the flat casing on the round hull, the upper rudder, the matt black tiled finish."
+  },
+  {
+   "name": "[T3] SNLE / SNLE-NG missile-compartment sections side by side",
+   "image": "ref/ssbn_f/snle_snleng_section.jpg",
+   "source": "Wikimedia Commons 'SNLE-SNLE-NG.jpg'",
+   "view": "quarter",
+   "exact": false,
+   "note": "A schematic section (left Le Redoutable, right Le Triomphant): each tube under a hatch in the casing's flat top. Ratios to the Triomphant hull's radius (525 px): the tube's centre 165 px off the centreline (0.31 -> y 1.9 m), the hatch and coaming about 300 px across (0.58 -> 3.6 m), the casing top flat to about 240 px (0.46 -> 2.9 m) before its shoulder. Not to scale vertically."
+  },
+  {
+   "name": "[T4] a Triomphant-class boat surfaced, from ahead",
+   "image": "ref/ssbn_f/snleng_from_ahead.jpg",
+   "source": "Wikimedia Commons 'SNLE-NG.jpeg'",
+   "view": "quarter",
+   "exact": false,
+   "note": "Scaled on the sail's height over the casing (7.6 m = 143 px, 18.8 px/m at the sail): the sail 67 px = 3.6 m wide, the sail planes 230 px = 12.2 m tip to tip at 103 px = 5.5 m over the casing (z 9.0), level; the masts raised, the casing smooth and black."
+  },
+  {
+   "name": "[T5] Le Terrible (S619), port broadside at a distance",
+   "image": "ref/ssbn_f/le_terrible_port.jpg",
+   "source": "Wikimedia Commons 'S619.Le Terrible.wmt.jpg'",
+   "view": "quarter",
+   "exact": false,
+   "note": "Bow left; 8.1 - 8.5 px/m off the sail's 14.4 m: the sail's upright front and raked back, four masts raised, the long low smooth casing (no hatch coamings in its line); the sail plane edge-on 2.0 - 2.5 m under the sail's top, from 0.75 m to 4.3 m abaft its front (root X 36.1 .. 32.6)."
+  }
+ ],
+ "must_show": [
+  "a long round hull 137.9 m (shroud X -68.65 to bow X +69.0), 12.5 m beam, the missile-section hump's flat top 3.49 m from X -26 to the sail, falling to 2.1 m at X 52, keel -10.6",
+  "the casing on the hull's back from the knuckle (z 0.3, X -27 .. 48) to a broad rounded top: [T3] traced falls 0.08 / 0.19 / 0.31 / 0.46 m below the crown at y 2.86 / 3.21 / 3.45 / 3.69 (flat within 0.1 m to about y 3.0, 6.0 m); the model's section is flat to y 3.24 and rounds down 0.45 m by y 3.69 (within 0.26 m of the trace), sloped sides below",
+  "sail X 22.6 .. 37.0, 3.6 m wide [T4], top 11.09 m, raked after edge (X 22.6 at the casing, 23.9 at the top), the front near upright (X 36.9 at z 7), the top edge rounded",
+  "the fillet at the sail's forward foot from z 4.3 at X 37.1 down to the casing at X 39.9 (z 3.3 at X 38.5)",
+  "LARGE sail planes high on the sail at z 9.0, root X 32.6 .. 36.1 (from 0.75 m abaft the sail front, carried in over its half-round front) [T5], tips 6.1 m off the centreline (12.2 m tip to tip) [T4]",
+  "SIXTEEN missile-tube hatches in two rows of eight abaft the sail, centres y +-1.95, X 19.5 .. -6.05 (pitch 3.65), rims 3.36 m across (lids 3.16 m) lying flush on the casing and inside its shoulder, after [T3]: rims 3.6 m across (0.58 R), tube centres y +-1.95 (0.31 R); hinges and lugs; a narrow walk between the rows; the broadside casing line smooth [T5]",
+  "bridge windows at the sail's top front X 32.6 .. 34.3, z 10.0 - 10.35, the cockpit recess X 33.8 .. 35.6, periscopes and masts raised at X 27.8 .. 31.0, the door at X 32.4 .. 33.4, ladder rungs",
+  "cruciform stern X -59.8 .. -56.0: upper rudder to z 4.0, lower to -9.9, horizontal stern planes 7.5 m out, each with its hinge slot",
+  "pump-jet: the shroud X -68.65 .. -63.1, radius 2.5 aft to 3.37, on stator vanes round the tail cone",
+  "casing fittings: escape trunks X -36, -14, 44.5; loading hatch X 58; cleats X -42, -30, 47, 61; capstan X 60; the bow fairing X 53.6 .. 54.6 to 3.0; rows of free-flood holes along the casing's sides; bow shutters X 64",
+  "anechoic tile finish over hull, casing and sail, X -68.65 .. 69.0; matt black; no numbers or markings; team colour only as small strips on the sail top and the casing"
+ ],
+ "landmarks": [
+  {
+   "name": "sail top at x 30",
+   "ref": 0,
+   "expect_m": [
+    30.0,
+    11.09
+   ],
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     15,
+     -3,
+     2.0,
+     45,
+     3,
+     15
+    ]
+   },
+   "note": "[T1] px 1145 row 3"
+  },
+  {
+   "name": "sail after edge at z 7",
+   "ref": 0,
+   "expect_m": [
+    23.22,
+    7.0
+   ],
+   "model_at": {
+    "cross": 7.0,
+    "from_h": 15.0,
+    "to_h": 30.0,
+    "in_m": [
+     15,
+     -3,
+     2.0,
+     45,
+     3,
+     15
+    ]
+   },
+   "note": "[T1] row 50: px 1067"
+  },
+  {
+   "name": "sail front at z 7",
+   "ref": 0,
+   "expect_m": [
+    36.88,
+    7.0
+   ],
+   "model_at": {
+    "cross": 7.0,
+    "from_h": 45.0,
+    "to_h": 30.0,
+    "in_m": [
+     15,
+     -3,
+     2.0,
+     45,
+     3,
+     15
+    ]
+   },
+   "note": "[T1] row 50: px 1225"
+  },
+  {
+   "name": "fillet at x 38.5",
+   "ref": 0,
+   "expect_m": [
+    38.5,
+    3.32
+   ],
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     37.5,
+     -3,
+     2.0,
+     39.5,
+     3,
+     6
+    ]
+   },
+   "note": "[T1] px 1244 row 92"
+  },
+  {
+   "name": "hump top at x 0",
+   "ref": 0,
+   "expect_m": [
+    0.0,
+    3.49
+   ],
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     -3,
+     -0.35,
+     -12,
+     3,
+     0.35,
+     6
+    ]
+   },
+   "note": "[T1] px 798 row 91 (on the centreline, between the hatch rows)"
+  },
+  {
+   "name": "keel at x 20",
+   "ref": 0,
+   "expect_m": [
+    20.0,
+    -10.51
+   ],
+   "model_at": {
+    "edge": "lower",
+    "in_m": [
+     15,
+     -7,
+     -12,
+     25,
+     7,
+     0
+    ]
+   },
+   "note": "[T1] px 1030 row 253"
+  },
+  {
+   "name": "upper rudder top",
+   "ref": 0,
+   "expect_m": [
+    -58.0,
+    4.0
+   ],
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     -61,
+     -1,
+     0,
+     -55,
+     1,
+     6
+    ]
+   },
+   "note": "[T1] px 127 row 85"
+  },
+  {
+   "name": "lower rudder bottom",
+   "ref": 0,
+   "expect_m": [
+    -58.0,
+    -9.91
+   ],
+   "model_at": {
+    "edge": "lower",
+    "in_m": [
+     -61,
+     -1,
+     -12,
+     -55,
+     1,
+     -6
+    ]
+   },
+   "note": "[T1] px 127 row 246"
+  },
+  {
+   "name": "shroud top at x -66",
+   "ref": 0,
+   "expect_m": [
+    -66.0,
+    -0.75
+   ],
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     -68.7,
+     -4,
+     -8,
+     -63,
+     4,
+     0
+    ]
+   },
+   "note": "[T1] px 35 row 140"
+  }
+ ],
+ "not_confirmed": [
+  "the hatch pitch (3.65 m, the least the 3.6 m rims allow) and the first hatch's station (X 19.5): the rows' offset and the rim size are ratios off the schematic [T3]; no photograph shows the hatches from above",
+  "the sail planes' tip chord and sweep (the root X 32.6 .. 36.1 is read off [T5]); their span and the sail's width are scaled off one photograph from ahead [T4] (about +-0.4 m)",
+  "the casing's knuckle (z 0.3) and top width: [T3] is a schematic",
+  "the stern planes' span (7.5 m), the stator count (nine), the window places on the sail, the free-flood rows",
+  "the tile size (0.5 m)"
+ ]
+}

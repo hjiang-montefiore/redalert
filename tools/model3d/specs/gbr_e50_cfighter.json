@@ -51,12 +51,14 @@
       "rotate": 270,
       "px_per_m": 104.0,
       "anchor_px": [1488, 1017],
-      "anchor_m": [0, 1.19],
+      "anchor_m": [0, 1.123],
+      "pitch_deg": -3.98,
+      "hide": ["gear"],
       "mask": "dark",
       "mask_opts": { "threshold": 110, "fill": true },
       "window_m": [-6.2, 0.45, 6.2, 3.3],
       "exact": false,
-      "note": "Advisory. Drawn gear-up in the datum and with the folded wings and the drop tanks ghosted in; the model stands 3.98 deg nose-up, so the fin and tailplane sit about 0.4 m lower against the fuselage than drawn. Used for the wing's dihedral (5.0 deg on the chord plane, measured rows 420-850), the root fairing's depth, the intake mouths and the tailplane's height."
+      "note": "Pipeline round 2: the model is turned back 3.98 deg into the drawing's datum (pitch_deg) and its gear hidden (the drawing is gear-up), and the anchor's height corrected from 1.19 to 1.123 m - the datum fit outline.py found with a free slide (0.067 m) and which the reviewer's own datum overlay (front_datum_c.png) supports; IoU 0.747 -> 0.947. Still advisory until a spec owner checks that height. Before: Drawn gear-up in the datum and with the folded wings and the drop tanks ghosted in; the model stands 3.98 deg nose-up, so the fin and tailplane sit about 0.4 m lower against the fuselage than drawn. Used for the wing's dihedral (5.0 deg on the chord plane, measured rows 420-850), the root fairing's depth, the intake mouths and the tailplane's height."
     },
     {
       "name": "[P1] WV828 and 034 in a hangar, wings folded",
@@ -87,5 +89,15 @@
     "the cross-section of the fuselage aft of the wing (width from the plan, depth from the side, ellipses between)",
     "the inside of the intakes and jet pipes",
     "height: 2.73 m as drawn on the drawing's wheels against the published 2.64 m (the published figure's attitude and oleo compression are not stated)"
+  ],
+  "landmarks": [
+    {"name": "main wheel track (port wheel centre y)", "ref": 1, "expect_m": [null, 1.16], "tol_m": 0.05, "model_at": {"path": "gear", "in_m": [-1.0, 0.8, 0.0, 1.5, 1.3, 0.65], "whole": true, "point": [null, "mid"]}, "note": "[D1] head-on view ghosts the mains on rows 896 and 1138: y +-1.16 m (review 1 and 2)"},
+    {"name": "wheels on the ground (gear lowest point)", "ref": 0, "expect_m": [null, 0.0], "tol_m": 0.02, "model_at": {"path": "gear", "point": [null, "min"]}, "note": "[D1] side: the drawing's own two wheel contacts set the 3.98 deg sit"},
+    {"name": "fin top height", "ref": 0, "expect_m": [null, 2.73], "tol_m": 0.04, "model_at": {"point": [null, "max"]}, "note": "[D1] side, ground attitude: top of the fin 2.73 m (review 1: drawing row 50, model row 49.97)"},
+    {"name": "tailplane half span at x -5.0", "ref": 1, "expect_m": [-5.0, 2.005], "tol_m": 0.04, "model_at": {"edge": "upper"}, "note": "[D1] plan: tailplane span 4.01 m (review 1)"},
+    {"name": "jet pipe lip, aft end x", "ref": 1, "expect_m": [-1.495, null], "tol_m": 0.05, "model_at": {"material": "hk_metal", "in_m": [-1.8, 0.4, 0.6, -0.9, 1.3, 1.8], "point": ["min", null]}, "note": "[D1] plan: the nozzle lip at cols 798-806, x -1.42..-1.50 (review 1 fix 2, review 2)"},
+    {"name": "jet pipe centre y", "ref": 1, "expect_m": [null, 0.84], "tol_m": 0.05, "model_at": {"material": "hk_metal", "in_m": [-1.8, 0.4, 0.6, -0.9, 1.3, 1.8], "point": [null, "mid"]}, "note": "must_show: one round exhaust each side at y 0.84 m"},
+    {"name": "canopy glazing front (windscreen base) x", "ref": 0, "expect_m": [4.92, null], "tol_m": 0.1, "model_at": {"material": "hk_glass", "in_m": [2.5, -1, 1.7, 6, 1, 3], "point": ["max", null]}, "note": "must_show: glazing from col 139 of the sheet (x 4.92 in the datum); tolerance holds the datum -> ground-attitude turn"},
+    {"name": "canopy glazing aft end x", "ref": 0, "expect_m": [3.08, null], "tol_m": 0.1, "model_at": {"material": "hk_glass", "in_m": [2.5, -1, 1.7, 6, 1, 3], "point": ["min", null]}, "note": "must_show: glazing to col 330 of the sheet (x 3.08 in the datum)"}
   ]
 }

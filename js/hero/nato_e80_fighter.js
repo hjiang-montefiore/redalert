@@ -277,10 +277,9 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
                walkway edges, de-icer boots;
      blade()   a tapered blade aerial or a fence standing on the skin;
      lamp()    a small eight-faced lamp in a vertex colour (one material);
-     sheet()   a grey-scale canvas laid over the coloured skins by projected
-               UVs (plan views from above and below, the two sides): panel
-               lines, rivet rows, walkways, exhaust soot and weathering. The
-               skins keep their colour; the sheet only darkens it. */
+     layout() / projUV()  the four-band sheet layout and its projected UVs
+               (the same layout as HeroKit's paint sheet, so the canvas
+               HeroKit.paintSheet draws lies on these UVs; see paint). */
   function DK(V) {
     function vsub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
     function vcross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
@@ -392,94 +391,8 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
       geo2.setAttribute("uv", new V.BufferAttribute(uv, 2));
       return geo2;
     }
-    function rng(seed) {
-      var s = seed >>> 0 || 1;
-      return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
-    }
-    /* spec: { frames: [[x, half-width], ...] lines round the body;
-               top: [[[x,y],...], ...] polylines seen from above (mirrored
-                    to starboard if spec.mirror);
-               bot: the same from below; side: [[[x,z],...]] both sides;
-               rivets: polylines (above) dotted;
-               walk: [[[x,y],...]] walkway outlines (above);
-               soot: [[x, y, z, length, width]] streaks running aft;
-               grime: count of weathering blots; seam: line darkness 0-1 } */
-    function sheet(L, spec, seed) {
-      var cv = document.createElement("canvas");
-      cv.width = L.TW; cv.height = L.TH;
-      var g = cv.getContext("2d"), R = rng(seed || 7), i, j, sd;
-      function U(x) { return (x - L.XMIN) * L.PX; }
-      function RT(y) { return (L.YMAX - y) * L.PY; }
-      function RB(y) { return L.B_BOT + (L.YMAX - y) * L.PY; }
-      function RS(z, s) { return (s ? L.B_STBD : L.B_PORT) + (L.ZMAX - z) * L.PZ; }
-      g.fillStyle = "#f2f2f2"; g.fillRect(0, 0, L.TW, L.TH);
-      for (i = 0; i < (spec.grime || 140); i++) {          /* weathering */
-        g.fillStyle = R() < 0.6 ? "rgba(40,40,40," + (0.03 + R() * 0.04) + ")" : "rgba(255,255,255,0.05)";
-        g.beginPath(); g.ellipse(R() * L.TW, R() * L.TH, 4 + R() * 26, 2 + R() * 9, 0, 0, Math.PI * 2); g.fill();
-      }
-      var sa = spec.seam === undefined ? 0.55 : spec.seam;
-      var LINE = "rgba(30,32,34," + sa + ")", FAINT = "rgba(30,32,34," + (sa * 0.45) + ")";
-      function path(pts, map, col, lw, dash) {
-        g.strokeStyle = col || LINE; g.lineWidth = lw || 1.2;
-        if (g.setLineDash) g.setLineDash(dash || []);
-        g.beginPath();
-        for (var k = 0; k < pts.length; k++) {
-          var q = map(pts[k]);
-          if (k) g.lineTo(q[0], q[1]); else g.moveTo(q[0], q[1]);
-        }
-        g.stroke();
-        if (g.setLineDash) g.setLineDash([]);
-      }
-      var mirror = spec.mirror !== false;
-      function both(list, fT, col, lw, dash) {
-        for (j = 0; j < (list || []).length; j++) {
-          path(list[j], fT(1), col, lw, dash);
-          if (mirror) path(list[j], fT(-1), col, lw, dash);
-        }
-      }
-      both(spec.top, function (m) { return function (q) { return [U(q[0]), RT(m * q[1])]; }; });
-      both(spec.bot, function (m) { return function (q) { return [U(q[0]), RB(m * q[1])]; }; });
-      both(spec.rivets, function (m) { return function (q) { return [U(q[0]), RT(m * q[1])]; }; }, FAINT, 1, [1, 3]);
-      both(spec.rivetsB, function (m) { return function (q) { return [U(q[0]), RB(m * q[1])]; }; }, FAINT, 1, [1, 3]);
-      for (j = 0; j < (spec.side || []).length; j++) {
-        for (sd = 0; sd < 2; sd++) {
-          path(spec.side[j], (function (s) { return function (q) { return [U(q[0]), RS(q[1], s)]; }; })(sd));
-        }
-      }
-      for (j = 0; j < (spec.frames || []).length; j++) {
-        var f = spec.frames[j], x = U(f[0]);
-        g.strokeStyle = LINE; g.lineWidth = 1.2;
-        g.beginPath(); g.moveTo(x, RT(f[1])); g.lineTo(x, RT(-f[1])); g.stroke();
-        g.beginPath(); g.moveTo(x, RB(f[1])); g.lineTo(x, RB(-f[1])); g.stroke();
-        for (sd = 0; sd < 2; sd++) {
-          g.beginPath(); g.moveTo(x, RS(L.ZMAX, sd)); g.lineTo(x, RS(L.ZMAX - L.SIDEH / L.PZ, sd)); g.stroke();
-        }
-      }
-      for (j = 0; j < (spec.walk || []).length; j++) {     /* walkways: a darker, non-slip band */
-        for (sd = 1; sd >= (mirror ? -1 : 1); sd -= 2) {
-          var w = spec.walk[j];
-          g.fillStyle = "rgba(20,22,24,0.16)";
-          g.beginPath();
-          for (i = 0; i < w.length; i++) { if (i) g.lineTo(U(w[i][0]), RT(sd * w[i][1])); else g.moveTo(U(w[i][0]), RT(sd * w[i][1])); }
-          g.closePath(); g.fill();
-        }
-      }
-      for (j = 0; j < (spec.soot || []).length; j++) {     /* exhaust soot, fading aft */
-        var s = spec.soot[j], x0 = U(s[0]), x1 = U(s[0] - s[3]), hw = s[4] * L.PY;
-        var grd = g.createLinearGradient(x0, 0, x1, 0);
-        grd.addColorStop(0, "rgba(25,22,20,0.55)"); grd.addColorStop(1, "rgba(25,22,20,0)");
-        g.fillStyle = grd;
-        g.fillRect(x1, RT(s[1]) - hw, x0 - x1, 2 * hw);
-        g.fillRect(x1, RB(s[1]) - hw, x0 - x1, 2 * hw);
-        for (sd = 0; sd < 2; sd++) g.fillRect(x1, RS(s[2], sd) - s[4] * L.PZ, x0 - x1, 2 * s[4] * L.PZ);
-      }
-      var tex = new V.CanvasTexture(cv);
-      tex.wrapS = tex.wrapT = V.ClampToEdgeWrapping;
-      tex.anisotropy = 4;
-      return tex;
-    }
     return { ribbon: ribbon, blade: blade, lamp: lamp, hoop: hoop, layout: layout, projUV: projUV,
-             sheet: sheet, geo: geo, quad: quad };
+             geo: geo, quad: quad };
   }
 
   /* ============================================================ helpers */
@@ -621,11 +534,16 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
      Bubble canopy set far forward, the windscreen meeting the radome base
      [P2]. Rows: s, half-width, sill z, top z (the first build's CANOPY). */
   function canRows(isE) {
-    var C = [[3.05, 0.09, 0.53, 0.60], [3.70, 0.31, 0.56, 0.97], [4.40, 0.45, 0.62, 1.17],
-             [5.15, 0.50, 0.68, 1.27], [5.90, 0.48, 0.72, 1.25], [6.60, 0.36, 0.76, 1.12]];
-    if (isE) C = [[3.05, 0.09, 0.53, 0.60], [3.70, 0.31, 0.56, 0.97], [4.40, 0.45, 0.62, 1.17],
-                  [5.15, 0.50, 0.68, 1.27], [5.90, 0.48, 0.72, 1.25], [6.60, 0.46, 0.75, 1.23],
-                  [7.25, 0.43, 0.77, 1.18], [7.85, 0.30, 0.78, 1.04]];
+    /* 2026-11-26 shape pass: the tops raised to the references (review:
+       0.14-0.18 m low).  C off [P2] (top z 0.96 s 3.62, 1.35 s 4.46, 1.44
+       s 5.02-5.30, 1.38 s 5.85, 1.27 s 6.69); E off the 3-view sheet's
+       two-seat side elevation [P1s] (1.00 s 3.7, 1.23 s 4.4, 1.39 s 5.0,
+       1.46 s 5.6-6.2, 1.39 s 6.8, 1.27 s 7.4, 1.12 s 7.85).  Sills kept. */
+    var C = [[3.05, 0.09, 0.53, 0.60], [3.70, 0.31, 0.56, 1.00], [4.40, 0.45, 0.62, 1.32],
+             [5.15, 0.50, 0.68, 1.43], [5.90, 0.48, 0.72, 1.39], [6.60, 0.36, 0.76, 1.28]];
+    if (isE) C = [[3.05, 0.09, 0.53, 0.60], [3.70, 0.31, 0.56, 1.00], [4.40, 0.45, 0.62, 1.25],
+                  [5.15, 0.50, 0.68, 1.40], [5.90, 0.48, 0.72, 1.46], [6.60, 0.46, 0.75, 1.42],
+                  [7.25, 0.43, 0.77, 1.31], [7.85, 0.30, 0.78, 1.12]];
     return C;
   }
   function addCanopy(isE) {
@@ -634,8 +552,11 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
     loftTo(rings, "glass", false, false);
     /* the canopy's metal tail fairing back into the spine */
     var last = CAN[CAN.length - 1], s0 = last[0];
-    var SP = [[s0 - 0.05, last[1] + 0.01, last[3] + 0.005], [s0 + 0.7, last[1] * 0.80, last[3] - 0.17],
-              [s0 + 1.4, last[1] * 0.55, last[3] - 0.30], [s0 + 2.0, 0.10, last[2] + 0.03]];
+    /* the spine fairing behind the raised canopy: C [P2] 1.16 at s 7.25,
+       0.99 at s 8.08; E [P1s] 1.03 at s 8.6, 0.96 at s 9.2 */
+    var d1 = isE ? 0.10 : 0.12, d2 = isE ? 0.20 : 0.28;
+    var SP = [[s0 - 0.05, last[1] + 0.01, last[3] + 0.005], [s0 + 0.7, last[1] * 0.80, last[3] - d1],
+              [s0 + 1.4, last[1] * 0.55, last[3] - d2], [s0 + 2.0, 0.10, last[2] + 0.03]];
     loftTo(SP.map(function (q) { return ringSE(X(q[0]), 0, q[1], q[2], last[2] - 0.05, last[2] - 0.05, 2.3, 2.0, 24).slice(0, 13); }),
            "skin", false, true);
     /* frames: windscreen bow, the canopy arch(es), the sills */
@@ -668,7 +589,11 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
   var WZ = 0.40;
   function wingSec(y) {
     var le = 8.12 + (y - 0.9) * (13.93 - 8.12) / (6.45 - 0.9), te;
-    if (y <= 5.68) te = lerp(14.88, 15.52, (y - 0.9) / (5.68 - 0.9));
+    /* 2026-11-26: the flap trailing edge is straight across at s 15.28
+       (x -5.56) out to the kink at y 3.9 ([P1] plan: x -5.55 at y 2.0 and
+       2.8), then the outboard line as before (x -5.68 at y 4.8) */
+    if (y <= 3.9) te = 15.28;
+    else if (y <= 5.68) te = lerp(15.28, 15.52, (y - 3.9) / (5.68 - 3.9));
     else te = lerp(15.52, 14.50, (y - 5.68) / (6.50 - 5.68));
     if (y > 6.45) le = lerp(13.93, 14.45, (y - 6.45) / 0.05);
     var t = (y - 0.9) / 5.6;
@@ -693,7 +618,7 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
   function addFlying() {
     var sd;
     for (sd = -1; sd <= 1; sd += 2) {
-      var ys = [0.9, 1.8, 2.8, 3.8, 4.8, 5.68, 6.05], yt = [6.05, 6.30, 6.48];
+      var ys = [0.9, 1.8, 2.8, 3.9, 4.8, 5.68, 6.05], yt = [6.05, 6.30, 6.48];
       foilLoft(ys.map(function (y) { var q = wingSec(y); q.a *= sd; return q; }), "w", "skin");
       foilLoft(yt.map(function (y) { var q = wingSec(y); q.a *= sd; return q; }), "w", "team");
       foilLoft([1.3, 1.9, 2.58].map(function (y) { var q = stabSec(y); q.a *= sd; return q; }), "w", "skin");
@@ -723,7 +648,10 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
     var sd, k, j;
     for (sd = -1; sd <= 1; sd += 2) {
       var yc = sd * TYC, zc = -0.15, rings = [];
-      [[17.80, 0.56], [17.95, 0.53], [18.30, 0.50], [18.68, 0.46]].forEach(function (q, ri) {
+      /* 2026-11-26: exit moved forward to s 18.18 (x -8.46; [P1] plan s 18.15,
+         review: the first build's s 18.68 left the booms only 0.35 m of
+         overhang, 0.9 on the drawing) */
+      [[17.80, 0.56], [17.90, 0.54], [18.02, 0.51], [18.18, 0.48]].forEach(function (q, ri) {
         var ring = [];
         for (j = 0; j < 28; j++) {
           var a = j / 28 * Math.PI * 2, r = q[1] * (ri >= 2 ? (j % 2 ? 0.985 : 1.0) : 1.0);
@@ -737,10 +665,10 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
       var deep = rings[3].map(function (p) { return [p[0] + 0.6, yc + (p[1] - yc) * 0.78, zc + (p[2] - zc) * 0.78]; });
       loftTo([rings[3], inner], "steel", false, false);
       loftTo([inner, deep], "ink", false, true);
-      for (k = 0; k < 14; k++) {
-        var a2 = k / 14 * Math.PI * 2;
-        put("ink", rod([X(18.0), yc + 0.525 * Math.cos(a2), zc + 0.525 * Math.sin(a2)],
-                       [X(18.66), yc + 0.465 * Math.cos(a2), zc + 0.465 * Math.sin(a2)], 0.012, 4));
+      for (k = 0; k < 10; k++) {                 /* petal ribs (14 before the E's triangle budget cut) */
+        var a2 = k / 10 * Math.PI * 2;
+        put("ink", rod([X(17.92), yc + 0.525 * Math.cos(a2), zc + 0.525 * Math.sin(a2)],
+                       [X(18.16), yc + 0.485 * Math.cos(a2), zc + 0.485 * Math.sin(a2)], 0.012, 4));
       }
     }
   }
@@ -795,7 +723,7 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
         }), "skin", true, true);
         for (b = 0; b < 3; b++) {
           tube([[8.4 + b * 2.3, 0.01], [8.6 + b * 2.3, 0.10], [9.0 + b * 2.3, 0.136], [10.0 + b * 2.3, 0.136], [10.45 + b * 2.3, 0.085], [10.61 + b * 2.3, 0.04]],
-               sd * 2.03, -0.76, 8, "metal");
+               sd * 2.03, -0.76, 6, "metal");
           put("steel", boxG(0.30, 0.04, 0.12, X(9.4 + b * 2.3), sd * 2.03, -0.62));
           for (var k = 0; k < 4; k++) {
             var a = Math.PI / 4 + k * Math.PI / 2, up = [0, Math.cos(a), Math.sin(a)];
@@ -805,7 +733,7 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
         /* LANTIRN: the nav pod to port, the targeting pod to starboard */
         var pl = sd > 0 ? 1.99 : 2.50, pd = sd > 0 ? 0.150 : 0.190;
         tube([[6.35, 0.02], [6.53, pd * 0.78], [6.90, pd], [6.35 + pl - 0.5, pd], [6.35 + pl - 0.12, pd * 0.8], [6.35 + pl, pd * 0.45]],
-             sd * 1.16, -1.12, 14, "metal");
+             sd * 1.16, -1.12, 10, "metal");
         put("ink", rod([X(6.33), sd * 1.16, -1.12], [X(6.45), sd * 1.16, -1.12], pd * 0.72, 10));
         put("steel", boxG(0.70, 0.07, 0.22, X(7.30), sd * 1.16, -0.97));
       }
@@ -830,7 +758,7 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
       gput("steel", rod([X(10.80), sd * 1.30, -0.86], [X(10.80), sd * 1.375, mz], 0.095, 8, 0.12));
       gput("metal", rod([X(10.80), sd * 1.31, -1.00], [X(10.80), sd * 1.34, -1.36], 0.14, 8));
       gput("steel", rod([X(10.0), sd * 1.05, -0.86], [X(10.75), sd * 1.33, mz + 0.30], 0.045, 6));
-      gput("rubber", wheelG(mr, 0.26, X(10.80), sd * 1.48, mz, 28));
+      gput("rubber", wheelG(mr, 0.26, X(10.80), sd * 1.48, mz, 24));
       gput("metal", wheelG(0.22, 0.28, X(10.80), sd * 1.48, mz, 14));
       gput("skin", boxG(1.60, 0.04, 0.80, X(10.60), sd * 1.02, -1.26));
     }
@@ -899,56 +827,255 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
       put("ink", D.blade(p, [0, 0, q[1]], [1, 0, 0], 0.28, 0.30, 0.12, 0.03, 0.10));
     });
     /* the receptacle door in the port wing root, the arrestor hook */
-    put("ink", boxG(0.50, 0.32, 0.02, X(RECEPT[0]), RECEPT[1], RECEPT[2] - 0.005));
+    put("ink", boxG(0.50, 0.32, 0.02, X(RECEPT[0]), RECEPT[1], tab(TRK, RECEPT[0])[1] + 0.008));   /* seated on the trunk top */
     put("metal", rod([X(16.4), 0, -0.68], [X(17.8), 0, -0.62], 0.06, 6));
   }
 
   /* ============================================================= paint ==
-     The grey-scale sheet (us_e2_hawkeye.js / us_ef111a.js kit) over the one
-     skin grey: panel lines, rivet rows, the walkways either side of the
-     spine, soot behind the nozzles, weathering. */
-  var _sheet = null;
-  function paintSheet() {
-    if (_sheet !== null) return _sheet;
-    try {
-      function wl(secOf, u, y0, y1) {
-        var out = [], k;
-        for (k = 0; k <= 5; k++) { var y = y0 + (y1 - y0) * k / 5, q = secOf(y); out.push([X(q.s + u * q.c), y]); }
-        return out;
+     2026-11-25 paint rework (the true render showed the rebuild nearly bare
+     at the game camera: the skin grey authored as a paint chip came out
+     near white and the grey-scale sheet's lines vanished on it).  Now the
+     WHOLE colour is carried by a HeroKit.paintSheet canvas over a white
+     skin material, every tone authored with HeroKit.authorFor(the grey the
+     game camera should show), so:
+       F-15C  one main air-superiority grey; the darker grey ONLY as a plain
+              panel tone on the upper centre fuselage and trunk tops
+              between the canopy and the fins (the darker upper tone of the
+              Compass Ghost / Mod Eagle scheme, drawn as one plain panel -
+              no blots, no pattern), the anti-glare-free radome a shade
+              lighter;
+       F-15E  one dark gunship grey all over.
+     On the sheet: panel lines and frames (HeroKit sheet lines), fastener
+     rows along the spars, trunk and keel seams, access panels with screw
+     corners (the nose avionics doors under the sills, the gun bay, the
+     trunk-top and engine-bay doors, fuel panels on the wing, the flaps,
+     ailerons and rudders in a fresh-paint tone), the walkways either side
+     of the spine with scuffs, exhaust soot along the boom and keel and on
+     the nozzle shrouds, the gun-port blast stain, fluid streaks behind
+     the gear wells, and weathering.  Plain paint (AGENT_POLICY 6): no
+     camouflage, numbers, text or national markings; team colour stays in
+     the small strips (fin bands, wingtips, spine). */
+  var _sheets = {};
+  function seen(hex) { return HeroKit.authorFor(hex); }
+  function sheetSpec(isE) {
+    function wl(secOf, u, y0, y1) {
+      var out = [], k;
+      for (k = 0; k <= 5; k++) { var y = y0 + (y1 - y0) * k / 5, q = secOf(y); out.push([X(q.s + u * q.c), y]); }
+      return out;
+    }
+    /* the tones the game camera should show (sRGB, sunlit top face) */
+    var MAIN = isE ? 0x676e73 : 0x9ba3a9, DARK = isE ? 0x5b6267 : 0x6d767e, RAD = isE ? 0x60676b : 0xa6adb2;
+    var FRESH = isE ? 0x80878c : 0xb2babf, WORN = isE ? 0x565d61 : 0x838b91;
+    function halfM(h) { var o = 0, k; for (k = 0; k < 3; k++) { var sh = 16 - 8 * k; o |= Math.round((((MAIN >> sh) & 255) + ((h >> sh) & 255)) / 2) << sh; } return o; }
+    var FRESHW = halfM(FRESH), WORNW = halfM(WORN);
+    var top = [wl(wingSec, 0.16, 1.6, 6.0), wl(wingSec, 0.45, 1.6, 6.0), wl(wingSec, 0.80, 2.1, 5.5),
+               wl(stabSec, 0.35, 1.4, 3.8), [[X(11.4), 2.6], [X(15.1), 2.6]], [[X(10.2), 4.2], [X(15.3), 4.2]],
+               [[X(7.0), 0.92], [X(16.5), 0.95]], [[X(7.0), 1.92], [X(13.0), 2.0]], [[X(6.6), 0.0], [X(17.6), 0.0]]];
+    var bot = [wl(wingSec, 0.30, 1.6, 6.0), wl(wingSec, 0.70, 1.6, 6.0), [[X(6.0), 0.5], [X(16.0), 0.5]],
+               [[X(6.0), 1.21], [X(17.6), 1.21]], [[X(3.0), 0.0], [X(17.6), 0.0]]];
+    var riv = [wl(wingSec, 0.30, 1.6, 6.0), wl(wingSec, 0.62, 1.6, 6.0), wl(wingSec, 0.08, 1.5, 6.0),
+               wl(stabSec, 0.15, 1.4, 4.0), [[X(9.0), 1.30], [X(16.5), 1.40]], [[X(7.0), 0.62], [X(16.0), 0.70]],
+               [[X(3.2), 0.40], [X(6.6), 0.55]]];
+    var rivB = [wl(wingSec, 0.30, 1.6, 6.0), wl(wingSec, 0.62, 1.6, 6.0), [[X(6.0), 0.9], [X(17.4), 0.9]],
+                [[X(6.0), 1.55], [X(17.4), 1.55]]];
+    var fr = [];
+    [1.5, 2.75, 3.6, 4.6, 5.6, 7.0, 8.0, 9.0, 10.1, 11.2, 12.4, 13.6, 14.8, 16.0, 17.0].forEach(function (s) {
+      fr.push([X(s), s < 7 ? tab(BODY, s)[0] : 2.0]);
+    });
+    var side = [[[X(2.9), 0.15], [X(5.5), 0.30]], [[X(9.5), 0.10], [X(17.6), 0.10]], [[X(9.5), -0.45], [X(17.6), -0.45]],
+                [[X(2.9), -0.40], [X(6.6), -0.45]], [[X(14.9), 0.45], [X(18.3), 0.45]], [[X(14.9), 1.6], [X(18.3), 1.6]],
+                [[X(14.9), 2.6], [X(18.3), 2.6]]];
+    var areas = [];
+    if (!isE) {
+      /* the darker grey: one plain panel over the upper centre fuselage and
+         the trunk tops, canopy fairing to the tail (top band) */
+      areas.push({ band: "top", color: seen(DARK), poly: [[X(7.6), 0.0], [X(7.6), 0.62], [X(9.0), 1.05], [X(10.4), 1.62],
+                                                         [X(13.0), 1.98], [X(17.9), 1.98], [X(17.9), 0.0]] });
+      /* the same tone on the upper flank of the trunks and booms (sides) */
+      areas.push({ band: "side", color: seen(DARK), poly: [[X(7.6), 0.72], [X(10.0), 0.52], [X(17.9), 0.48],
+                                                          [X(19.2), 0.20], [X(19.2), 0.62], [X(14.6), 0.66], [X(7.6), 0.90]] });
+    }
+    /* the aft engine bay ahead of the nozzles: bare, heat-darkened metal
+       (titanium) on the type, top, sides and bottom, booms excluded */
+    var TI = isE ? 0x7d8184 : 0x646a6e;
+    areas.push({ band: "top", color: seen(TI), poly: [[X(16.3), 0.0], [X(16.3), 0.95], [X(17.0), 1.85], [X(18.0), 1.85], [X(18.0), 0.0]] });
+    areas.push({ band: "bot", color: seen(TI), poly: [[X(16.0), 0.0], [X(16.0), 0.95], [X(16.8), 1.85], [X(18.0), 1.85], [X(18.0), 0.0]] });
+    areas.push({ band: "side", color: seen(TI), poly: [[X(16.4), 0.40], [X(16.4), -0.75], [X(18.0), -0.75], [X(18.0), 0.40]] });
+    /* the radome a shade lighter (it is a separate material on the type) */
+    areas.push({ band: "top", color: seen(RAD), poly: [[X(-0.1), 0], [X(-0.1), 0.6], [X(2.75), 0.6], [X(2.75), 0]] });
+    areas.push({ band: "side", color: seen(RAD), poly: [[X(-0.1), -1.0], [X(2.75), -1.0], [X(2.75), 0.6], [X(-0.1), 0.6]] });
+    areas.push({ band: "bot", color: seen(RAD), poly: [[X(-0.1), 0], [X(-0.1), 0.6], [X(2.75), 0.6], [X(2.75), 0]] });
+    /* fresh-paint control surfaces: flaps, ailerons, stabilators' aft panel */
+    function surf(secOf, u0, u1, y0, y1) {
+      var a = wl(secOf, u0, y0, y1), b = wl(secOf, u1, y0, y1).reverse();
+      return a.concat(b);
+    }
+    ["top", "bot"].forEach(function (bd) {
+      areas.push({ band: bd, color: seen(FRESHW), poly: surf(wingSec, 0.80, 0.99, 2.1, 4.1) });
+      areas.push({ band: bd, color: seen(WORNW), poly: surf(wingSec, 0.80, 0.99, 4.2, 5.5) });
+      areas.push({ band: bd, color: seen(FRESH), poly: surf(stabSec, 0.55, 0.95, 1.6, 3.6) });
+      /* wing leading edge: worn, a little darker */
+      areas.push({ band: bd, color: seen(WORN), poly: surf(wingSec, 0.0, 0.07, 1.0, 6.0) });
+    });
+    return {
+      key: isE ? "nato_e90_cas_v2" : "nato_e80_fighter_v2", seed: isE ? 1661 : 1543,
+      bounds: { x0: X(19.6), x1: X(-0.1), ymax: 6.6, z0: GROUND, z1: 3.6 },
+      demarcation: { z: 0, above: seen(MAIN), below: seen(MAIN) },
+      areas: areas, frames: fr, top: top, bot: bot, rivets: riv, rivetsBot: rivB, side: side,
+      seam: isE ? 0.75 : 0.72, grime: 220,
+      walk: [[[X(8.6), 0.30], [X(15.8), 0.30], [X(15.8), 0.70], [X(8.6), 0.70]],
+             [[X(10.6), 1.05], [X(13.4), 1.05], [X(13.4), 1.55], [X(10.6), 1.55]]],
+      soot: [[X(18.2), 1.21, -0.15, 2.6, 0.55], [X(17.8), 1.66, -0.10, 1.4, 0.30], [X(16.6), 0.0, -0.80, 2.8, 0.35]],
+      draw: function (g, m) {
+        var R = HeroKit.rng(isE ? 77 : 55);
+        function rgba(hex, a) { return "rgba(" + ((hex >> 16) & 255) + "," + ((hex >> 8) & 255) + "," + (hex & 255) + "," + a + ")"; }
+        var INK = isE ? "rgba(8,10,12," : "rgba(24,27,30,", LIT = "rgba(255,255,255,", LK = isE ? 1.7 : 1;
+        /* rect in a band: band "top" | "bot" (x, y, mirrored) or "side" (x, z, both sides) */
+        function rows(bd, v, sd) { return bd === "top" ? m.top(v) : bd === "bot" ? m.bot(v) : m.side(v, sd); }
+        function each(bd, fn) {
+          if (bd === "side") { fn(function (v) { return rows(bd, v, false); }); fn(function (v) { return rows(bd, v, true); }); }
+          else { fn(function (v) { return rows(bd, v); }); fn(function (v) { return rows(bd, -v); }); }
+        }
+        function panel(bd, s0, s1, v0, v1, o) {
+          o = o || {};
+          each(bd, function (rv) {
+            var xa = m.U(X(s0)), xb = m.U(X(s1)), ya = rv(v0), yb = rv(v1);
+            var x0 = Math.min(xa, xb), y0 = Math.min(ya, yb), w = Math.abs(xb - xa), h = Math.abs(yb - ya);
+            if (o.fill !== undefined) { g.fillStyle = rgba(seen(o.fill), 1); g.fillRect(x0, y0, w, h); }
+            if (o.shade) { g.fillStyle = INK + o.shade + ")"; g.fillRect(x0, y0, w, h); }
+            g.strokeStyle = INK + (o.line || 0.66) + ")"; g.lineWidth = o.lw || 2; g.strokeRect(x0 + 0.5, y0 + 0.5, w, h);
+            g.strokeStyle = LIT + (0.22 * LK).toFixed(3) + ")"; g.lineWidth = 1; g.strokeRect(x0 + 2.5, y0 + 2.5, w - 4, h - 4);
+            var st = o.step || 7, k;
+            g.fillStyle = INK + "0.55)";
+            if (o.screws !== false) {
+              for (k = x0 + 3; k < x0 + w - 2; k += st) { g.fillRect(k, y0 + 2, 1.6, 1.6); g.fillRect(k, y0 + h - 3, 1.6, 1.6); }
+              for (k = y0 + 3 + st; k < y0 + h - 3; k += st) { g.fillRect(x0 + 2, k, 1.6, 1.6); g.fillRect(x0 + w - 3, k, 1.6, 1.6); }
+            }
+          });
+        }
+        var P = isE ? 0x868d92 : 0xb6bdc2, Q = isE ? 0x50575b : 0x80888f;
+        /* the wing's tone patches at half the contrast (review: a quilt) */
+        function half(h) { var M0 = MAIN, o = 0, k; for (k = 0; k < 3; k++) { var sh = 16 - 8 * k, a3 = (M0 >> sh) & 255, b3 = (h >> sh) & 255; o |= Math.round((a3 + b3) / 2) << sh; } return o; }
+        var PW = half(P), QW = half(Q);
+        /* forward fuselage: the big avionics doors under the sills */
+        panel("side", 3.1, 4.5, -0.45, 0.25, { fill: P });
+        panel("side", 4.6, 6.4, -0.50, 0.30, {});
+        panel("side", 1.0, 2.6, -0.55, -0.15, { screws: false, line: 0.4 });
+        panel("side", 6.6, 7.5, 0.30, 0.62, { fill: Q });
+        /* trunk sides: bleed / engine access, under the wing */
+        panel("side", 9.8, 11.6, -0.65, -0.15, {});
+        panel("side", 12.0, 13.8, -0.70, -0.15, { fill: Q });
+        panel("side", 14.2, 17.2, -0.70, -0.05, { shade: 0.06 });
+        /* fins: rudder in the fresh tone, the tip fairing panel */
+        panel("side", 17.65, 18.40, 0.95, 3.15, { fill: P, screws: false });
+        panel("side", 16.2, 17.2, 0.70, 1.40, {});
+        /* top: trunk-top doors, gun bay (starboard only via the mirror is
+           acceptable: the plain panel reads the same), spine panels */
+        panel("top", 7.2, 8.6, 0.95, 1.75, { fill: isE ? P : 0x8a939a });
+        panel("top", 10.6, 12.2, 1.10, 1.85, {});
+        panel("top", 13.4, 15.0, 1.05, 1.90, { fill: isE ? Q : 0x77808a });
+        panel("top", 15.6, 17.4, 0.25, 0.80, { shade: 0.08 });
+        panel("top", 6.8, 7.5, 0.10, 0.55, { screws: false });
+        /* wing top: fuel and access panels */
+        [[10.2, 11.0, 2.6, 3.2], [11.6, 12.6, 3.4, 4.0], [12.6, 13.4, 4.6, 5.0], [9.6, 10.2, 1.7, 2.2],
+         [12.0, 13.6, 2.3, 2.9], [13.4, 14.1, 3.3, 4.1], [10.0, 10.8, 3.6, 4.0], [14.0, 14.6, 4.6, 5.4]].forEach(function (q, i) {
+          panel("top", q[0], q[1], q[2], q[3], { fill: i % 3 === 1 ? PW : i % 3 === 2 ? QW : undefined, step: 6 });
+        });
+        /* underside: engine bay doors, gear-well doors, keel */
+        panel("bot", 13.2, 17.5, 0.75, 1.65, { fill: Q, step: 6 });
+        panel("bot", 9.8, 11.6, 0.95, 1.55, { shade: 0.10 });
+        panel("bot", 5.2, 6.6, 0.05, 0.30, { shade: 0.08 });
+        [[10.0, 11.2, 2.4, 3.2], [11.8, 13.0, 3.6, 4.4]].forEach(function (q) { panel("bot", q[0], q[1], q[2], q[3], { fill: PW }); });
+        /* wing and stabilator ribs: chordwise panel breaks between the spars,
+           and the fin's rib lines (top and bottom bands, both sides) */
+        function line(pts, map, a2, lw) {
+          g.strokeStyle = INK + a2 + ")"; g.lineWidth = lw || 1.8; g.beginPath();
+          pts.forEach(function (q, n) { var pp = map(q); if (n) g.lineTo(pp[0], pp[1]); else g.moveTo(pp[0], pp[1]); });
+          g.stroke();
+          g.strokeStyle = LIT + (0.18 * LK).toFixed(3) + ")"; g.lineWidth = 1; g.beginPath();      /* the lit lip beside the seam */
+          pts.forEach(function (q, n) { var pp = map(q); if (n) g.lineTo(pp[0] + 2, pp[1] + 2); else g.moveTo(pp[0] + 2, pp[1] + 2); });
+          g.stroke();
+        }
+        function rib(secOf, y, u0, u1, a2) {
+          var q = secOf(y), pts = [[X(q.s + u0 * q.c), y], [X(q.s + u1 * q.c), y]];
+          [1, -1].forEach(function (sg) {
+            line(pts, function (pp) { return [m.U(pp[0]), m.top(sg * pp[1])]; }, a2);
+            line(pts, function (pp) { return [m.U(pp[0]), m.bot(sg * pp[1])]; }, a2 * 0.8);
+          });
+        }
+        [1.6, 2.1, 2.8, 3.5, 4.2, 4.9, 5.6].forEach(function (y) { rib(wingSec, y, 0.16, 0.80, 0.55); });
+        [2.1, 4.15, 5.5].forEach(function (y) { rib(wingSec, y, 0.80, 1.0, 0.7); });
+        [1.6, 2.2, 2.9, 3.5].forEach(function (y) { rib(stabSec, y, 0.12, 0.95, 0.5); });
+        [0.9, 1.5, 2.1, 2.6, 3.1].forEach(function (z) {
+          var f = finSec(z), pts = [[X(f.s + 0.05 * f.c), z], [X(f.s + 0.72 * f.c), z]];
+          line(pts, function (pp) { return [m.U(pp[0]), m.side(pp[1], false)]; }, 0.5);
+          line(pts, function (pp) { return [m.U(pp[0]), m.side(pp[1], true)]; }, 0.5);
+        });
+        /* lengthwise panel lines along the trunk tops and the spine */
+        [[0.45, 7.6, 17.6], [1.45, 8.4, 16.8], [1.75, 9.5, 14.6]].forEach(function (q) {
+          var pts = [[X(q[1]), q[0]], [X(q[2]), q[0]]];
+          [1, -1].forEach(function (sg) { line(pts, function (pp) { return [m.U(pp[0]), m.top(sg * pp[1])]; }, 0.5); });
+        });
+        /* the gun port blast stain on the starboard root */
+        var gx = m.U(X(8.0)), gy = m.top(-1.16), gr = g.createLinearGradient(gx, 0, gx - 0.9 * m.L.PX * 2, 0);
+        gr.addColorStop(0, "rgba(20,18,16,0.6)"); gr.addColorStop(1, "rgba(20,18,16,0)");
+        g.fillStyle = gr; g.fillRect(gx - 1.8 * m.L.PX, gy - 0.12 * m.L.PY, 1.8 * m.L.PX, 0.24 * m.L.PY);
+        /* fluid streaks aft of the wells and along the keel (from below) */
+        var k, sd;
+        for (k = 0; k < 70; k++) {
+          var sx = X(9.0 + R() * 8.5), sy = (R() < 0.5 ? -1 : 1) * (0.2 + R() * 1.6), len = (0.4 + R() * 1.4) * m.L.PX;
+          g.fillStyle = "rgba(30,26,20," + (0.05 + R() * 0.08).toFixed(3) + ")";
+          g.fillRect(m.U(sx) - len, m.bot(sy), len, 1 + R() * 2);
+        }
+        /* walkway scuffs and boot marks */
+        for (k = 0; k < 50; k++) {
+          sd = R() < 0.5 ? -1 : 1;
+          g.fillStyle = INK + "0.07)";
+          g.beginPath(); g.ellipse(m.U(X(8.8 + R() * 6.8)), m.top(sd * (0.32 + R() * 0.36)), 2 + R() * 5, 1 + R() * 3, R() * 3, 0, Math.PI * 2); g.fill();
+        }
+        /* the fine fastener rows along the trunk and boom seams (sides) */
+        g.fillStyle = INK + "0.38)";
+        [[-0.42, 6.4, 17.4], [0.12, 9.6, 17.4], [0.42, 14.9, 18.3], [-0.20, 3.0, 6.4]].forEach(function (q) {
+          for (sd = 0; sd < 2; sd++) for (var xx = m.U(X(q[2])); xx < m.U(X(q[1])); xx += 4) g.fillRect(xx, m.side(q[0], !!sd) - 3, 1.4, 1.4);
+        });
+        /* oil and hydraulic staining under the nozzles' shroud (sides) */
+        for (sd = 0; sd < 2; sd++) {
+          var hx = m.U(X(17.9)), hg = g.createLinearGradient(hx, 0, m.U(X(14.5)), 0);
+          hg.addColorStop(0, "rgba(28,24,20,0.45)"); hg.addColorStop(1, "rgba(28,24,20,0)");
+          g.fillStyle = hg; g.fillRect(m.U(X(14.5)) - (m.U(X(14.5)) - hx), m.side(0.35, !!sd), m.U(X(14.5)) - hx, m.side(-0.8, !!sd) - m.side(0.35, !!sd));
+        }
       }
-      var top = [wl(wingSec, 0.16, 1.6, 6.0), wl(wingSec, 0.45, 1.6, 6.0), wl(wingSec, 0.80, 2.1, 5.5),
-                 wl(stabSec, 0.35, 1.4, 3.8), [[X(11.4), 2.6], [X(15.1), 2.6]], [[X(10.2), 4.2], [X(15.3), 4.2]]];
-      var bot = [wl(wingSec, 0.30, 1.6, 6.0), wl(wingSec, 0.70, 1.6, 6.0), [[X(6.0), 0.5], [X(16.0), 0.5]]];
-      var riv = [wl(wingSec, 0.30, 1.6, 6.0), wl(wingSec, 0.62, 1.6, 6.0), [[X(9.0), 1.30], [X(16.5), 1.40]]];
-      var fr = [];
-      [1.5, 2.75, 3.6, 7.0, 8.0, 9.0, 10.1, 11.2, 12.4, 13.6, 14.8, 16.0, 17.0].forEach(function (s) {
-        fr.push([X(s), s < 7 ? tab(BODY, s)[0] : 2.0]);
-      });
-      var side = [[[X(2.9), 0.15], [X(5.5), 0.30]], [[X(9.5), 0.10], [X(17.6), 0.10]], [[X(9.5), -0.45], [X(17.6), -0.45]]];
-      _sheet = DX_.sheet(LAY, {
-        frames: fr, top: top, bot: bot, rivets: riv, side: side, seam: 0.50, grime: 200,
-        walk: [[[X(8.6), 0.30], [X(15.8), 0.30], [X(15.8), 0.70], [X(8.6), 0.70]]],
-        soot: [[X(18.5), 1.21, -0.15, 2.6, 0.55]]
-      }, 1543);
-    } catch (e) { _sheet = false; }
-    return _sheet;
+    };
+  }
+  function paintSheet(THREE, Mlib, C, isE) {
+    var key = isE ? "e" : "c";
+    if (_sheets[key] !== undefined) return _sheets[key];
+    var tex = null;
+    try {
+      var HK = HeroKit.begin(THREE, Mlib, C, { category: "air", key: isE ? "nato_e90_cas" : "nato_e80_fighter" });
+      HK.paintSheet(sheetSpec(isE));
+      tex = HK.R.mats.skin.def.map || null;
+    } catch (e) { if (typeof console !== "undefined") console.warn("nato_e80_fighter sheet: " + e); tex = null; }
+    _sheets[key] = tex;
+    return tex;
   }
 
   function mats(C, tex, isE) {
     var tc = (C && C.team !== undefined) ? C.team : "#3f7fd0";
+    /* with the sheet, the skin is white and the canvas carries the paint;
+       without one (no document) the main grey goes on the material */
+    var skinCol = tex ? 0xffffff : seen(isE ? 0x666d72 : 0x9aa2a8);
     var m = {
-      /* the twotone (FS 36176 / 36320) grey of the PAINT table, or for the E
-         Gunship Gray FS 36118 */
-      skin: new V.MeshStandardMaterial({ color: isE ? 0x5a6064 : 0x7b858b, roughness: 0.82, metalness: 0.08, side: V.DoubleSide }),
-      radome: new V.MeshStandardMaterial({ color: isE ? 0x50565a : 0x8a9196, roughness: 0.62, metalness: 0.05, side: V.DoubleSide }),
-      metal: new V.MeshStandardMaterial({ color: 0x8d9399, roughness: 0.52, metalness: 0.50, side: V.DoubleSide }),
-      steel: new V.MeshStandardMaterial({ color: 0x6f757a, roughness: 0.48, metalness: 0.60, side: V.DoubleSide }),
-      burnt: new V.MeshStandardMaterial({ color: 0x5d5751, roughness: 0.52, metalness: 0.58, side: V.DoubleSide }),
+      skin: new V.MeshStandardMaterial({ color: skinCol, roughness: 0.80, metalness: 0.08, side: V.DoubleSide }),
+      radome: new V.MeshStandardMaterial({ color: seen(isE ? 0x60676b : 0xa3aaaf), roughness: 0.62, metalness: 0.05, side: V.DoubleSide }),
+      metal: new V.MeshStandardMaterial({ color: 0x7d838a, roughness: 0.52, metalness: 0.50, side: V.DoubleSide }),
+      steel: new V.MeshStandardMaterial({ color: 0x5f656a, roughness: 0.48, metalness: 0.60, side: V.DoubleSide }),
+      burnt: new V.MeshStandardMaterial({ color: 0x4a4540, roughness: 0.52, metalness: 0.58, side: V.DoubleSide }),
       ink: new V.MeshStandardMaterial({ color: 0x15181a, roughness: 0.95, metalness: 0.05, side: V.DoubleSide }),
       rubber: new V.MeshStandardMaterial({ color: 0x17181a, roughness: 0.95, metalness: 0.04 }),
       glass: new V.MeshStandardMaterial({ color: 0x1d2e33, roughness: 0.10, metalness: 0.35, side: V.DoubleSide }),
-      frame: new V.MeshStandardMaterial({ color: 0x5a6166, roughness: 0.6, metalness: 0.3, side: V.DoubleSide }),
-      seam: new V.MeshStandardMaterial({ color: isE ? 0x3a3f42 : 0x535a5e, roughness: 0.85, metalness: 0.05, side: V.DoubleSide }),
+      frame: new V.MeshStandardMaterial({ color: seen(isE ? 0x4d5357 : 0x6b7378), roughness: 0.6, metalness: 0.3, side: V.DoubleSide }),
+      seam: new V.MeshStandardMaterial({ color: seen(isE ? 0x41474b : 0x5f676d), roughness: 0.85, metalness: 0.05, side: V.DoubleSide }),
       lamp: new V.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.3, metalness: 0.0,
                                          emissive: 0x333333, emissiveIntensity: 0.6 }),
       team: new V.MeshStandardMaterial({ color: new V.Color(tc), roughness: 0.58, metalness: 0.15,
@@ -978,7 +1105,7 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
     put("team", boxG(1.0, 0.40, 0.02, sp[0], 0, sp[2]));
 
     LAY = DX_.layout(X(19.6), X(-0.1), 6.6, GROUND, 3.6);
-    var T = mats(C, paintSheet(), isE);
+    var T = mats(C, paintSheet(THREE, Mlib, C, isE), isE);
     var g = new V.Group();
     emit(g, K, T, ["skin", "radome", "team", "seam", "frame", "glass", "metal", "steel", "burnt", "ink", "lamp"]);
     var gear = new V.Group(); gear.name = "gear";

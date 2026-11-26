@@ -4,11 +4,12 @@
 usage:
   python3 tools/model3d/gate.py KEY [--spec tools/model3d/specs/KEY.json] [--team T]
                                     [--before DIR] [--extra FILE.js]... [--out DIR]
-                                    [--category ship|air|veh] [--no-render]
+                                    [--before-align] [--category ship|air|veh] [--no-render]
 
 Runs dump.js on KEY (and on --before DIR), outline.py against every reference
 of the spec, and render.js (a true render; with --before a before | after
-sheet), then prints one line per rule with the measured number and its limit.
+sheet), the landmarks of the spec, the floating-part check, then prints one line
+per rule with the measured number and its limit.
 Exit code 1 if any rule FAILs. WARN and INFO never fail the gate: they are for
 the reviewer. Everything lands in --out (default ./gate_out): gate_KEY.json,
 KEY.json (the dump), render_KEY.png/.json, outline_KEY_*.png.
@@ -22,6 +23,9 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
+sys.path.insert(0, HERE)
+import outline as OL  # noqa: E402
+import m3dlib as ML   # noqa: E402
 
 # ============================================================== THE LIMITS
 # One column per category. None = not gated for that category (still printed).
@@ -46,6 +50,15 @@ LIMITS = {
     "outline_iou_min":                   (0.88,    0.88,    0.88),     # "exact" references only
     "detail_ratio_min":                  (1.00,    1.00,    1.00),     # game-view sobel, after / before
     "detail_ratio_want":                 (1.10,    1.10,    1.10),     # below this: WARN "did not rise"
+    # Floating parts: an assembly of touching parts (gap <= 5 mm) that does not touch the main body FAILs
+    # when its gap is over max(float_gap_min_m, float_gap_share x its own size, float_gap_len_share x the
+    # model's length): an eighth of the part, and 3 px of the review sheet's 900 px side panel (0.0037 L).
+    # A 0.8 m wheel door 0.24 m under the belly fails; a 0.2 m canopy rail 12 mm off the glass does not
+    # (it is listed as a WARN, with every other part standing off by more than 5 mm).
+    "float_gap_min_m":                   (0.02,    0.02,    0.02),
+    "float_gap_share":                   (0.125,   0.125,   0.125),
+    "float_gap_len_share":               (0.0,     0.0,     0.0),     # off: a length term was tuned to pass tel_c and let 5 cm floats through (ships got a 22 cm floor); fix the model instead
+    "landmark_tol_m":                    (0.15,    0.05,    0.08),     # a landmark's tolerance when it gives none
 }
 CATS = ("ship", "air", "veh")
 BOX_AXIS_COS = math.cos(math.radians(3.0))     # a face counts as axis-aligned within 3 degrees
@@ -53,6 +66,10 @@ FITTING_MAX_SIZE = 0.06                        # a "fitting": a separate part no
 FITTING_MIN_SIZE = 0.0015                      # ... and no smaller than 0.15% (a stray sliver is not a fitting)
 OPAQUE_MIN = 0.99                              # a material at or above this opacity is "opaque"
 MARKING_WORDS = r"insignia|roundel|star|marking|flag|numeral|pennant|tailcode|serial|emblem|decal|logo"
+FLOAT_REPORT_M = 0.005                         # parts closer than this touch
+FREE_DEFAULT = ["rotordisc", "flame"]          # node names that float on purpose in every model
+# a must_show item names a place: a number with a unit, an axis value, a station / column / row, a per cent of length
+POSITION_RE = r"[-+]?\d+(\.\d+)?\s*(m|mm|deg|per ?cent|%)(?![a-z])|\b[xyzXYZ]\s*[=:~]?\s*[-+]?\s*\d|\b(col|cols|row|rows|station|stations|frame|axle)\s*\d"
 
 
 SPEC_LIMITS = {}   # per-model exceptions from the spec's "limits" block, set in main()
@@ -184,7 +201,9 @@ def find_source(key, extra, root):
 
 
 def paint_scan(path):
-    """Advisory: canvas text and marking-like names in the file's CODE (comments stripped)."""
+    """Advisory: canvas text drawn in the file's CODE (comments stripped). Identifiers are NOT scanned:
+    the kit's own option names (deckMarkings, ...) are paint the rules allow; marking-like MATERIAL names
+    are checked on the dump instead."""
     src = open(path, encoding="utf8", errors="replace").read()
     code = re.sub(r"/\*.*?\*/", lambda m: "\n" * m.group(0).count("\n"), src, flags=re.S)
     hits = []
@@ -192,10 +211,125 @@ def paint_scan(path):
         line2 = re.sub(r"//.*$", "", line)
         if re.search(r"\b(fillText|strokeText)\s*\(", line2):
             hits.append((i, "canvas text", line2.strip()[:90]))
-        m = re.search(r"\b\w*(%s)\w*\b" % MARKING_WORDS, line2, flags=re.I)
-        if m and not re.search(r"\bstar(t|board|ted|ting|ts)\w*", m.group(0), flags=re.I):
-            hits.append((i, "name '%s'" % m.group(0), line2.strip()[:90]))
     return hits
+
+
+def marking_material(name):
+    m = re.search(r"(%s)" % MARKING_WORDS, name or "", flags=re.I)
+    return bool(m) and not re.search(r"star(t|board)", name, flags=re.I)
+
+
+def eval_landmarks(dump, spec, spec_path, cat):
+    """Each spec landmark: where the reference puts it, where the model has it, the error in metres."""
+    base = os.path.dirname(os.path.abspath(spec_path))
+    refs = spec.get("references", [])
+    T0, mi = ML.tri_array(dump)
+    out = []
+    for j, lm in enumerate(spec.get("landmarks", [])):
+        r = {"n": j, "name": lm.get("name", "#%d" % j)}
+        try:
+            ref = refs[lm["ref"]] if lm.get("ref") is not None else {}
+            view = lm.get("view") or ref.get("view")
+            tol = float(lm.get("tol_m", lim("landmark_tol_m", cat)))
+            r.update({"ref": lm.get("ref"), "view": view, "tol_m": tol})
+            # expected, in the view's axes (h, v), or model xyz with nulls for what is not checked
+            if lm.get("expect_m") is not None:
+                e = list(lm["expect_m"])
+            elif lm.get("at_m") is not None:
+                e = list(lm["at_m"])
+            elif lm.get("at_px") is not None:
+                e = list(OL.ref_frame(ref, base)["to_m"](lm["at_px"]))
+            else:
+                raise ValueError("needs expect_m, at_m or at_px")
+            if len(e) == 3:
+                axes = [0, 1, 2]
+            elif view in ML.VIEW_AXES:
+                axes = list(ML.VIEW_AXES[view])
+            else:
+                raise ValueError("a 2-value expectation needs a side/top/front view (landmark 'view' or its reference's)")
+            sel = lm.get("model_at") or {}
+            T = T0
+            if ref.get("pitch_deg"):
+                T = ML.pitch_tris(T0, float(ref["pitch_deg"]), tuple(ref.get("pitch_about_m", (0.0, 0.0))))
+            got = [None] * len(e)
+            if sel.get("node"):
+                hits = [nd for nd in dump["nodes"] if nd["name"] == sel["node"]]
+                if not hits:
+                    raise ValueError("no node named %r" % sel["node"])
+                pos = np.array([hits[int(sel.get("index", 0))]["pos"]], dtype=np.float64)
+                if ref.get("pitch_deg"):
+                    pos = ML.pitch_tris(pos[None], float(ref["pitch_deg"]), tuple(ref.get("pitch_about_m", (0.0, 0.0))))[0]
+                got = [float(pos[0][a]) for a in axes]
+            else:
+                m = ML.select_tris(dump, T, mi, sel)
+                if ref.get("hide"):
+                    m &= ~ML.select_names(dump, ref["hide"])
+                if not m.any():
+                    raise ValueError("model_at selects no triangles")
+                S = T[m]
+                if sel.get("cross") is not None:
+                    # where the silhouette's edge first crosses a level, scanning from_h -> to_h: a box end,
+                    # a step, a raked front. expect_m is [h, level]; only h is compared
+                    if len(e) != 2:
+                        raise ValueError("a cross landmark takes a 2-value expect_m [h, level]")
+                    lev = float(sel["cross"])
+                    h0, h1 = float(sel["from_h"]), float(sel["to_h"])
+                    up = sel.get("edge", "upper") != "lower"
+                    nstep = max(2, int(abs(h1 - h0) / 0.01))
+                    prev, hit = None, None
+                    for q in range(nstep + 1):
+                        h = h0 + (h1 - h0) * q / nstep
+                        v = ML.edge_at(S, axes[0], axes[1], h, upper=up)
+                        above = v is not None and (v >= lev if up else v <= lev)
+                        if above and prev is not None:
+                            hit = h
+                            break
+                        prev = h if not above else None
+                        if q == 0 and above:
+                            raise ValueError("the edge is already past %.2f at from_h %.2f" % (lev, h0))
+                    if hit is None:
+                        raise ValueError("the edge never crosses %.2f between %.2f and %.2f" % (lev, h0, h1))
+                    got = [hit, e[1]]
+                    e = [e[0], None]
+                elif sel.get("edge"):
+                    if len(e) != 2:
+                        raise ValueError("an edge landmark takes a 2-value expect_m [h, v]")
+                    h = sel.get("at_h", e[0])
+                    v = ML.edge_at(S, axes[0], axes[1], float(h), upper=sel["edge"] != "lower")
+                    got = [e[0], v]
+                    if v is None:
+                        raise ValueError("no model surface at %s = %.2f" % ("xyz"[axes[0]], h))
+                else:
+                    pts = S.reshape(-1, 3)
+                    pick = sel.get("point") or ["mid"] * len(e)
+                    for q, a in enumerate(axes):
+                        how = pick[q] if q < len(pick) else "mid"
+                        if e[q] is None or how is None:
+                            continue
+                        col = pts[:, a]
+                        got[q] = float(col.min() if how == "min" else col.max() if how == "max" else
+                                       (col.min() + col.max()) / 2)
+            d2, used = 0.0, []
+            for q in range(len(e)):
+                if e[q] is None or got[q] is None:
+                    continue
+                d2 += (got[q] - e[q]) ** 2
+                used.append("xyz"[axes[q]])
+            if not used:
+                raise ValueError("nothing to compare (every coordinate null)")
+            r.update({"expect": [None if x is None else round(float(x), 3) for x in e],
+                      "model": [None if x is None else round(float(x), 3) for x in got], "axes": "".join("xyz"[a] for a in axes),
+                      "checked": "".join(used), "error_m": round(math.sqrt(d2), 3)})
+            r["ok"] = r["error_m"] <= tol
+        except Exception as ex:   # a broken landmark is a spec error, reported as such
+            r["error"] = "%s: %s" % (type(ex).__name__, ex)
+        out.append(r)
+    return out
+
+
+def must_show_lint(spec):
+    """must_show items that name no station or position."""
+    return [m for m in spec.get("must_show", []) if not re.search(POSITION_RE, m)]
 
 
 def run(cmd, timeout=600):
@@ -217,7 +351,7 @@ def main(argv):
     if not argv or "-h" in argv or "--help" in argv:
         print(__doc__)
         return 2
-    o = {"extra": [], "out": "gate_out", "spec": None, "before": None, "team": None, "category": None, "render": True}
+    o = {"extra": [], "out": "gate_out", "spec": None, "before": None, "team": None, "category": None, "render": True, "before_align": False}
     pos, i = [], 0
     while i < len(argv):
         a = argv[i]
@@ -228,6 +362,7 @@ def main(argv):
         elif a == "--team": o["team"] = argv[i + 1]; i += 2
         elif a == "--category": o["category"] = argv[i + 1]; i += 2
         elif a == "--no-render": o["render"] = False; i += 1
+        elif a == "--before-align": o["before_align"] = True; i += 1
         else: pos.append(a); i += 1
     key = pos[0]
     out = os.path.abspath(o["out"])
@@ -293,8 +428,14 @@ def main(argv):
     tol = lim("tris_tolerance", cat)
     tmin, tmax = lim("tris_min", cat), lim("tris_max", cat)
     ok = tmin * (1 - tol) <= st["triangles"] <= tmax * (1 + tol)
-    add("PASS" if ok else "FAIL", "triangles", st["triangles"], "%d..%d (+-%d%%)" % (tmin, tmax, round(tol * 100)),
-        "" if tmin <= st["triangles"] <= tmax else "outside the budget proper, inside the grace")
+    nt = st["triangles"]
+    if nt > tmax:
+        gnote = "%.1f%% over the %d budget: inside the %d%% grace" % ((nt / tmax - 1) * 100, tmax, round(tol * 100)) if ok else "over the budget and its grace"
+    elif nt < tmin:
+        gnote = "%.1f%% under the %d floor: inside the %d%% grace" % ((1 - nt / tmin) * 100, tmin, round(tol * 100)) if ok else "under the floor and its grace"
+    else:
+        gnote = ""
+    add("PASS" if ok else "FAIL", "triangles", nt, "%d..%d (+-%d%%)" % (tmin, tmax, round(tol * 100)), gnote)
     add("PASS" if st["degenerate"] <= lim("zero_area_max", cat) else "FAIL", "zero-area triangles", st["degenerate"], "0")
     add("PASS" if st["nan"] <= lim("nan_max", cat) else "FAIL", "NaN triangles", st["nan"], "0")
     L = st["bbox"]["size"][0]
@@ -353,17 +494,42 @@ def main(argv):
     add("PASS" if fit >= lim("fittings_min", cat) else "FAIL", "small separate parts (fittings)", fit, ">= %d" % lim("fittings_min", cat),
         "%d separate parts in all; a fitting is %.2f..%.2f m across" % (len(diag), FITTING_MIN_SIZE * L, FITTING_MAX_SIZE * L))
     times["measure"] = time.time() - t
-    add("INFO", "hidden geometry", "not measured", "", "no cheap estimate: check the true render and the side sheet")
+    # floating parts
+    t = time.time()
+    Tall, _mi = ML.tri_array(dump)
+    free_names = FREE_DEFAULT + list((spec or {}).get("free_parts", []))
+    try:
+        free = ML.select_names(dump, free_names)
+    except ValueError:
+        free = None
+    gaps = ML.gap_check(Tall, free=free, report=FLOAT_REPORT_M)
+    times["gaps"] = time.time() - t
+    gmin, gshare = max(lim("float_gap_min_m", cat), lim("float_gap_len_share", cat) * L), lim("float_gap_share", cat)
+
+    def fdesc(f):
+        b = f["bbox"]
+        nb = f.get("nearest", {}).get("bbox")
+        return "%.3f m gap, %.2f m part at x %.2f..%.2f y %.2f..%.2f z %.2f..%.2f%s" % (
+            f["gap_m"], f["size_m"], b[0][0], b[1][0], b[0][1], b[1][1], b[0][2], b[1][2],
+            (", nearest x %.2f..%.2f z %.2f..%.2f" % (nb[0][0], nb[1][0], nb[0][2], nb[1][2])) if nb else "")
+    fl = [f for f in gaps["floating"] if not f["free"]]
+    over = [f for f in fl if f["gap_m"] > max(gmin, gshare * f["size_m"])]
+    under = [f for f in fl if f not in over]
+    add("PASS" if not over else "FAIL", "floating parts", "%d over the limit" % len(over), "gap <= max(%.2f m, %.3f x size)" % (gmin, gshare),
+        ("; ".join(fdesc(f) for f in over[:3])) if over else "%d parts, %d touching assemblies; free by name: %s" % (gaps["parts"], gaps["assemblies"], ",".join(free_names)))
+    if under:
+        add("WARN", "parts standing off (> 5 mm)", "%d" % len(under), "look", "; ".join(fdesc(f) for f in under[:3]) + (" ... (all in gate json)" if len(under) > 3 else ""))
+    add("INFO", "hidden geometry", "not measured", "", "a part inside another counts as touching; check the true render")
 
     # ---- 3. plain paint (advisory)
     src = find_source(key, o["extra"], REPO)
     if src:
         hits = paint_scan(src)
-        mat_hits = [m.get("name") for m in dump["materials"] if m.get("name") and re.search(MARKING_WORDS, m["name"], flags=re.I)]
+        mat_hits = [m.get("name") for m in dump["materials"] if m.get("name") and marking_material(m["name"])]
         if hits or mat_hits:
             add("WARN", "plain paint (advisory)", "%d hit(s)" % (len(hits) + len(mat_hits)), "0",
                 os.path.relpath(src, REPO) + ": " + "; ".join(["line %d %s" % (h[0], h[1]) for h in hits[:4]] + ["material '%s'" % n for n in mat_hits[:3]]) +
-                " - the whole FILE is scanned, not only this key's builder")
+                " - canvas text anywhere in the FILE, not only this key's builder")
         else:
             add("PASS", "plain paint (advisory)", "0 hits", "0", os.path.relpath(src, REPO))
     else:
@@ -372,8 +538,6 @@ def main(argv):
     # ---- 4. outline against the references
     outline = None
     if spec and spec.get("references"):
-        sys.path.insert(0, HERE)
-        import outline as OL
         t = time.time()
         outline = OL.run(dump_path, spec_path, out)
         times["outline"] = time.time() - t
@@ -396,6 +560,40 @@ def main(argv):
         add("WARN", "spec", "none", "", "no %s: outline, published length and required nodes are not checked" % os.path.relpath(spec_path, REPO))
     else:
         add("WARN", "outline", "no references in the spec", "", "shape is not checked against anything")
+
+    # ---- 4b. the old model's outlines, on its own best fit when asked
+    if outline and before and spec:
+        t = time.time()
+        bpath = os.path.join(out, key + "_before.json")
+        Lb = before["stats"]["bbox"]["size"][0]
+        bo = OL.run(bpath, spec_path, out, align_override=(lambda ref: 0.05 * Lb) if o["before_align"] else None, tag="before")
+        times["outline_before"] = time.time() - t
+        for ra, rb in zip(outline["references"], bo["references"]):
+            if "iou" not in ra or "iou" not in rb:
+                continue
+            add("INFO", "outline #%d %s before -> after" % (ra["n"], ra["view"]), "%.3f -> %.3f" % (rb["iou"], ra["iou"]), "report only",
+                ("before on its own best fit (slid %+.2f, %+.2f m)" % tuple(rb["shift_m"])) if o["before_align"] else
+                "before NOT aligned: an old model with another origin scores low for that alone - use --before-align")
+
+    # ---- 4c. landmarks and the must_show lint
+    landmarks = None
+    if spec and spec.get("landmarks"):
+        t = time.time()
+        landmarks = eval_landmarks(dump, spec, spec_path, cat)
+        times["landmarks"] = time.time() - t
+        for r in landmarks:
+            lab = "landmark %s" % r["name"]
+            if "error" in r:
+                add("FAIL", lab, "ERROR", "", "spec error: " + r["error"])
+                continue
+            add("PASS" if r["ok"] else "FAIL", lab, "%.3f m" % r["error_m"], "<= %.2f m" % r["tol_m"],
+                "%s %s: ref %s, model %s (ref #%s)" % (r["view"] or "xyz", r["checked"], r["expect"], r["model"], r["ref"]))
+    elif spec:
+        add("WARN", "landmarks", "none", "", "the spec has no landmarks: nothing checks where features sit inside the outline")
+    if spec and spec.get("must_show"):
+        bad = must_show_lint(spec)
+        add("WARN" if bad else "PASS", "must_show items with a position", "%d of %d" % (len(spec["must_show"]) - len(bad), len(spec["must_show"])), "all",
+            ("no station or position in: " + " | ".join(b[:50] for b in bad[:4])) if bad else "")
 
     # ---- 5. the true render, and detail against the before
     render = None
@@ -464,7 +662,7 @@ def main(argv):
                "rules": [{"status": r[0], "rule": r[1], "measured": r[2], "limit": r[3], "note": r[4]} for r in rows],
                "limits": {k: lim(k, cat) for k in LIMITS}, "surface": sm, "fittings": fit, "parts": int(len(diag)),
                "stats": {k: st[k] for k in ("triangles", "drawCalls", "meshes", "materials", "textures", "degenerate", "nan", "bbox")},
-               "outline": outline, "render": render, "files": files, "seconds": dict(times, total=round(total, 2))},
+               "outline": outline, "landmarks": landmarks, "gaps": gaps, "render": render, "files": files, "seconds": dict(times, total=round(total, 2))},
               open(files["gate"], "w"), indent=1)
     return 1 if nf else 0
 

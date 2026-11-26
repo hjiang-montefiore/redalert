@@ -1,0 +1,486 @@
+{
+  "key": "gbr_e60_ewair",
+  "team": "gbr",
+  "name": "English Electric (BAC) Canberra T.17, 360 Squadron",
+  "category": "air",
+  "published": {
+    "len": 21.66,
+    "span": 19.51,
+    "height": 4.78,
+    "source": "en.wikipedia 'English Electric Canberra', B.2: length 65 ft 6 in (19.96 m), span 64 ft 0 in (19.51 m, without tip tanks), height 15 ft 8 in (4.78 m). No T.17 length is published in the sources fetched: 21.66 m is MEASURED (CC: radome tip to nacelle lip 6.65 m against the B.2's 4.95 m, i.e. the B.2 plus 1.70 m), so the length rule checks the model against its own measurement, not a published figure"
+  },
+  "len": 21.66,
+  "nodes": [
+    "gear"
+  ],
+  "engine": {
+    "row": "js/eras.js gbr_e60_ewair: cat aircraft, layer air, jet, jam 6; js/aar_specs.js: null (no tanker gear, no probe)",
+    "current_nodes": "tools/model3d/dump.js on the tree before this change: one engine node, the group 'gear'.",
+    "frame": "Built in the drawing frame of the file (z 0 the fuselage axis, ground z -1.66) and stood level on its wheels by the kit's stance (pitch 0 about the main-wheel contact), so the dumped model stands on z 0: every z below is the as-stood height = drawing z + 1.66.",
+    "shared_file": "js/hero/gb_vforce.js also builds the Valiant (gbr_e50_tanker, and gbr_e50_heavybomber through js/hero/redo_bombers.js) and the Victor (gbr_e60_tanker): only the Canberra's builder changed; those three rows dump byte-identical before and after (dump json compared without buildMs)."
+  },
+  "references": [
+    {
+      "name": "[CA] Canberra B.2 3-view silhouette, side (aft of the nacelle lip)",
+      "image": "ref/gbr_e60_ewair/ca_3v.jpg",
+      "source": "Wikimedia Commons 'English Electric Canberra B2 3-view silhouette.jpg', 927 x 1281",
+      "view": "side",
+      "flip": true,
+      "px_per_m": 42.23,
+      "anchor_px": [
+        892,
+        1226
+      ],
+      "anchor_m": [
+        -10.83,
+        1.68
+      ],
+      "mask": "dark",
+      "mask_opts": {
+        "threshold": 128,
+        "fill": true
+      },
+      "window_m": [
+        -11.3,
+        0.4,
+        4.18,
+        5.0
+      ],
+      "ignore_m": [
+        [
+          -11.0,
+          1.9,
+          -10.3,
+          2.7
+        ]
+      ],
+      "hide": [
+        "gear",
+        "hfwire"
+      ],
+      "exact": true,
+      "note": "Nose left in the sheet: flipped. Scale on the side view's own length: B.2 nose col 49 to tail bullet col 892 = 843 px over the published 19.96 m = 42.23 px/m (the plan is drawn at 40.48 along / 41.98 across, so each view is scaled on its own). Second dimension: fuselage depth at col 357 rows 1186-1266 = 80 px = 1.89 m against CB's 78 in (1.98 m) - 4.5 per cent thin, the silhouette's outline width. The T.17 is the B.2 plus 1.70 m forward of the nacelle lip (CC), so only the part aft of the lip (x < 4.18) is compared: window_m. Origin: the tail tip (col 892) is model x -10.83; the fuselage axis (row 1226 at col 357) is z 0.02 in the drawing frame = 1.68 as stood. The T.17's tail-cone fairing (CC) differs from the B.2 bullet: ignore_m. Gear hidden (the drawing is gear-up)."
+    },
+    {
+      "name": "[CA] Canberra B.2 3-view silhouette, plan",
+      "image": "ref/gbr_e60_ewair/ca_3v.jpg",
+      "source": "the same sheet",
+      "view": "top",
+      "crop": [
+        0,
+        240,
+        927,
+        1075
+      ],
+      "rotate": 90,
+      "px_per_m": 40.48,
+      "anchor_px": [
+        459.5,
+        1062
+      ],
+      "anchor_m": [
+        -10.83,
+        0
+      ],
+      "mask": "dark",
+      "mask_opts": {
+        "threshold": 128,
+        "fill": true
+      },
+      "window_m": [
+        -11.3,
+        -10.5,
+        4.18,
+        10.5
+      ],
+      "hide": [
+        "gear"
+      ],
+      "exact": false,
+      "note": "Nose up in the sheet: rotate 90. Along: rows 254-1062 = 808 px over 19.96 m = 40.48 px/m; across: cols 50-869 = 819 px over the 19.51 m span = 41.98 px/m - 3.6 per cent apart, so advisory only (the silhouette has no tip tanks; CB and every photograph has them, the model draws them). Tailplane span measured across: row 1020 cols 287-646 = 359 px = 8.55 m (41.98)."
+    },
+    {
+      "name": "[CA] Canberra B.2 3-view silhouette, head-on",
+      "image": "ref/gbr_e60_ewair/ca_3v.jpg",
+      "source": "the same sheet",
+      "view": "front",
+      "crop": [
+        0,
+        0,
+        927,
+        200
+      ],
+      "px_per_m": 41.9,
+      "anchor_px": [
+        455.5,
+        143
+      ],
+      "anchor_m": [
+        0,
+        1.68
+      ],
+      "mask": "dark",
+      "mask_opts": {
+        "threshold": 128,
+        "fill": true
+      },
+      "hide": [
+        "gear"
+      ],
+      "exact": false,
+      "note": "Span 817 px (cols 47-864) over 19.51 m = 41.9 px/m. The fuselage circle's foot is row 184; its centre taken 41 px above (1.98 m deep). Gear-up and without tip tanks, and the T.17's bigger nose stands in front: advisory. Used for the nacelle centres at y +-3.05 m and the dihedral (2 deg to the nacelle, 4.35 deg outboard, CB)."
+    },
+    {
+      "name": "[CC] WH664 of 360 Sqn in flight, starboard side, gear down",
+      "_landmarks": "the stations measured on this photograph (intake lip, wheels, canopy) are distances along the level airframe, so their landmarks name ref 0 (level, unpitched side axes), not this pitched overlay",
+      "image": "ref/gbr_e60_ewair/ca_a1.jpg",
+      "source": "Wikimedia Commons 'English Electric Canberra T17, UK - Air Force AN1155605.jpg', 1024 x 678",
+      "view": "side",
+      "px_per_m": 44.2,
+      "anchor_px": [
+        987,
+        357
+      ],
+      "anchor_m": [
+        10.83,
+        1.61
+      ],
+      "mask": "bg",
+      "mask_opts": {
+        "tolerance": 28,
+        "fill": true
+      },
+      "hide": [
+        "hfwire"
+      ],
+      "pitch_deg": 1.5,
+      "pitch_about_m": [
+        10.83,
+        1.61
+      ],
+      "exact": false,
+      "note": "Square on, long lens. Scale 44.2 px/m from the B.2's 15.0 m from nacelle lip to tail tip (663 px); fuselage depth 87 px for 78 in = 43.9 agrees. Radome tip (987, 357) = model (10.83, -0.05 drawing = 1.61 as stood). Measured on it: nose to nacelle lip 294 px = 6.65 m; canopy 2.45-3.85 m aft of the tip, its top 0.15 m over the spine; cheek fairing front 0.77 m (col 953), aft point 2.19 m (col 890); keel fairing under the nose 0.8-4.1 m; HF mast on the spine at 7.67 m (col 648) with the wire to the fin top; the fin aerial fairing at about 2.45 m up the fin, cols 127-160; the tail-cone fairing 0.32 m across, cols 32-60. In flight the airframe is about 1.5 deg nose-up on the picture's horizontal (pitch_deg, turned about the radome tip; the best free fit: IoU 0.726 level, 0.767 at 1.0, 0.771 at 1.5, 0.730 at 2.0); it is also banked a little, which the side overlay cannot take out. Its roundels, fin flash, codes, serial and squadron badge are NOT drawn; the camouflage pattern is not drawn either (plain paint, AGENT_POLICY 6)."
+    },
+    {
+      "name": "[CD] WH646 of 360 Sqn at Aviano 1989, starboard side on the ground",
+      "image": "ref/gbr_e60_ewair/ca_aviano.jpg",
+      "source": "Wikimedia Commons 'Canberra T17 360 Sqn at Aviano AB 1989.JPEG', 960 x 636",
+      "view": "quarter",
+      "exact": false,
+      "note": "For the reviewer: the level sit on the ground (belly 0.70 m clear at the nose wheel, 27 : 78 px), the twin nose wheels, the single mains, the cheek fairing, the tail-cone fairing and the probe behind it, the fin aerial fairing. Hazy and taken in flat light: the finish reads paler than it is."
+    },
+    {
+      "name": "[CE] WH863 nose section close up (Newark Air Museum)",
+      "image": "ref/gbr_e60_ewair/ca_nose.jpg",
+      "source": "Wikimedia Commons 'EE Canberra T17 WH863 nose (6806456188).jpg', 960 x 640",
+      "view": "quarter",
+      "exact": false,
+      "note": "For the reviewer: the black radome cap (front 0.72 m), a cheek fairing each side with its bulbous front, the small dark fairing on the nose top, the crew door and equipment panel outlines, the green upper paint over light grey under the nose. Its numbers and stencils are not drawn."
+    },
+    {
+      "name": "[CF] WH740 at East Midlands, starboard quarter",
+      "image": "ref/gbr_e60_ewair/ca_side.jpg",
+      "source": "Wikimedia Commons 'WH740 English Electric Canberra T17 ... 070924.jpg', 1600 x 521",
+      "view": "quarter",
+      "exact": false,
+      "note": "For the reviewer: the tip tanks green over grey, split at their widest line; the nacelle intake with its starter bullet on vanes; the big outboard main-leg door; the HF mast and wire; the light grey undersides of wing and nacelle. The red intake ring is museum paint and the camouflage pattern is not drawn."
+    },
+    {
+      "name": "[CB] Martin B-57A 3-view line drawing (dimensioned)",
+      "image": "ref/gbr_e60_ewair/ca_b57a.png",
+      "source": "Wikimedia Commons 'Martin B-57A Canberra 3-view line drawing.png'",
+      "view": "quarter",
+      "exact": false,
+      "note": "Dimensions only (the licence-built B.2 airframe, in inches): tailplane span 336 in, 10 deg tailplane dihedral, wing dihedral 2 deg inboard and 4 deg 21 min outboard, track 189.375 in (4.81 m), wing root chord 228 in, fuselage depth 78 in, main tyre rolling radius 18.3 in, nose tyre 10.6 in, tip tanks 170.4 in long and 32 in across centred on the 767.42 in tip-to-tip line (y +-9.745 m)."
+    }
+  ],
+  "must_show": [
+    "the T.17's long ECM nose: radome tip at x 10.83 (d 0), the nose 6.65 m from tip to nacelle lip (B.2: 4.95), its black radome cap over the front 0.72 m (x 10.11 to 10.83), square-topped section 0.7 m half width",
+    "a cheek fairing each side of the nose at y +-0.79 m, z 1.59, 0.48 m deep (CC rows 350-372 at 44.2 px/m) and about 0.42 m wide: full, blunt front at d 0.77 (x 10.06), pointed aft end at d 2.2 (x 8.6), painted like the nose round it (CE shows no dark cap on it) (CC, CE)",
+    "the small dark fairing on the nose top at d 0.55-1.25 (x 10.28 to 9.58, CE) and the light keel fairing under the nose from d 0.85 to 4.1 (x 9.98 to 6.73, CC)",
+    "the fighter-type bubble canopy offset nothing - on the centre line from d 2.45 to 3.85 (x 8.38 to 6.98), its top 0.15 m over the spine (z 2.78), frames at d 2.68 and 3.55",
+    "round fuselage 1.98 m deep, deepest over the wing, tapering to a tail-cone fairing 0.32 m across from d 21.1 to 21.66 (x -10.27 to -10.83) with a dark cap (CC, CD)",
+    "straight wing: constant 5.78 m chord to the nacelles, tapered outboard, leading edge d 8.02, dihedral 2 deg to y 3.05 and 4.35 deg outboard (CA, CB)",
+    "Avon nacelles through the wing at y +-3.05 m: intake lip at d 6.65 (x 4.18) with the starter bullet on three vanes, the jet pipes out at d 14.36 (x -3.53) (CC, CF)",
+    "tip tanks 4.33 m long, 0.81 m across, centred at y +-9.745 m, from d 9.0 (x 1.83) to 13.33 (x -2.5), the jettison vent pipe aft of it to x -2.72, green over grey split at their widest line, each with a small vent fin aft (CB, CF)",
+    "the square-topped fin to z 4.74, its trailing edge at x -9.98 (z 4.0), -9.91 (z 4.4), -9.72 (z 4.7) and the top-rear corner rounded (CA side; CC about -9.8) with its curved dorsal fillet from d 16.8, the aerial fairing on each side at z 4.11 (fin height 2.45 m), and the low tailplane at z 2.41 root with 10 deg dihedral, span 8.54 m (CA, CB, CC)",
+    "the HF mast on the spine at d 7.67 (x 3.16) and its wire to the fin's leading edge at z 4.64 (CC, CF)",
+    "gear: twin nose wheels at d 4.7 (x 6.13), single main wheels at d 9.1 (x 1.73) on a 4.81 m track (y +-2.40), the big main-leg door outboard of each wheel (CC, CB, CF)",
+    "plain paint: grey-green above (shown about 0x737c69 at the game camera), light aircraft grey below (about 0xb3b7b0), split low on the fuselage side (24 per cent of the depth up from the belly) and on the wing at the leading edge; panel lines, hinge lines, the bomb-bay (ECM bay) doors d 7.0-13.2 on the sheet; team colour only in a small strip on each upper outer wing at y +-8.1"
+  ],
+  "landmarks": [
+    {
+      "name": "starboard intake lip, front x",
+      "ref": 0,
+      "expect_m": [
+        4.18,
+        null
+      ],
+      "tol_m": 0.05,
+      "model_at": {
+        "material": "hk_metal",
+        "in_m": [
+          3.9,
+          -3.6,
+          1.3,
+          4.5,
+          -3.5,
+          2.6
+        ],
+        "point": [
+          "max",
+          null
+        ]
+      },
+      "note": "[CC] nose tip to nacelle lip 294 px at 44.2 px/m = 6.65 m: x 10.83 - 6.65 = 4.18. The box takes the lip ring's outer edge (y -3.6..-3.5), clear of the bullet"
+    },
+    {
+      "name": "fin top height",
+      "ref": 0,
+      "expect_m": [
+        null,
+        4.78
+      ],
+      "tol_m": 0.05,
+      "model_at": {
+        "in_m": [
+          -10,
+          -0.5,
+          4.0,
+          -7.5,
+          0.5,
+          5.2
+        ],
+        "point": [
+          null,
+          "max"
+        ]
+      },
+      "note": "[CA] side: fin top row 1095, axis row 1226 at 42.23 px/m: 3.10 m over the axis + 1.68 = 4.78 m (the published height); the stance holds the B.2's 1.66 m axis height (CB, CD)"
+    },
+    {
+      "name": "tailplane half span (port tip y)",
+      "ref": 1,
+      "expect_m": [
+        null,
+        4.28
+      ],
+      "tol_m": 0.05,
+      "model_at": {
+        "in_m": [
+          -10.5,
+          3.5,
+          2.5,
+          -8.5,
+          4.6,
+          3.6
+        ],
+        "point": [
+          null,
+          "max"
+        ]
+      },
+      "note": "[CA] plan row 1020 cols 287-646 = 359 px at 41.98 px/m across = 8.55 m; CB 336 in = 8.53 m"
+    },
+    {
+      "name": "tip tank centre (port, y)",
+      "ref": 7,
+      "view": "top",
+      "expect_m": [
+        null,
+        9.745
+      ],
+      "tol_m": 0.05,
+      "model_at": {
+        "in_m": [
+          1.5,
+          9.0,
+          1.0,
+          1.9,
+          10.5,
+          3.0
+        ],
+        "whole": true,
+        "point": [
+          null,
+          "mid"
+        ]
+      },
+      "note": "[CB] tanks centred on the 767.42 in tip-to-tip line: 9.745 m. The box takes the tank's nose only (x 1.5-1.9, ahead of the wing's leading edge, whose most forward point near the tip is x 1.47 at y 9.04), so no wing or lamp is in the selection"
+    },
+    {
+      "name": "tip tank front x",
+      "ref": 7,
+      "view": "top",
+      "expect_m": [
+        1.83,
+        null
+      ],
+      "tol_m": 0.1,
+      "model_at": {
+        "in_m": [
+          -3.0,
+          9.0,
+          1.0,
+          2.5,
+          10.5,
+          3.0
+        ],
+        "point": [
+          "max",
+          null
+        ]
+      },
+      "note": "[CB] tank 170.4 in (4.33 m) long; [CC] its nose 0.9 m ahead of the tip's leading edge (d 9.0)"
+    },
+    {
+      "name": "main wheel track (starboard wheel centre y)",
+      "ref": 7,
+      "view": "front",
+      "expect_m": [
+        -2.405,
+        null
+      ],
+      "tol_m": 0.05,
+      "model_at": {
+        "path": "gear",
+        "in_m": [
+          1.0,
+          -2.6,
+          0.0,
+          2.4,
+          -2.2,
+          0.95
+        ],
+        "whole": true,
+        "point": [
+          "mid",
+          null
+        ]
+      },
+      "note": "[CB] track 189.375 in = 4.81 m. The box holds the tyre and hub whole, not the leg (y -2.54..-2.70) or the axle stub running to it"
+    },
+    {
+      "name": "main wheel axle x",
+      "ref": 7,
+      "expect_m": [
+        1.73,
+        null
+      ],
+      "tol_m": 0.08,
+      "model_at": {
+        "path": "gear",
+        "in_m": [
+          1.0,
+          -2.7,
+          0.0,
+          2.4,
+          -2.1,
+          0.95
+        ],
+        "whole": true,
+        "point": [
+          "mid",
+          null
+        ]
+      },
+      "note": "[CC] main wheel centre 9.1 m aft of the radome tip (evaluated on ref 7's level side axes: ref 0 hides the gear)",
+      "view": "side"
+    },
+    {
+      "name": "nose wheel axle x",
+      "ref": 7,
+      "expect_m": [
+        6.13,
+        null
+      ],
+      "tol_m": 0.08,
+      "model_at": {
+        "path": "gear",
+        "in_m": [
+          5.6,
+          -0.4,
+          0.0,
+          6.7,
+          0.4,
+          0.6
+        ],
+        "whole": true,
+        "point": [
+          "mid",
+          null
+        ]
+      },
+      "note": "[CC] nose wheels 4.7 m aft of the radome tip (evaluated on ref 7's level side axes: ref 0 hides the gear)",
+      "view": "side"
+    },
+    {
+      "name": "canopy glazing front x",
+      "ref": 0,
+      "expect_m": [
+        8.38,
+        null
+      ],
+      "tol_m": 0.08,
+      "model_at": {
+        "material": "hk_glass",
+        "point": [
+          "max",
+          null
+        ]
+      },
+      "note": "[CC] windscreen foot 2.45 m aft of the radome tip"
+    },
+    {
+      "name": "canopy top height",
+      "ref": 0,
+      "expect_m": [
+        null,
+        2.77
+      ],
+      "tol_m": 0.05,
+      "model_at": {
+        "material": "hk_glass",
+        "point": [
+          null,
+          "max"
+        ]
+      },
+      "note": "[CC] canopy top 0.15 m over the spine (0.96): 1.11 + 1.66"
+    },
+    {
+      "name": "fin trailing edge at z 4.4",
+      "ref": 0,
+      "expect_m": [
+        -9.91,
+        4.4
+      ],
+      "tol_m": 0.08,
+      "model_at": {
+        "in_m": [
+          -10.4,
+          -0.3,
+          4.3,
+          -9.0,
+          0.3,
+          4.5
+        ],
+        "point": [
+          "min",
+          null
+        ]
+      },
+      "note": "[CA] side: the fin's trailing edge at z 4.4 (review 1); CC reads about -9.8. The box is a 0.2 m slice of the fin above the tailplane and the tail light"
+    }
+  ],
+  "not_confirmed": [
+    "the T.17's overall length (measured off CC, no published figure found) and the nose's plan width (0.7 m half width, from CE by eye)",
+    "the wing sections (NACA 00xx forms, 12 per cent root to 8 per cent tip) and incidence (drawn at zero)",
+    "the sizes of the cheek fairings, the nose-top fairing and the keel fairing (from CC / CE by eye: their stations are measured, their depths are not)",
+    "the fin aerial fairings' length and the tail-cone fairing's cap (CC / CD at their resolution)",
+    "the T.17's internal jammers and the bomb-bay ECM fit (not visible); the two small light fittings under the inner wing in CF and under the nacelle tail in CC are NOT drawn - no picture shows what they are",
+    "the demarcation height on the fuselage side (24 per cent of the depth from the belly, from CC and CF), and the exact grey-green: 360 Sqn T.17s wore dark green / dark sea grey camouflage over light aircraft grey (CC, CF) and a lighter late scheme (CD); the model takes one plain grey-green between the two upper colours, as the brief asks",
+    "gear legs, braces and doors are schematic beyond the wheel stations, track and the outboard leg door",
+    "the tailplane's trailing edge: CA plan puts it at d 21.14-21.19 (x -10.31..-10.36) all along the span, as drawn; CA side at its own scale (42.23 px/m against the plan's 40.48 along) shows its outer trailing edge about 0.15 m further forward, which reads as a small red 'nub' at x -10.4, z 2.6-2.9 in the side outline. Left as the plan and CC show it"
+  ]
+}

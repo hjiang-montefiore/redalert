@@ -1,0 +1,426 @@
+{
+ "key": "nato_e00_recon",
+ "team": "nato",
+ "name": "M1151 HMMWV Expanded Capacity Armament Carrier with the GPK gunner's shield and the M2",
+ "category": "veh",
+ "published": {
+  "width": 2.3,
+  "height": 1.9,
+  "source": "AM General / en.wikipedia 'Humvee': the M1114/M1151 family about 4.9 x 2.3 x 1.9 m on 37 in tyres, wheelbase 3.30 m (130 in). The length is not gated: the figure is rounded and does not say whether the pintle and the front shackles count (the model's 4.98 m X extent runs from the shackles to the pintle hook; [L1] puts the bumper face at x +2.18 and the tail at -2.38, 4.56 m of body)."
+ },
+ "len": 4.98,
+ "nodes": [
+  "roadwheel",
+  "turret"
+ ],
+ "engine_contract": {
+  "row": "js/eras.js / js/rules.js row nato_e00_recon; js/hero/us_humvee.js builds it through HeroHumvee.make(variant)",
+  "current_nodes": "four 'roadwheel' groups (axle on local Y, origin on the axle) and one 'turret' group (origin on the ring, mast or slew ring, +X forward)",
+  "api": "HeroHumvee.make(key)(THREE, M, C) is also called by js/hero/roc_retry.js (make('e00') for atgmv_r: it replaces the meshes of the 'turret' group and re-skins every material carrying userData.worldUV) and js/hero/roc_artillery.js (make('av') for roc_e90_spaag: re-skins the worldUV material); the skin keeps userData.worldUV = 4.6",
+  "len_rule": "UNIT_MODELS[key].len = the measured X extent (atgmv_r in roc_retry.js keeps 4.98 on the e00 body, so the e00 extent may not move)"
+ },
+ "references": [
+  {
+   "name": "[L1] M1167 HMMWV (the M1151 armoured body) firing a TOW, Lithuania 2015, starboard broadside",
+   "image": "ref/nato_e00_recon/m1167_side_lithuania.jpg",
+   "source": "Wikimedia Commons 'Bilateral wire guided missile training conducted in Lithuania 150806-A-FJ979-004.jpg' (US Army, public domain), 1200 x 534; cached in the scratchpad q_rocretry_ref by the M1167 builder",
+   "view": "side",
+   "px_per_m": 141.4,
+   "origin_px": [
+    639.25,
+    511.9
+   ],
+   "rotate": 1.1,
+   "outline_m": [
+    [
+     2.198,
+     0.466
+    ],
+    [
+     2.176,
+     1.032
+    ],
+    [
+     1.844,
+     1.109
+    ],
+    [
+     1.49,
+     1.18
+    ],
+    [
+     0.96,
+     1.254
+    ],
+    [
+     0.797,
+     1.271
+    ],
+    [
+     0.713,
+     1.732
+    ],
+    [
+     -1.126,
+     1.761
+    ],
+    [
+     -2.329,
+     1.388
+    ],
+    [
+     -2.385,
+     1.361
+    ],
+    [
+     -2.385,
+     0.745
+    ],
+    [
+     -2.187,
+     0.727
+    ],
+    [
+     -2.102,
+     0.478
+    ],
+    [
+     -2.031,
+     0.229
+    ],
+    [
+     -1.89,
+     0.064
+    ],
+    [
+     -1.65,
+     0.003
+    ],
+    [
+     -1.409,
+     0.055
+    ],
+    [
+     -1.254,
+     0.214
+    ],
+    [
+     -1.183,
+     0.425
+    ],
+    [
+     1.066,
+     0.403
+    ],
+    [
+     1.193,
+     0.167
+    ],
+    [
+     1.391,
+     0.022
+    ],
+    [
+     1.646,
+     0.003
+    ],
+    [
+     1.901,
+     0.026
+    ],
+    [
+     2.07,
+     0.15
+    ],
+    [
+     2.141,
+     0.326
+    ]
+   ],
+   "window_m": [
+    -2.6,
+    0.35,
+    2.4,
+    1.85
+   ],
+   "align_m": 0.06,
+   "exact": false,
+   "note": "THE MEASURING PICTURE for the armoured body and for everything the HMMWV family shares (axles, tyres, the front clip, the arches). Near-square broadside from starboard (nose right), long lens. Scale on the 3.30 m wheelbase: hub centres at px (872.5, 441) and (406, 450), 466.5 px = 141.4 px a metre; the 9 px drop to the rear is a camera roll of 1.1 deg (rotate). Ground under each hub taken 0.47 m (the 37 in tyre) below it: the tyre feet are in grass, so every height carries about +-0.04 m of datum doubt and reads 0.03-0.06 m LOWER than the old file's [D1] drawing (roof 1.77 here, 1.87 there; published-family 1.83 for the M1025 on 36 in tyres) - the tolerances below are set to that doubt, not to the model. Outline hand-traced in this picture's pixels (b2_hmmwv/tools/mkspec.py), the ITAS turret above z 1.85 left out by window_m (this row carries the GPK / OGPK instead). Other trucks, dust and grass behind and under it: the trace, not a mask."
+  },
+  {
+   "name": "[R4] M1151 with the GPK and the M2 firing, Croatia, from astern",
+   "image": "ref/nato_e00_recon/m1151_rear_croatia.jpg",
+   "source": "Wikimedia Commons 'Dog Company Trains in Croatia During Exercise DOG Custer (9866587).jpg' (US Army, DVIDS, public domain), 960 x 640; cached in the scratchpad q_rocretry_ref",
+   "view": "quarter",
+   "exact": false,
+   "note": "For the reviewer: the GPK shield and its side wings from behind, the slant-back, the four 20 l jerrycans racked across the tail, the tail lamps, the pintle. Taken from above and behind: no scale."
+  },
+  {
+   "name": "[R2] M1097 Avenger, ROC Army, CKS Memorial Hall 2014, front-left",
+   "image": "ref/nato_e90_spaag/m1097_avenger_cks.jpg",
+   "source": "Wikimedia Commons 'ROCA M1097 Avenger Display at CKS Memorial Hall Square 20140607.jpg' (CC BY-SA), 960 x 720; cached in the scratchpad q_rocart_ref",
+   "view": "quarter",
+   "exact": false,
+   "note": "For the reviewer: the two-door hard cab of the M1097, the doors with the pressed X, the bonnet's raised intake on its left front, the turret on the bed - the low housing behind the cab, the two big pods of four on its sides (here raised), the gun and sight boxes under the right pod, two whips. Wears ROC camouflage and a number: the model is plain."
+  },
+  {
+   "name": "[R3] HMMWV front clip, ROC Army display (crop)",
+   "image": "ref/nato_e00_recon/hmmwv_front_crop.jpg",
+   "source": "crop of a ROC Army display photograph cached in the scratchpad q_rk2_ref (crop_hmmwv.png; the source file name was not recorded by the builder who cut it)",
+   "view": "quarter",
+   "exact": false,
+   "note": "For the reviewer: the grille face (vertical slots, the round headlamps inboard, amber lamps on the fender fronts), the chamfered fender tops, the RAISED AIR INTAKE - a box proud of the bonnet's left front quarter with its black grille - the windshield's two panes. Camouflage and number plate on it are not drawn. READING ONLY (review 1): its source file was not recorded, nothing is measured on it, and every feature cited is also in [R2], which the specs cite instead."
+  }
+ ],
+ "must_show": [
+  "low and wide on four big 37 in tyres at the corners, axles at x +1.65 and -1.65, the tyres standing out under full-width fenders (half width 1.15 m)",
+  "the one-piece front clip: bonnet sloping from z 1.25 at the cowl (x 0.96) to 1.03 at the nose (x 2.16), chamfered outer fender tops, the square-topped wheel openings with their tops at z 0.96",
+  "the grille face at x 2.19: vertical slots between the two round headlamps, the amber lamps on the fender fronts outboard [R2]",
+  "the RAISED AIR INTAKE on the bonnet's left front quarter, x 1.41..2.03, y +0.06..+0.60, about 6 cm proud with its black slatted grille [R2]",
+  "the intake stack up the right of the windshield at x 0.88, y -1.02, from the fender top to a cap at z 1.80 [L1]",
+  "the near-upright armoured windshield in a heavy black frame, its foot at the cowl x 0.94 and its top at the roof front x 0.76 [L1]",
+  "four thick flat armoured doors with seams at x 0.70, -0.20 and -1.12, their outside hinges and black D-ring pulls (z 0.72), small armour windows in a black gasket inside wide raised bolted frames (front glass x 0.05..0.56, rear -1.00..-0.41, z 1.25..1.50) [L1]",
+  "the bolted armour plate on the body side behind the front wheel, x 0.73..1.19, z 0.42..0.94 [L1]",
+  "the flat roof at z 1.78 to x -1.12, then the bare slant-back to the tail top at z 1.40 (x -2.36): the seam round its rear lid, the two black blocks at its top corners (x -1.38..-1.10), the thin ledge across it half way down (x -1.81, at most 1.5 cm proud), the edge bolts [L1][R4]; the roof's plain edge rails with four bolts a side and a black slot near x -0.28 [L1]",
+  "the dark louvred panel on each rear quarter in a raised frame, x -2.26..-1.42, z 1.03..1.19 [L1]",
+  "the GPK gunner's shield on the ring at x -0.35: a flat front plate with two thick glass blocks in black frames either side of the M2 (y +-0.08..+-0.46, z 2.24..2.46), short side wings, open behind [R4]",
+  "the geared hubs: the wheel face with its eight nuts and the hub cap turning with the tyre, the painted rims (all four wheels, centres z 0.47)",
+  "the jerrycan rack across the tail, four cans at z 0.70..1.17, and the big black rear mudflaps behind the rear wheels (x -2.31, z 0.10..0.62) [R4]",
+  "plain CARC tan, no markings: darker under the belt line (z < 1.1), dried mud to z 0.6 and splashed round both arches (x +-1.65), dust on the bonnet and roof"
+ ],
+ "landmarks": [
+  {
+   "name": "front axle (scale anchor)",
+   "ref": 0,
+   "expect_m": [
+    1.65,
+    null,
+    null
+   ],
+   "tol_m": 0.04,
+   "model_at": {
+    "node": "roadwheel",
+    "index": 0
+   },
+   "note": "[L1] the hub at px 872.5, 3.30 m wheelbase"
+  },
+  {
+   "name": "fender top at the nose (x 2.16)",
+   "ref": 0,
+   "expect_m": [
+    2.16,
+    1.03
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     2.0,
+     -0.9,
+     0.9,
+     2.35,
+     -0.6,
+     1.3
+    ]
+   },
+   "note": "[L1] px (945, 360); the right fender's top, y -0.9..-0.6 (clear of the shackles and the drive lamp)"
+  },
+  {
+   "name": "fender top just ahead of the cowl (x 1.00)",
+   "ref": 0,
+   "expect_m": [
+    1.0,
+    1.245
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     0.975,
+     -0.9,
+     1.0,
+     1.2,
+     -0.6,
+     1.45
+    ]
+   },
+   "note": "[L1] px (781, 333.5), 4 cm ahead of the windshield foot (the box starts ahead of the windshield frame)"
+  },
+  {
+   "name": "front wheel opening, its flat top (x 1.65)",
+   "ref": 0,
+   "expect_m": [
+    1.65,
+    0.96
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "edge": "lower",
+    "material": "hv_skin",
+    "in_m": [
+     1.2,
+     -1.2,
+     0.75,
+     2.1,
+     -0.3,
+     1.3
+    ]
+   },
+   "note": "[L1] px (872, 371.5): the clip's underside over the tyre"
+  },
+  {
+   "name": "intake stack top (x 0.875)",
+   "ref": 0,
+   "expect_m": [
+    0.875,
+    null,
+    1.79
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "in_m": [
+     0.75,
+     -1.1,
+     1.3,
+     1.0,
+     -0.9,
+     2.0
+    ],
+    "point": [
+     "mid",
+     null,
+     "max"
+    ]
+   },
+   "note": "[L1] the cap's top at px (763, 256)"
+  },
+  {
+   "name": "roof height at x -0.28 (right edge)",
+   "ref": 0,
+   "expect_m": [
+    -0.28,
+    1.77
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     -1.0,
+     -1.16,
+     1.5,
+     0.6,
+     -0.95,
+     2.0
+    ]
+   },
+   "note": "[L1] px (600, 262.5) reads 1.77 (1.30 m above the hub, which carries no ground doubt); the 0.08 m tolerance is the photo's datum doubt (tyre feet in grass, loaded radius), not room for [D1]'s 1.87, which review 1 rejected"
+  },
+  {
+   "name": "slant-back height at x -1.65",
+   "ref": 0,
+   "expect_m": [
+    -1.65,
+    1.6
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     -1.9,
+     -1.16,
+     1.2,
+     -1.4,
+     -0.92,
+     2.0
+    ]
+   },
+   "note": "[L1] the slant from the roof's end px (480, 266) to the tail top px (310, 322.5): z 1.598 at x -1.65 (1.552 at -1.80). The builder moved the station from -1.80 to -1.65 to stay off the model's own ledge across the slant (x -1.86..-1.76, drawn from [R4]): this measures the slant, not the ledge"
+  },
+  {
+   "name": "tail face (x -2.38)",
+   "ref": 0,
+   "expect_m": [
+    -2.38,
+    null,
+    null
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "material": "hv_skin",
+    "in_m": [
+     -2.45,
+     -1.2,
+     0.6,
+     -2.2,
+     1.2,
+     1.4
+    ],
+    "point": [
+     "min",
+     null,
+     null
+    ]
+   },
+   "note": "[L1] px 302.5 at z 1.0 (the paint only: the jerrycans stand behind it, the bumper and lamp guards are black)"
+  },
+  {
+   "name": "louvred panel on the rear quarter (centre)",
+   "ref": 0,
+   "expect_m": [
+    -1.84,
+    1.1
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "material": "hv_dark",
+    "in_m": [
+     -2.35,
+     -1.2,
+     0.98,
+     -1.35,
+     -1.115,
+     1.25
+    ]
+   },
+   "note": "[L1] the dark panel px 320..439 x 351..372: x -2.26..-1.42, z 1.02..1.17"
+  },
+  {
+   "name": "front door glass top (x 0.29)",
+   "ref": 0,
+   "expect_m": [
+    0.29,
+    null,
+    1.49
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "material": "hv_glass",
+    "in_m": [
+     0.0,
+     -1.2,
+     1.0,
+     0.6,
+     -1.1,
+     1.8
+    ],
+    "point": [
+     "mid",
+     null,
+     "max"
+    ]
+   },
+   "note": "[L1] the armour glass px 645..717 x 300..342: z 1.20..1.49"
+  }
+ ],
+ "not_confirmed": [
+  "the GPK's plate sizes (kept from the old file; [R4] shows it from behind and above only, with no scale): its overall width with the wings reads about 1.4 m in [R4] against 1.18 m in the model - a landmark once [R4] has a scale",
+  "the roof's edge: [L1] shows a plain raised rail along each side with about four sparse bolts and one small black slot near x -0.28 (drawn on the right-hand rail); the rail's section (3 x 1.2 cm; [L1]'s roof edge at 1.77 is the rail's top) and the bolts' exact stations are read off [L1] by eye",
+  "the bonnet's raised intake: its size and place read off the quarter photograph of a first-generation truck ([R2]) and assumed the same on the armoured clip, which [L1] shows from the side only",
+  "[R3] is kept for reading only (its source file was not recorded); every item it shows is also in [R2]",
+  "the tan: two shades of the same CARC Tan 686A - e00 / recon_n authored at the chip's value #b8a07a (HeroKit's rule for a paint chip), the e90 M1025 at the darker #8e7858 its review accepted; neither is measured off a photograph",
+  "the port side: every reference is from starboard or a quarter; drawn mirrored",
+  "the underside (belly pan, axles, the geared hub housings behind the wheels) is by proportion",
+  "paint: CARC Green 383 and Tan 686A as plain colours; the exact seen colour in the game's light is a choice, not a measurement (authored per HeroKit's seenAs table)",
+  "mud, dust and the panel shading are drawn where they gather on a driven truck (the foot of the body, round the arches, the bonnet and roof); their amounts are not from a photograph"
+ ]
+}

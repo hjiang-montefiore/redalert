@@ -1,0 +1,319 @@
+{
+ "key": "nato_e90_spaag",
+ "team": "nato",
+ "name": "M1097 Avenger Pedestal Mounted Stinger",
+ "category": "veh",
+ "published": {
+  "len": 4.95,
+  "width": 2.18,
+  "height": 2.64,
+  "source": "en.wikipedia 'AN/TWQ-1 Avenger': 4.95 x 2.18 x 2.64 m, 3,900 kg, two Stinger pods of four, the FN M3P, the FLIR, on the M1097 heavy HMMWV"
+ },
+ "len": 4.99,
+ "nodes": [
+  "roadwheel",
+  "turret"
+ ],
+ "engine_contract": {
+  "row": "js/eras.js / js/rules.js row nato_e90_spaag; js/hero/us_humvee.js builds it through HeroHumvee.make(variant)",
+  "current_nodes": "four 'roadwheel' groups (axle on local Y, origin on the axle) and one 'turret' group (origin on the ring, mast or slew ring, +X forward)",
+  "api": "HeroHumvee.make(key)(THREE, M, C) is also called by js/hero/roc_retry.js (make('e00') for atgmv_r: it replaces the meshes of the 'turret' group and re-skins every material carrying userData.worldUV) and js/hero/roc_artillery.js (make('av') for roc_e90_spaag: re-skins the worldUV material); the skin keeps userData.worldUV = 4.6",
+  "len_rule": "UNIT_MODELS[key].len = the measured X extent (atgmv_r in roc_retry.js keeps 4.98 on the e00 body, so the e00 extent may not move)"
+ },
+ "references": [
+  {
+   "name": "[L1] M1167 HMMWV (the M1151 armoured body) firing a TOW, Lithuania 2015, starboard broadside",
+   "image": "ref/nato_e00_recon/m1167_side_lithuania.jpg",
+   "source": "Wikimedia Commons 'Bilateral wire guided missile training conducted in Lithuania 150806-A-FJ979-004.jpg' (US Army, public domain), 1200 x 534; cached in the scratchpad q_rocretry_ref by the M1167 builder",
+   "view": "side",
+   "px_per_m": 141.4,
+   "origin_px": [
+    639.25,
+    511.9
+   ],
+   "rotate": 1.1,
+   "outline_m": [
+    [
+     2.198,
+     0.466
+    ],
+    [
+     2.176,
+     1.032
+    ],
+    [
+     1.844,
+     1.109
+    ],
+    [
+     1.49,
+     1.18
+    ],
+    [
+     0.96,
+     1.254
+    ],
+    [
+     0.797,
+     1.271
+    ],
+    [
+     0.713,
+     1.732
+    ],
+    [
+     -1.126,
+     1.761
+    ],
+    [
+     -2.329,
+     1.388
+    ],
+    [
+     -2.385,
+     1.361
+    ],
+    [
+     -2.385,
+     0.745
+    ],
+    [
+     -2.187,
+     0.727
+    ],
+    [
+     -2.102,
+     0.478
+    ],
+    [
+     -2.031,
+     0.229
+    ],
+    [
+     -1.89,
+     0.064
+    ],
+    [
+     -1.65,
+     0.003
+    ],
+    [
+     -1.409,
+     0.055
+    ],
+    [
+     -1.254,
+     0.214
+    ],
+    [
+     -1.183,
+     0.425
+    ],
+    [
+     1.066,
+     0.403
+    ],
+    [
+     1.193,
+     0.167
+    ],
+    [
+     1.391,
+     0.022
+    ],
+    [
+     1.646,
+     0.003
+    ],
+    [
+     1.901,
+     0.026
+    ],
+    [
+     2.07,
+     0.15
+    ],
+    [
+     2.141,
+     0.326
+    ]
+   ],
+   "window_m": [
+    -2.6,
+    0.35,
+    2.4,
+    1.85
+   ],
+   "align_m": 0.06,
+   "exact": false,
+   "note": "THE MEASURING PICTURE for the armoured body and for everything the HMMWV family shares (axles, tyres, the front clip, the arches). Near-square broadside from starboard (nose right), long lens. Scale on the 3.30 m wheelbase: hub centres at px (872.5, 441) and (406, 450), 466.5 px = 141.4 px a metre; the 9 px drop to the rear is a camera roll of 1.1 deg (rotate). Ground under each hub taken 0.47 m (the 37 in tyre) below it: the tyre feet are in grass, so every height carries about +-0.04 m of datum doubt and reads 0.03-0.06 m LOWER than the old file's [D1] drawing (roof 1.77 here, 1.87 there; published-family 1.83 for the M1025 on 36 in tyres) - the tolerances below are set to that doubt, not to the model. Outline hand-traced in this picture's pixels (b2_hmmwv/tools/mkspec.py), the ITAS turret above z 1.85 left out by window_m (this row carries the GPK / OGPK instead). Other trucks, dust and grass behind and under it: the trace, not a mask."
+  },
+  {
+   "name": "[R3] HMMWV front clip, ROC Army display (crop)",
+   "image": "ref/nato_e00_recon/hmmwv_front_crop.jpg",
+   "source": "crop of a ROC Army display photograph cached in the scratchpad q_rk2_ref (crop_hmmwv.png; the source file name was not recorded by the builder who cut it)",
+   "view": "quarter",
+   "exact": false,
+   "note": "For the reviewer: the grille face (vertical slots, the round headlamps inboard, amber lamps on the fender fronts), the chamfered fender tops, the RAISED AIR INTAKE - a box proud of the bonnet's left front quarter with its black grille - the windshield's two panes. Camouflage and number plate on it are not drawn. READING ONLY (review 1): its source file was not recorded, nothing is measured on it, and every feature cited is also in [R2], which the specs cite instead."
+  },
+  {
+   "name": "[R2] M1097 Avenger, ROC Army, CKS Memorial Hall 2014, front-left",
+   "image": "ref/nato_e90_spaag/m1097_avenger_cks.jpg",
+   "source": "Wikimedia Commons 'ROCA M1097 Avenger Display at CKS Memorial Hall Square 20140607.jpg' (CC BY-SA), 960 x 720; cached in the scratchpad q_rocart_ref",
+   "view": "quarter",
+   "exact": false,
+   "note": "For the reviewer: the two-door hard cab of the M1097, the doors with the pressed X, the bonnet's raised intake on its left front, the turret on the bed - the low housing behind the cab, the two big pods of four on its sides (here raised), the gun and sight boxes under the right pod, two whips. Wears ROC camouflage and a number: the model is plain."
+  }
+ ],
+ "must_show": [
+  "low and wide on four big 36 in tyres at the corners, axles at x +1.65 and -1.65, full-width fenders (half width 1.08 m) over them",
+  "the one-piece front clip: bonnet sloping from z 1.28 at the cowl (x 0.91) to 1.03 at the nose (x 2.16), chamfered outer fender tops, square-topped wheel openings (top z 0.98)",
+  "the grille face at x 2.16: vertical slots between the two round headlamps, amber lamps on the fender fronts [R2]",
+  "the RAISED AIR INTAKE on the bonnet's left front quarter, x 1.38..2.00, y +0.06..+0.60, about 6 cm proud with its black slatted grille [R2]",
+  "the raked two-pane windshield in its frame, foot at the cowl x 0.91, top at x 0.68 z 1.79",
+  "the geared hubs: the wheel face with its eight nuts and the hub cap turning with the tyre, the painted rims (centres z 0.46)",
+  "the M1097 heavy HMMWV's two-door hard cab to x -0.30, the doors with the pressed X [R2]",
+  "the turret on the bed with its slew ring at x -1.25: the housing with the raked glass front in a black frame (x -0.62..0.58 about the ring) [R2]",
+  "a pod of four Stingers either side of the housing, y +-0.57..+-0.97, z 2.18..2.60, x -1.70..-0.13; each with a black end frame round its 2 x 2 tube ends, black clamp bands and ribs, the trunnion to the housing [R2]",
+  "the FN M3P .50 low under the right pod (y -0.70, z 1.96) and the FLIR / laser box under the left one (y +0.55..+0.78, z 1.58..1.92); two whips on the housing roof at y +-0.40",
+  "plain CARC Green 383, no markings; darker under the belt line (z < 1.1), mud to z 0.6 and round both arches (x +-1.65)"
+ ],
+ "landmarks": [
+  {
+   "name": "front axle (scale anchor)",
+   "ref": 0,
+   "expect_m": [
+    1.65,
+    null,
+    null
+   ],
+   "tol_m": 0.04,
+   "model_at": {
+    "node": "roadwheel",
+    "index": 0
+   },
+   "note": "[L1] the hub at px 872.5, 3.30 m wheelbase"
+  },
+  {
+   "name": "fender top at the nose (x 2.16)",
+   "ref": 0,
+   "expect_m": [
+    2.16,
+    1.03
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     2.0,
+     -0.9,
+     0.9,
+     2.35,
+     -0.6,
+     1.3
+    ]
+   },
+   "note": "[L1] px (945, 360); the right fender's top, y -0.9..-0.6 (clear of the shackles and the drive lamp)"
+  },
+  {
+   "name": "fender top at x 1.30",
+   "ref": 0,
+   "expect_m": [
+    1.3,
+    1.2
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     1.1,
+     -0.9,
+     0.9,
+     1.5,
+     -0.6,
+     1.4
+    ]
+   },
+   "note": "[L1] px (823, 338.8)"
+  },
+  {
+   "name": "fender top just ahead of the cowl (x 1.00)",
+   "ref": 0,
+   "expect_m": [
+    1.0,
+    1.245
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     0.975,
+     -0.9,
+     1.0,
+     1.2,
+     -0.6,
+     1.45
+    ]
+   },
+   "note": "[L1] px (781, 333.5), 4 cm ahead of the windshield foot (the box starts ahead of the windshield frame)"
+  },
+  {
+   "name": "front wheel opening, its flat top (x 1.65)",
+   "ref": 0,
+   "expect_m": [
+    1.65,
+    0.96
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "edge": "lower",
+    "material": "hv_skin",
+    "in_m": [
+     1.2,
+     -1.2,
+     0.75,
+     2.1,
+     -0.3,
+     1.3
+    ]
+   },
+   "note": "[L1] px (872, 371.5): the clip's underside over the tyre"
+  },
+  {
+   "name": "pod tops at the published height 2.64 m",
+   "ref": null,
+   "expect_m": [
+    null,
+    null,
+    2.64
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "in_m": [
+     -1.9,
+     0.5,
+     2.0,
+     0.1,
+     1.05,
+     2.8
+    ],
+    "point": [
+     null,
+     null,
+     "max"
+    ]
+   },
+   "note": "published height (en.wikipedia); the left pod's top, its handles left in (they are part of the pod)"
+  }
+ ],
+ "not_confirmed": [
+  "first-generation body: no side photograph of an M1025 could be fetched this round (Commons rate-limited the session); the body stations are the old file's ([D1] M1151 drawing and [P2] M1025 side photograph readings, recorded in js/hero/us_humvee.js's header) and only the parts the whole family shares are gated, on [L1]",
+  "the Avenger's 4.95 m is met with the rear overhang read long (the split is not published)",
+  "the pods are drawn level (stowed); [R2] shows them raised",
+  "the M3P position (under the right pod) and the FLIR box size",
+  "the port side: every reference is from starboard or a quarter; drawn mirrored",
+  "the underside (belly pan, axles, the geared hub housings behind the wheels) is by proportion",
+  "paint: CARC Green 383 and Tan 686A as plain colours; the exact seen colour in the game's light is a choice, not a measurement (authored per HeroKit's seenAs table)",
+  "mud, dust and the panel shading are drawn where they gather on a driven truck (the foot of the body, round the arches, the bonnet and roof); their amounts are not from a photograph"
+ ]
+}
