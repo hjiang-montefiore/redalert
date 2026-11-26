@@ -59,11 +59,10 @@
     12. Avenger: two-door hard cab, the turret on the bed - housing with the raked glass front, a pod of four
         each side (2 x 2 mouths), the M3P low on the right, the FLIR on the left, two whips [P5][P7].
     13. TRAFFIC JAM: the S-250 shelter on the bed [G][D2] and the vertical-element log-periodic array [G1].
-   Paint (from dated photographs): NATO three-colour CARC for every 1980s-90s row ([P1][P2][P4], and the
-     Avenger in Desert Shield, 1990 [P5]); sampled off [P2] green #697761, brown #665845, black #353a39,
-     drawn at about 0.8.  Desert tan for the armoured pair, as [P3] shows (door in sun #bbb29e, drawn
-     #a1977a).  No markings, numbers, bumper codes or plates ([P3]'s and [P7]'s are not drawn).
-
+   Paint (batch 2): PLAIN CARC, one colour per row (AGENT_POLICY: no camouflage; the 1985-90 photographs
+     show the NATO three-colour, which is no longer drawn): Green 383 for e80, the Avenger and TRAFFIC JAM,
+     Tan 686A for e90 (armour_specs gives it "desert", the 1991 truck), e00 and n.  No markings, numbers,
+     bumper codes or plates ([P3]'s and [P7]'s are not drawn).
    CORRECTED against the old file: the old body was one slab at one width with a box for a bonnet; the front
      clip is now lofted from [D1]'s bonnet line and [P1]'s section, the fenders stand full width over the
      tyres and the doors are inset.  The old TRAFFIC JAM antenna was a horizontal Yagi, a guess; [G1] shows
@@ -85,7 +84,41 @@
      is exactly C.team, on a top-facing roof (or shelter) panel.
    Model space: +X nose, +Y left, +Z up, real metres, tyres on z = 0.  Colours authored in sRGB and left to
    prepModel() to linearise.  ASCII only.
-   DETAIL PASS 2 (the owner: the models looked plainer than the old ones): hvDetail() on every body (dpKit through the Baker, no new material); the skin takes dpWeather.
+   BATCH 2 (2026-11, what reads at the game camera; spec tools/model3d/specs/<key>.json, six of them):
+     References added, all in tools/model3d/specs/ref/: [L1] the M1167 broadside (Lithuania 2015) - the
+     measuring picture, 141.4 px a metre on the wheelbase; [R2] the ROC M1097 Avenger at CKS (front-left);
+     [R3] an HMMWV front clip (ROC display); [R4] an M1151 with the GPK from astern (Croatia).
+     - paint: plain, on a canvas registered to the truck (paint()): shade under the belt line, dried mud to
+       z 0.6 and thrown round both arches, rivet rows, the bonnet sun-faded and the rear darker, dust drifts
+       on the tops; turret parts are mapped where they stand (worldUV takes the group's offset), so the
+       Avenger housing no longer takes the mud band; tops map at y + 2.3 m, clear of the mud band.
+     - the black steel, the tyres (lathe UVs) and the glass (sky in the upper pane) carry maps of their own
+       under userData.hvUV, never userData.worldUV, so roc_artillery.js / roc_retry.js re-skin only the paint.
+     - the RAISED AIR INTAKE on the bonnet's left front with its black slat grille, as [R2][R3] show; the
+       old file's vent across the rear of the bonnet (in no photograph) is gone.  Bonnet line lowered at the
+       nose to [L1] (fender top 1.02 at the nose, 1.075 at 6 cm).
+     - the armoured body to [L1]: roof 1.82 (was 1.87), roof end x -1.12 and slant to z 1.42 at the tail,
+       tail -2.41 (was -2.48; the pintle stays at -2.62, so the 4.98 m extent atgmv_r keeps is unchanged),
+       doors 0.70 / -0.20 / -1.12, glass 1.25-1.54 in wide raised frames, the louvre panel at z 1.03-1.19
+       (was 1.31-1.50), the intake stack cap at 1.84 (was 1.98); four jerrycans racked on the tail [R4].
+     - the OGPK's rear half open over the gunner (the dark hatch shows); the bonnet's creases, the rear
+       lid's seam on the slant; door seams twice as wide; the S-250's joints, ECU, entry panel and door;
+       the Avenger pods' black end frames, tube rims, bands, ribs, handles and trunnions, the canopy's frame.
+     - floating parts fixed: the side marker lamps (were over the wheel opening), the rear tie-downs, the
+       shelter's roof eyes.
+     Tris / draw calls before -> after: e80 / e90 11308 -> 11820 (12), e00 11848 -> 12768 (14), n 11928 ->
+     12884 (14), av 10460 -> 11832 (14), tj 10560 -> 11360 (12).  make() and its keys, the 'turret' and
+     'roadwheel' groups, the skin's userData.worldUV = 4.6 and every UNIT_MODELS len unchanged.
+   REVIEW 1 (batch 2, e00 / n sent back): the kit bags and rolled net on the slant-back removed (in
+     neither [L1] nor [R4]); the body above the belt line lowered to [L1] - roof 1.78, slant to 1.40 at the
+     tail (1.555 at x -1.80), glass 1.25-1.50, stack cap 1.80; what reads at the game camera: the armour
+     windows in a black gasket inside wider raised bolted frames, a heavier black windshield frame, the
+     louvre panel with dark slats in a raised frame, the GPK's glass blocks thick in wide black frames, and
+     off [L1] / [R4] the bolted plate behind the front wheel, the doors' D-ring pulls, the slant's corner
+     blocks, ledge and edge bolts, the big rear mudflaps (review 2: the invented roof bolt rows replaced by
+     [L1]'s plain edge rail, four bolts a side and a slot; the ledge lowered to 1.5 cm); the armoured pair's tan authored at the 686A chip
+     value (the e90 M1025 keeps its accepted shade, "tan90").
+   DETAIL PASS 2 (the owner: the models looked plainer than the old ones): hvDetail() on every body (dpKit through the Baker, no new material); (its dpWeather sheet is replaced by batch 2's paint).
      e80 / e90 6608 -> 7664 tris (12 draw calls), e00 6552 -> 7624 (14), n 6620 -> 7692 (14), av 6484 -> 7316
      (14), tj 6584 -> 7416 (12).  make() and its keys unchanged.  */
 
@@ -102,20 +135,20 @@ var HeroHumvee = (function () {
      front clip; hwS: half width of the body sides (the doors); roof: roof top. */
   var XF = 1.65, XR = -1.65;
   var VAR = {
-    e80: { kind: "slant", paint: "nato", R: 0.457, nose: 2.16, bump: 2.21, tail: -2.28, pint: -2.36,
+    e80: { kind: "slant", paint: "green", R: 0.457, nose: 2.16, bump: 2.21, tail: -2.28, pint: -2.36,
            hwF: 1.08, hwS: 1.03, roof: 1.83 },
-    e90: { kind: "slant", paint: "nato", R: 0.457, nose: 2.16, bump: 2.21, tail: -2.28, pint: -2.36,
+    e90: { kind: "slant", paint: "tan90", R: 0.457, nose: 2.16, bump: 2.21, tail: -2.28, pint: -2.36,
            hwF: 1.08, hwS: 1.03, roof: 1.83 },
-    e00: { kind: "arm", paint: "tan", R: 0.470, nose: 2.19, bump: 2.245, tail: -2.48, pint: -2.62,
-           hwF: 1.15, hwS: 1.12, roof: 1.87, turret: "gpk" },
-    n:   { kind: "arm", paint: "tan2", R: 0.470, nose: 2.19, bump: 2.245, tail: -2.48, pint: -2.62,
-           hwF: 1.15, hwS: 1.12, roof: 1.87, turret: "ogpk" },
+    e00: { kind: "arm", paint: "tan", R: 0.470, nose: 2.19, bump: 2.245, tail: -2.41, pint: -2.62,
+           hwF: 1.15, hwS: 1.12, roof: 1.78, turret: "gpk" },
+    n:   { kind: "arm", paint: "tan2", R: 0.470, nose: 2.19, bump: 2.245, tail: -2.41, pint: -2.62,
+           hwF: 1.15, hwS: 1.12, roof: 1.78, turret: "ogpk" },
     /* the M1097 heavy HMMWV with the Avenger: 4.95 m on the fact sheet, so its tail is longer
        than the M1025's (read off [P5], the rear bumper about 0.75 m behind the rear axle) */
-    av:  { kind: "avenger", paint: "nato", R: 0.457, nose: 2.21, bump: 2.26, tail: -2.45, pint: -2.62,
+    av:  { kind: "avenger", paint: "green", R: 0.457, nose: 2.21, bump: 2.26, tail: -2.45, pint: -2.62,
            hwF: 1.08, hwS: 1.03, roof: 1.83 },
     /* the shelter carrier of the TRAFFIC JAM (the M998-family two-door cab) */
-    tj:  { kind: "jam", paint: "nato", R: 0.457, nose: 2.16, bump: 2.21, tail: -2.28, pint: -2.36,
+    tj:  { kind: "jam", paint: "green", R: 0.457, nose: 2.16, bump: 2.21, tail: -2.28, pint: -2.36,
            hwF: 1.08, hwS: 1.03, roof: 1.83 }
   };
   var TW = 0.318;          /* 12.5 in section width */
@@ -127,62 +160,181 @@ var HeroHumvee = (function () {
   }
 
   /* --------------------------------------------------------------- paint */
-  /* Cached per paint kind: build() runs once per key, team and era.  The skin is mapped by
-     world position (4.6 m to the canvas), so the pattern runs on from a door into the fender.
-     "nato": the NATO three-colour CARC of [P1][P2][P4][P5] - green, brown and black in big
-     hard-edged patches.  Sampled off [P2] in daylight: green #697761, brown #665845, black
-     #353a39; drawn at about 0.8 of that (#515c45, #54473a, #262a29).
-     "tan": CARC desert tan as [P3][P6] show (door in sun #bbb29e, drawn #a1977a), with dust. */
-  var _cv = {};
-  function blob(q, R, cx, cy, rad, sx, n) {
-    var i, a, r, px, py;
-    q.beginPath();
-    for (i = 0; i < n; i++) {
-      a = i / n * Math.PI * 2 + R() * 0.3; r = rad * (0.6 + R() * 0.6);
-      px = cx + Math.cos(a) * r * sx; py = cy + Math.sin(a) * r;
-      if (i === 0) q.moveTo(px, py); else q.lineTo(px, py);
-    }
-    q.closePath(); q.fill();
-  }
-  function paint(kind) {
-    if (_cv[kind]) return _cv[kind];
-    var R = rng(kind === "nato" ? 8801 : (kind === "tan" ? 9902 : 7703)), W = 256, H = 256, i, k, gr, x, y;
-    var cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  /* PAINT (batch 2, 2026-11): PLAIN service paint, one colour per variant (AGENT_POLICY: no
+     camouflage), drawn on a canvas REGISTERED to the truck: the skin is mapped by world position
+     (4.6 m to the canvas, worldUV below), side faces take (x, z), front and rear faces (y, z), top
+     faces (x, y + 2.3 m) so the roof and bonnet land in the canvas's upper middle band (z-equivalent
+     1.15-3.45 m) and never in the mud band at its foot.  What the canvas carries, in metres on the
+     truck: the lower body darker (shade under the belt line), dried mud thick to z 0.45 and thinning
+     to about 0.95, splashed up round both wheel arches (x +-1.65) and thrown back behind each wheel,
+     rivet rows on the belt line (z 1.02) and the sill (z 0.60) as the riveted aluminium body shows,
+     sun-faded and darker panels, rain streaks under the windows, dust on the top band, chips.
+       green: CARC Green 383 (FS 34094); authored #475034 so it shows about #5d6a43 on a side in sun
+              (HeroKit's seenAs ramp)
+       tan:   CARC Tan 686A (FS 33446) on the armoured pair, authored at the chip's own value #b8a07a (the
+              kit's rule: a chip authored as is shows as that paint in bright sun, as [L1] does)
+       tan2:  the same tan, a later lot a little greyer (#b2a07c)
+       tan90: the e90 M1025's tan, kept at the darker #8e7858 the review accepted
+     Cached per paint kind. */
+  var PAINTS = {
+    green: { base: "#475034", mud: [112, 96, 70], dust: [128, 122, 96], lite: [120, 126, 96], fade: [88, 96, 66] },
+    tan90: { base: "#8e7858", mud: [112, 92, 64], dust: [196, 182, 148], lite: [236, 224, 190], fade: [178, 160, 124] },
+    tan:   { base: "#b8a07a", mud: [112, 92, 64], dust: [196, 182, 148], lite: [236, 224, 190], fade: [178, 160, 124] },
+    tan2:  { base: "#b2a07c", mud: [108, 90, 64], dust: [192, 180, 150], lite: [232, 222, 192], fade: [174, 160, 128] }
+  };
+  var TILE = 4.6, _cv = {};
+  function paint(kind, V) {
+    var ck = kind + "|" + (V ? V.kind + V.nose + V.tail : "");
+    if (_cv[ck]) return _cv[ck];
+    var P = PAINTS[kind] || PAINTS.green, N = 1024, K = N / TILE, R = rng((kind === "tan90" ? 3 : kind.length) * 7919 + 17), i, k, x, y, w, h, gr;
+    var cv = document.createElement("canvas"); cv.width = cv.height = N;
     var q = cv.getContext("2d");
-    if (kind === "nato") {
-      q.fillStyle = "#515c45"; q.fillRect(0, 0, W, H);
-      /* brown first, black over it: the pattern's black runs as narrower bands across the
-         brown and green fields; drawn three times shifted so the canvas tiles */
-      var cols = ["#54473a", "#54473a", "#262a29"];
-      for (i = 0; i < 21; i++) {
-        q.fillStyle = cols[i % 3];
-        x = R() * W; y = R() * H;
-        var rad = (i % 3 === 2) ? 16 + R() * 12 : 24 + R() * 22, sx = 1.3 + R() * 0.9;
-        for (k = 0; k < 9; k++) {
-          var ox = ((k % 3) - 1) * W, oy = (Math.floor(k / 3) - 1) * H;
-          blob(q, rng(i * 977 + 13), x + ox, y + oy, rad, sx, 7);
+    function X(xm) { return (((xm / TILE) % 1) + 1) % 1 * N; }       /* station -> canvas x (wraps) */
+    function Y(zm) { return N * (1 - zm / TILE); }                    /* height  -> canvas y */
+    function rgba(c, a) { return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")"; }
+    function ell(cx, cy, rx, ry, a) { q.beginPath(); q.ellipse(cx, cy, rx, ry, a || 0, 0, 2 * Math.PI); q.fill(); }
+    function wrapEll(cx, cy, rx, ry, a) { ell(cx, cy, rx, ry, a); if (cx - rx < 0) ell(cx + N, cy, rx, ry, a); if (cx + rx > N) ell(cx - N, cy, rx, ry, a); }
+    q.fillStyle = P.base; q.fillRect(0, 0, N, N);
+    /* paint that has weathered unevenly: big soft lighter and darker areas, no hard edges */
+    for (i = 0; i < 46; i++) {
+      q.fillStyle = (i % 2) ? rgba(P.fade, 0.05) : "rgba(20,18,12,0.05)";
+      wrapEll(R() * N, R() * N, 60 + R() * 150, 40 + R() * 90, R() * 3);
+    }
+    /* shade under the belt line: the lower body reads darker than the upper (z 1.1 -> 0) */
+    gr = q.createLinearGradient(0, Y(1.15), 0, N);
+    gr.addColorStop(0, "rgba(18,16,10,0.00)"); gr.addColorStop(0.5, "rgba(18,16,10,0.10)"); gr.addColorStop(1, "rgba(18,16,10,0.22)");
+    q.fillStyle = gr; q.fillRect(0, Y(1.15), N, N - Y(1.15));
+    /* the top band (roof, bonnet, the upper sides): sun-bleached, a fine dust */
+    gr = q.createLinearGradient(0, Y(3.45), 0, Y(1.15));
+    gr.addColorStop(0, rgba(P.lite, 0.06)); gr.addColorStop(0.5, rgba(P.lite, 0.10)); gr.addColorStop(1, rgba(P.lite, 0.03));
+    q.fillStyle = gr; q.fillRect(0, Y(3.45), N, Y(1.15) - Y(3.45));
+    for (i = 0; i < 900; i++) { q.fillStyle = rgba(P.dust, 0.10 + R() * 0.12); w = 1 + R() * 3; q.fillRect(R() * N, Y(3.45) + R() * (Y(1.15) - Y(3.45)), w, w); }
+    /* PANEL SHADING in the top band, registered to the panel breaks along the truck (the top faces
+       map x straight across): the bonnet (cowl to nose) sun-faded lighter, the roof as painted, the
+       slant-back or bed behind the roof darker and dirtier; a dark line at each break.  The crew's
+       boot scuffs and wind-blown dust smears on the bonnet and roof. */
+    if (V) {
+      var cowl = V.nose - 1.25, re = V.kind === "slant" ? -1.16 : V.kind === "arm" ? ARM_RE : CAB_BACK, yT = Y(3.45), hT = Y(1.15) - Y(3.45);
+      var band = function (x0, x1, c, a) {
+        var u0 = X(x0), u1 = X(x1); q.fillStyle = rgba(c, a);
+        if (u1 >= u0) q.fillRect(u0, yT, u1 - u0, hT); else { q.fillRect(u0, yT, N - u0, hT); q.fillRect(0, yT, u1, hT); }
+      };
+      band(cowl, V.nose + 0.1, P.lite, 0.14);
+      band(V.tail - 0.1, re, [24, 22, 14], 0.16);
+      [cowl, re].forEach(function (xb) { q.fillStyle = "rgba(14,13,8,0.35)"; q.fillRect(X(xb) - 1, yT, 3, hT); });
+      /* dust drifts, long along the truck as the air carries it, and darker wiped or scuffed
+         streaks; soft, so they read as dirt and not as a pattern */
+      var drift = function (x0, x1, n, a) {
+        for (i = 0; i < n; i++) {
+          x = X(x0 + R() * (x1 - x0)); y = yT + R() * hT;
+          var rx = 18 + R() * 50, ry = 3 + R() * 8;
+          gr = q.createRadialGradient(x, y, 0, x, y, rx);
+          var c = (i % 3) ? P.dust : [30, 26, 16], aa = (i % 3) ? a : a * 0.6;
+          gr.addColorStop(0, rgba(c, aa)); gr.addColorStop(1, rgba(c, 0));
+          q.save(); q.translate(x, y); q.scale(1, ry / rx); q.translate(-x, -y);
+          q.fillStyle = gr; q.beginPath(); q.arc(x, y, rx, 0, 2 * Math.PI); q.fill(); q.restore();
         }
-      }
-    } else {
-      q.fillStyle = (kind === "tan") ? "#a1977a" : "#a69c7e"; q.fillRect(0, 0, W, H);
-      for (i = 0; i < 26; i++) {
-        q.fillStyle = (i % 2) ? "rgba(236,222,186,0.10)" : "rgba(96,76,44,0.09)";
-        q.fillRect(R() * W, R() * H, 20 + R() * 70, 12 + R() * 40);
-      }
+      };
+      drift(cowl, V.nose, 60, 0.30);
+      drift(V.tail, cowl, 110, 0.26);
     }
-    /* rubbed paint, rain streaks and grime */
-    for (i = 0; i < 40; i++) {
-      q.fillStyle = (i % 3) ? "rgba(20,20,14,0.07)" : "rgba(170,160,130,0.06)";
-      q.fillRect(R() * W, R() * H, 1 + R() * 2, 20 + R() * 60);
+    /* rain streaks running down from under the windows and the roof edge (z 1.75 -> 1.1) */
+    for (i = 0; i < 120; i++) {
+      x = R() * N; y = Y(1.75 - R() * 0.4); h = 20 + R() * 90;
+      q.fillStyle = (i % 3) ? "rgba(22,20,12,0.10)" : rgba(P.lite, 0.08); q.fillRect(x, y, 1 + R() * 2, h);
     }
-    q.fillStyle = "rgba(20,18,12,0.30)";
-    for (i = 0; i < 40; i++) q.fillRect(R() * W, R() * H, 2, 2);
-    /* road dust on the lowest part of every side */
-    gr = q.createLinearGradient(0, H * 0.78, 0, H);
-    gr.addColorStop(0, "rgba(150,126,92,0.00)");
-    gr.addColorStop(1, "rgba(150,126,92,0.45)");
-    q.fillStyle = gr; q.fillRect(0, H * 0.78, W, H * 0.22);
-    _cv[kind] = cv;
+    /* MUD: a dried band at the foot, its top edge ragged, then spatter thinning upward */
+    var zMud = 0.60;
+    q.fillStyle = rgba(P.mud, 0.80);
+    q.beginPath(); q.moveTo(0, N);
+    for (x = 0; x <= N; x += 8) q.lineTo(x, Y(zMud + 0.10 * Math.sin(x * 0.021) + 0.06 * Math.sin(x * 0.077 + 1) + (R() - 0.5) * 0.05));
+    q.lineTo(N, N); q.closePath(); q.fill();
+    gr = q.createLinearGradient(0, Y(1.10), 0, Y(0.50));
+    gr.addColorStop(0, rgba(P.mud, 0.0)); gr.addColorStop(1, rgba(P.mud, 0.60));
+    q.fillStyle = gr; q.fillRect(0, Y(1.10), N, Y(0.50) - Y(1.10));
+    for (i = 0; i < 2600; i++) {
+      var zz = 0.40 + Math.pow(R(), 1.8) * 0.75; q.fillStyle = rgba(i % 4 ? P.mud : [70, 58, 40], 0.25 + R() * 0.4);
+      w = 1 + R() * 4; q.fillRect(R() * N, Y(zz), w, w * (0.6 + R()));
+    }
+    /* the arches: mud thrown up round each wheel opening (r 0.60 m about the axle at z 0.46) and
+       a fan thrown back behind it */
+    [1.65, -1.65].forEach(function (ax) {
+      var cx = X(ax), cy = Y(0.46);
+      for (k = 0; k < 1100; k++) {
+        var a = Math.PI * (0.05 + R() * 0.9), r = (0.60 + Math.pow(R(), 2) * 0.42) * K;
+        var px = cx + Math.cos(a) * r, py = cy - Math.sin(a) * r;
+        q.fillStyle = rgba(k % 5 ? P.mud : [66, 54, 36], 0.22 + R() * 0.45); w = 1 + R() * 4.5;
+        q.fillRect(((px % N) + N) % N, py, w, w * (0.5 + R()));
+      }
+      for (k = 0; k < 260; k++) {                       /* thrown back: behind the wheel, low */
+        var bx = cx - (0.62 + R() * 0.55) * K, by = Y(0.30 + R() * 0.55 * R());
+        q.fillStyle = rgba(P.mud, 0.20 + R() * 0.35); w = 2 + R() * 6;
+        q.fillRect(((bx % N) + N) % N, by, w * 1.8, w * 0.7);
+      }
+    });
+    /* rivet rows: the belt line and the sill of the riveted body (8 cm pitch) */
+    [1.02, 0.60, 1.30].forEach(function (zr, j) {
+      var yy = Y(zr), pitch = 0.08 * K;
+      for (x = R() * pitch; x < N; x += pitch) {
+        if (j === 2 && R() < 0.5) continue;
+        q.fillStyle = "rgba(14,13,8,0.55)"; q.fillRect(x, yy, 3, 3);
+        q.fillStyle = rgba(P.lite, 0.35); q.fillRect(x, yy - 1, 2, 1);
+      }
+      q.fillStyle = "rgba(14,13,8,0.18)"; q.fillRect(0, yy + 6, N, 1.5);
+    });
+    /* chips and scuffs, oil and fuel stains */
+    for (i = 0; i < 300; i++) { q.fillStyle = (i % 2) ? rgba(P.lite, 0.28) : "rgba(12,10,6,0.35)"; w = 1 + Math.floor(R() * 3); q.fillRect(R() * N, R() * N, w, w); }
+    for (i = 0; i < 10; i++) { q.fillStyle = "rgba(14,12,8,0.14)"; wrapEll(R() * N, Y(0.5 + R() * 0.8), 6 + R() * 16, 10 + R() * 30, 0); }
+    _cv[ck] = cv;
+    return cv;
+  }
+  /* the black steel, rubber and gun-metal: a grime sheet multiplied into their colour (tile 1.5 m,
+     box-mapped like the skin but under userData.hvUV so a re-skin by worldUV never touches it) */
+  var _gcv = null;
+  function grime() {
+    if (_gcv) return _gcv;
+    var N = 256, R = rng(4242), i, w, cv = document.createElement("canvas"); cv.width = cv.height = N;
+    var q = cv.getContext("2d");
+    q.fillStyle = "#a8a8a4"; q.fillRect(0, 0, N, N);
+    for (i = 0; i < 60; i++) { q.fillStyle = (i % 2) ? "rgba(255,250,235,0.10)" : "rgba(0,0,0,0.12)"; q.beginPath(); q.ellipse(R() * N, R() * N, 6 + R() * 30, 4 + R() * 18, R() * 3, 0, 6.283); q.fill(); }
+    for (i = 0; i < 700; i++) { q.fillStyle = (i % 3) ? "rgba(0,0,0,0.18)" : "rgba(255,245,220,0.30)"; w = 1 + R() * 2; q.fillRect(R() * N, R() * N, w, w); }
+    _gcv = cv;
+    return cv;
+  }
+  /* the glass: the sky caught in the upper part of every pane and a dark lower part (v = z / 2 m, so
+     a pane at z 1.2-1.8 runs v 0.6-0.9), two diagonal glints, a dust film along the bottom */
+  var _glcv = null;
+  function glassCanvas() {
+    if (_glcv) return _glcv;
+    var N = 256, i, cv = document.createElement("canvas"); cv.width = cv.height = N;
+    var q = cv.getContext("2d"), gr = q.createLinearGradient(0, 0, 0, N);
+    gr.addColorStop(0.00, "#a8b2b6"); gr.addColorStop(0.10, "#7c888e"); gr.addColorStop(0.20, "#4c5458");
+    gr.addColorStop(0.30, "#343c40"); gr.addColorStop(1.0, "#30383c");
+    q.fillStyle = gr; q.fillRect(0, 0, N, N);
+    q.fillStyle = "rgba(240,244,246,0.22)";
+    for (i = 0; i < 2; i++) { var x = 40 + i * 120; q.beginPath(); q.moveTo(x, 0); q.lineTo(x + 26, 0); q.lineTo(x - 30, N * 0.5); q.lineTo(x - 56, N * 0.5); q.closePath(); q.fill(); }
+    q.fillStyle = "rgba(170,150,110,0.25)"; q.fillRect(0, N * 0.36, N, N * 0.06);
+    _glcv = cv;
+    return cv;
+  }
+  /* the tyre: rubber with the tread's wear, dust caked in the sidewall's lower band (u round the
+     tyre, v from the axle out to the crown) */
+  var _tcv = null;
+  function tyreCanvas() {
+    if (_tcv) return _tcv;
+    var N = 256, R = rng(5151), i, x, w, cv = document.createElement("canvas"); cv.width = cv.height = N;
+    var q = cv.getContext("2d");
+    /* multiplied into a light rubber colour: the base sheet is dark (bare rubber), the dust light */
+    q.fillStyle = "#6a6a68"; q.fillRect(0, 0, N, N);
+    /* v 0.88-1 (canvas top): the crown, scrubbed and dusty; v 0.5-0.85: the sidewall, dust caked
+       toward the shoulder */
+    q.fillStyle = "rgba(200,180,140,0.55)"; q.fillRect(0, 0, N, N * 0.12);
+    var g2 = q.createLinearGradient(0, N * 0.12, 0, N * 0.5);
+    g2.addColorStop(0, "rgba(200,176,132,0.65)"); g2.addColorStop(1, "rgba(200,176,132,0.0)");
+    q.fillStyle = g2; q.fillRect(0, N * 0.12, N, N * 0.38);
+    for (i = 0; i < 600; i++) { q.fillStyle = (i % 3) ? "rgba(210,184,140,0.45)" : "rgba(0,0,0,0.30)"; w = 1 + R() * 3; q.fillRect(R() * N, N * (0.05 + R() * 0.45), w, w); }
+    for (i = 0; i < 24; i++) { x = R() * N; q.fillStyle = "rgba(0,0,0,0.25)"; q.fillRect(x, N * 0.15, 2, N * 0.3); }
+    _tcv = cv;
     return cv;
   }
   function canvasTex(THREE, cv) {
@@ -200,13 +352,19 @@ var HeroHumvee = (function () {
      glass, team, lamp (white), lampA (amber), lampR (tail).  Eight. */
   function makeMats(THREE, C, V) {
     var T = {};
-    var st = canvasTex(THREE, paint(V.paint));
+    var st = canvasTex(THREE, paint(V.paint, V));
     T.skin = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.88, metalness: 0.06 });
-    if (st) T.skin.map = st; else T.skin.color.setHex(V.paint === "nato" ? 0x515c45 : 0xa1977a);
-    T.skin.userData.worldUV = 4.6;
+    if (st) T.skin.map = st; else T.skin.color.set((PAINTS[V.paint] || PAINTS.green).base);
+    T.skin.userData.worldUV = TILE;
     T.dark = new THREE.MeshStandardMaterial({ color: 0x24261f, roughness: 0.78, metalness: 0.22 });
-    T.rub = new THREE.MeshStandardMaterial({ color: 0x181817, roughness: 0.95, metalness: 0.02 });
+    var gt = canvasTex(THREE, grime());
+    if (gt) { T.dark.map = gt; T.dark.color.setHex(0x363830); T.dark.userData.hvUV = 1.5; }
+    T.rub = new THREE.MeshStandardMaterial({ color: 0x1b1b19, roughness: 0.95, metalness: 0.02 });
+    var tt = canvasTex(THREE, tyreCanvas());
+    if (tt) { T.rub.map = tt; T.rub.color.setHex(0x5a5850); }
     T.glass = new THREE.MeshStandardMaterial({ color: 0x1b2a30, roughness: 0.12, metalness: 0.35 });
+    var gl = canvasTex(THREE, glassCanvas());
+    if (gl) { T.glass.map = gl; T.glass.color.setHex(0x46606a); T.glass.userData.hvUV = 2.0; }
     T.team = new THREE.MeshStandardMaterial({ color: (C && C.team !== undefined) ? C.team : 0x3f7fd0,
                                               roughness: 0.55, metalness: 0.18 });
     T.lamp = new THREE.MeshStandardMaterial({ color: 0xcfc9ac, roughness: 0.3, metalness: 0.1,
@@ -215,6 +373,8 @@ var HeroHumvee = (function () {
                                                emissive: 0x3a2206, emissiveIntensity: 0.7 });
     T.lampR = new THREE.MeshStandardMaterial({ color: 0xa01a10, roughness: 0.35, metalness: 0.1,
                                                emissive: 0x3c0a06, emissiveIntensity: 0.8 });
+    /* named for the tools (the gate's landmarks select by name); nothing in the engine reads them */
+    for (var nm in T) T[nm].name = "hv_" + nm;
     return T;
   }
 
@@ -387,8 +547,8 @@ var HeroHumvee = (function () {
         if (g.attributes.uv) U.set(g.attributes.uv.array, o * 2);
         o += c;
       }
-      var S = e.mat.userData && e.mat.userData.worldUV;
-      if (S) worldUV(P, U, S);
+      var S = e.mat.userData && (e.mat.userData.worldUV || e.mat.userData.hvUV);
+      if (S) worldUV(P, U, S, group.position);
       var geo = new THREE.BufferGeometry();
       geo.setAttribute("position", new THREE.BufferAttribute(P, 3));
       geo.setAttribute("normal", new THREE.BufferAttribute(N, 3));
@@ -401,15 +561,18 @@ var HeroHumvee = (function () {
     this.by = [];
   };
   /* box projection by each triangle's own facing; sides take (along, height) */
-  function worldUV(P, U, S) {
+  function worldUV(P, U, S, off) {
+    /* off: the group's position, so a turret's parts (built about its own origin) are mapped where
+       they stand on the truck and not into the mud band at the canvas's foot */
+    var ox = off ? off.x : 0, oy = off ? off.y : 0, oz = off ? off.z : 0;
     for (var t = 0; t < P.length / 9; t++) {
       var o = t * 9;
       var ux = P[o + 3] - P[o], uy = P[o + 4] - P[o + 1], uz = P[o + 5] - P[o + 2];
       var vx = P[o + 6] - P[o], vy = P[o + 7] - P[o + 1], vz = P[o + 8] - P[o + 2];
       var nx = Math.abs(uy * vz - uz * vy), ny = Math.abs(uz * vx - ux * vz), nz = Math.abs(ux * vy - uy * vx);
       for (var k = 0; k < 3; k++) {
-        var x = P[o + k * 3], y = P[o + k * 3 + 1], z = P[o + k * 3 + 2], u, v;
-        if (nz >= nx && nz >= ny) { u = x / S; v = y / S + 0.3; }
+        var x = P[o + k * 3] + ox, y = P[o + k * 3 + 1] + oy, z = P[o + k * 3 + 2] + oz, u, v;
+        if (nz >= nx && nz >= ny) { u = x / S; v = y / S + 0.5; }
         else if (nx >= ny) { u = y / S; v = z / S; }
         else { u = x / S; v = z / S; }
         U[t * 6 + k * 2] = u; U[t * 6 + k * 2 + 1] = v;
@@ -506,9 +669,17 @@ var HeroHumvee = (function () {
       N.set(parts[q].attributes.normal.array, o * 3);
       o += parts[q].attributes.position.count;
     }
+    /* u round the tyre (four repeats), v from the axle (0) out to the crown (1) */
+    var U = new Float32Array(n * 2);
+    for (q = 0; q < n; q++) {
+      var px = P[q * 3], pz = P[q * 3 + 2];
+      U[q * 2] = (Math.atan2(pz, px) / (2 * Math.PI) + 0.5) * 4;
+      U[q * 2 + 1] = Math.min(1, Math.sqrt(px * px + pz * pz) / R);
+    }
     var geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(P, 3));
     geo.setAttribute("normal", new THREE.BufferAttribute(N, 3));
+    geo.setAttribute("uv", new THREE.BufferAttribute(U, 2));
     return geo;
   }
 
@@ -535,12 +706,13 @@ var HeroHumvee = (function () {
     var yin = 0.03, yout = hw - 0.05;
     K.plate(T.glass, x0 + 0.006, z0 + 0.04, x1 + 0.006, z1 - 0.04, 0.016, yin, yout, "fwd");
     K.plate(T.glass, x0 + 0.006, z0 + 0.04, x1 + 0.006, z1 - 0.04, 0.016, -yout, -yin, "fwd");
-    var f = dark ? T.dark : T.skin;
-    K.rod(f, 0.024, [x0, hw - 0.02, z0], [x1, hw - 0.02, z1], 6);
-    K.rod(f, 0.024, [x0, -hw + 0.02, z0], [x1, -hw + 0.02, z1], 6);
-    K.rod(f, 0.016, [x0, 0, z0], [x1, 0, z1], 6);
-    K.rod(f, 0.024, [x1, -hw, z1], [x1, hw, z1], 6);
-    K.rod(f, 0.024, [x0, -hw, z0], [x0, hw, z0], 6);
+    var f = dark ? T.dark : T.skin, rf = dark ? 0.040 : 0.024, rc = dark ? 0.030 : 0.016;
+    /* (review 1: the armoured truck's black frame drawn heavier, so it reads at the game camera) */
+    K.rod(f, rf, [x0, hw - 0.02, z0], [x1, hw - 0.02, z1], 6);
+    K.rod(f, rf, [x0, -hw + 0.02, z0], [x1, -hw + 0.02, z1], 6);
+    K.rod(f, rc, [x0, 0, z0], [x1, 0, z1], 6);
+    K.rod(f, rf, [x1, -hw, z1], [x1, hw, z1], 6);
+    K.rod(f, rf, [x0, -hw, z0], [x0, hw, z0], 6);
   }
   /* ------------------------------------------------------- shared chassis */
   /* belly pan (16 in ground clearance), axle beams, the differentials, the geared hub-reduction
@@ -572,7 +744,7 @@ var HeroHumvee = (function () {
      fender fronts, and the fender sides with the square-topped wheel opening and the trailing
      edge that sweeps down and back to the sill [D1][P2]. */
   var BON = [   /* back from the nose (m), bonnet centre z, fender top z */
-    [0.00, 1.075, 1.055], [0.05, 1.140, 1.110], [0.45, 1.190, 1.155],
+    [0.00, 1.050, 1.020], [0.06, 1.110, 1.075], [0.45, 1.170, 1.135],
     [0.85, 1.250, 1.205], [1.25, 1.335, 1.280]
   ];
   var ZCLIP = 0.98;          /* underside of the clip over the tyres */
@@ -585,12 +757,24 @@ var HeroHumvee = (function () {
     }
     K.loft(T.skin, Rg);
     var cowl = nose - 1.25;
-    function zb(x) { var t = (nose - x) / 1.25; return BON[0][1] + (BON[4][1] - BON[0][1]) * Math.max(0, Math.min(1, t)) + 0.004; }
-    /* the black vent on the rear of the bonnet [P1][P3] */
-    K.plate(T.dark, cowl + 0.10, zb(cowl + 0.10) + 0.004, cowl + 0.55, zb(cowl + 0.55) + 0.004, 0.012, -0.36, 0.36, "up");
-    for (i = 0; i < 6; i++) {
-      x = cowl + 0.14 + i * 0.07;
-      K.bb(T.skin, x - 0.008, x + 0.008, -0.34, 0.34, zb(x) + 0.004, zb(x) + 0.022);
+    function zb(x) {   /* the bonnet centre's height at station x: piecewise along BON */
+      var d = Math.max(0, Math.min(1.25, nose - x)), j;
+      for (j = 0; j < BON.length - 1; j++) if (d <= BON[j + 1][0]) break;
+      j = Math.min(j, BON.length - 2);
+      var t = (d - BON[j][0]) / (BON[j + 1][0] - BON[j][0]);
+      return BON[j][1] + (BON[j + 1][1] - BON[j][1]) * t + 0.004;
+    }
+    /* batch 2: the RAISED AIR INTAKE - a box standing about 6 cm proud of the bonnet's left front
+       quarter, its top a black grille of cross slats.  [R2] (the M1097 Avenger, front-left) and [R3]
+       (front) show it there, ahead of the bonnet's middle and left of the centre line; the old file's
+       vent across the rear of the bonnet is not in either photograph and is gone. */
+    var vx0 = nose - 0.78, vx1 = nose - 0.16, vy0 = 0.06, vy1 = 0.60;
+    K.prism(T.skin, [[vx0, zb(vx0) - 0.05], [vx1, zb(vx1) - 0.05], [vx1, zb(vx1) + 0.045], [vx1 - 0.04, zb(vx1) + 0.06],
+                     [vx0, zb(vx0) + 0.06]], vy0, vy1);
+    K.plate(T.dark, vx1 - 0.05, zb(vx1 - 0.05) + 0.061, vx0 + 0.03, zb(vx0 + 0.03) + 0.061, 0.008, vy0 + 0.04, vy1 - 0.04, "up");
+    for (i = 0; i < 9; i++) {
+      x = vx0 + 0.07 + i * 0.058;
+      K.bb(T.skin, x - 0.009, x + 0.009, vy0 + 0.04, vy1 - 0.04, zb(x) + 0.066, zb(x) + 0.078);
     }
     /* fender sides: ahead of the wheel a sliver down to the bumper, behind it the trailing
        edge to the sill; the opening between them is square-topped at the clip's underside */
@@ -657,10 +841,34 @@ var HeroHumvee = (function () {
     var y = V.hwS, s;
     for (s = -1; s <= 1; s += 2) {
       var y0 = s * y, y1 = s * (y + 0.010);
-      K.bb(T.dark, x0 - 0.006, x0 + 0.006, y0, y1, 0.60, zTop);
-      K.bb(T.dark, x1 - 0.006, x1 + 0.006, y0, y1, 0.60, zTop);
-      K.bb(T.dark, x1, x0, y0, y1, 0.60, 0.612);
+      K.bb(T.dark, x0 - 0.011, x0 + 0.011, y0, y1, 0.60, zTop);
+      K.bb(T.dark, x1 - 0.011, x1 + 0.011, y0, y1, 0.60, zTop);
+      K.bb(T.dark, x1, x0, y0, y1, 0.60, 0.618);
       K.bb(T.glass, xw1, xw0, y0, s * (y + 0.012), zw0, zw1);
+      /* batch 2: the window's frame standing proud of the door round the glass (wide on the armoured
+         doors [L1], thin on the first-generation ones), so the window reads as a framed opening */
+      var fw = pressX ? 0.03 : 0.06, fy = s * (y + (pressX ? 0.02 : 0.045)), gk = pressX ? 0 : 0.018;
+      K.bb(T.skin, xw1 - gk - fw, xw0 + gk + fw, y0, fy, zw1 + gk, zw1 + gk + fw);
+      K.bb(T.skin, xw1 - gk - fw, xw0 + gk + fw, y0, fy, zw0 - gk - fw, zw0 - gk);
+      K.bb(T.skin, xw0 + gk, xw0 + gk + fw, y0, fy, zw0 - gk, zw1 + gk);
+      K.bb(T.skin, xw1 - gk - fw, xw1 - gk, y0, fy, zw0 - gk, zw1 + gk);
+      if (!pressX) {
+        /* review 1: the armoured window's black rubber gasket between the glass and the raised frame,
+           the frame's bolt heads, and the shadow line under and behind the frame [L1] */
+        var gy = s * (y + 0.016);
+        K.bb(T.dark, xw1 - gk, xw0 + gk, y0, gy, zw1, zw1 + gk);
+        K.bb(T.dark, xw1 - gk, xw0 + gk, y0, gy, zw0 - gk, zw0);
+        K.bb(T.dark, xw0, xw0 + gk, y0, gy, zw0, zw1);
+        K.bb(T.dark, xw1 - gk, xw1, y0, gy, zw0, zw1);
+        var ex0 = xw1 - gk - fw, ex1 = xw0 + gk + fw, ez0 = zw0 - gk - fw, ez1 = zw1 + gk + fw, sy2 = s * (y + 0.012);
+        K.bb(T.dark, ex0 - 0.012, ex1 + 0.012, y0, sy2, ez0 - 0.014, ez0);
+        K.bb(T.dark, ex0 - 0.014, ex0, y0, sy2, ez0, ez1);
+        for (var bi = 0; bi < 5; bi++) {
+          var bx = ex0 + 0.03 + (ex1 - ex0 - 0.06) * bi / 4, by = s * (y + 0.045);
+          K.bb(T.dark, bx - 0.012, bx + 0.012, by, s * (y + 0.053), ez1 - 0.042, ez1 - 0.018);
+          K.bb(T.dark, bx - 0.012, bx + 0.012, by, s * (y + 0.053), ez0 + 0.018, ez0 + 0.042);
+        }
+      }
       K.bb(T.dark, x1 + 0.10, x1 + 0.22, y0, s * (y + 0.025), zw0 - 0.17, zw0 - 0.14);
       if (pressX) {
         K.rod(T.dark, 0.009, [x0 - 0.07, s * (y + 0.006), 0.68], [x1 + 0.07, s * (y + 0.006), zw0 - 0.08], 4);
@@ -720,27 +928,51 @@ var HeroHumvee = (function () {
      windows, the slant-back with the louvred panel on its side, the air intake stack at the
      right of the cowl, the turret ring over the rear doors */
   var RING_ARM = -0.35;
+  /* batch 2, off the M1167 broadside [L1] (140.6 px a metre on the 3.30 m wheelbase): the roof ends at
+     x -1.12 and the slant meets the tail at z 1.40; doors 0.70 / -0.20 / -1.12; door glass 1.25-1.50; the
+     roof at 1.78 (the review: [L1] reads 1.77, 1.30 m above the hub, which has no ground doubt) */
+  var ARM_RE = -1.12, ARM_TT = 1.40, ARM_D = [[0.70, -0.20], [-0.20, -1.12]];
   function bodyArm(K, T, V) {
     var zr = V.roof, isN = V.turret === "ogpk", i, s;
     frontClip(K, T, V);
-    var top = [[V.nose - 1.25, 1.33], [0.82, 1.82], [0.78, zr], [-1.19, zr], [-1.24, zr - 0.04], [V.tail + 0.05, 1.36], [V.tail, 1.32]];
+    var top = [[V.nose - 1.25, 1.33], [0.76, zr - 0.04], [0.72, zr], [ARM_RE + 0.05, zr], [ARM_RE, zr - 0.04], [V.tail + 0.05, ARM_TT], [V.tail, ARM_TT - 0.04]];
     sideSkin(K, T, V, sideProfile(V, top));
-    windshieldAt(K, T, V, V.nose - 1.25, 1.36, 0.82, 1.80, true);
-    door(K, T, V, 0.74, -0.29, 1.31, 1.58, 0.55, 0.05, 1.82, false);
-    door(K, T, V, -0.29, -1.24, 1.31, 1.58, -0.44, -0.94, 1.82, false);
+    windshieldAt(K, T, V, V.nose - 1.25, 1.36, 0.76, zr - 0.05, true);
+    door(K, T, V, ARM_D[0][0], ARM_D[0][1], 1.25, 1.50, 0.56, 0.05, zr - 0.02, false);
+    door(K, T, V, ARM_D[1][0], ARM_D[1][1], 1.25, 1.50, -0.41, -1.00, zr - 0.02, false);
     mirrors(K, T, V, 0.80, 1.40);
     rearEnd(K, T, V);
     for (s = -1; s <= 1; s += 2) {
-      /* the louvred panel on the slant-back side [D1] */
-      K.bb(T.dark, -2.14, -1.42, s * V.hwS, s * (V.hwS + 0.008), 1.31, 1.50);
-      for (i = 0; i < 7; i++) K.bb(T.skin, -2.10 + i * 0.10, -2.06 + i * 0.10, s * V.hwS, s * (V.hwS + 0.016), 1.32, 1.49);
+      /* the louvred panel on the rear quarter: [L1] has it at x -2.26..-1.42, z 1.02..1.17 */
+      K.bb(T.dark, -2.26, -1.42, s * V.hwS, s * (V.hwS + 0.008), 1.03, 1.19);
+      for (i = 0; i < 8; i++) K.bb(T.dark, -2.22 + i * 0.105, -2.19 + i * 0.105, s * V.hwS, s * (V.hwS + 0.02), 1.04, 1.18);
+      /* review 1: its raised frame, so the dark panel has a hard lit edge round it */
+      K.bb(T.skin, -2.30, -1.38, s * V.hwS, s * (V.hwS + 0.03), 1.19, 1.23);
+      K.bb(T.skin, -2.30, -1.38, s * V.hwS, s * (V.hwS + 0.03), 0.99, 1.03);
+      K.bb(T.skin, -2.30, -2.26, s * V.hwS, s * (V.hwS + 0.03), 1.03, 1.19);
+      K.bb(T.skin, -1.42, -1.38, s * V.hwS, s * (V.hwS + 0.03), 1.03, 1.19);
+      /* review 1, off [L1]: the bolted armour plate on the body side behind the front wheel (x 0.73..1.19,
+         z 0.40..0.94, its top edge raked down to the arch) standing 2 cm proud with a black gap along
+         its top, and each door's black D-ring pull low on its rear edge */
+      var ap = [[0.73, 0.42], [1.06, 0.42], [1.19, 0.62], [1.19, 0.86], [1.08, 0.94], [0.73, 0.94]];
+      K.prism(T.skin, ap, s > 0 ? V.hwS : -(V.hwS + 0.022), s > 0 ? V.hwS + 0.022 : -V.hwS);
+      K.bb(T.dark, 0.73, 1.08, s * V.hwS, s * (V.hwS + 0.012), 0.94, 0.958);
+      K.rod(T.dark, 0.009, [1.08, s * (V.hwS + 0.012), 0.95], [1.20, s * (V.hwS + 0.012), 0.87], 4);
+      for (i = 0; i < 4; i++) K.bb(T.dark, 0.78 + i * 0.09 - 0.012, 0.78 + i * 0.09 + 0.012, s * (V.hwS + 0.022), s * (V.hwS + 0.03), 0.88, 0.905);
+      for (i = 0; i < 2; i++) {
+        var dx = ARM_D[i][1] + 0.18;
+        K.put(T.dark, new K.T.TorusGeometry(0.045, 0.012, 4, 10), dx, s * (V.hwS + 0.016), 0.72, Math.PI / 2, 0, 0);
+        K.bb(T.dark, dx - 0.03, dx + 0.03, s * V.hwS, s * (V.hwS + 0.02), 0.75, 0.79);
+      }
       /* the door hinges, outside on the armoured doors */
-      K.bb(T.dark, 0.70, 0.76, s * V.hwS, s * (V.hwS + 0.03), 1.05, 1.12);
-      K.bb(T.dark, -0.33, -0.27, s * V.hwS, s * (V.hwS + 0.03), 1.05, 1.12);
+      K.bb(T.dark, ARM_D[0][0] - 0.04, ARM_D[0][0] + 0.02, s * V.hwS, s * (V.hwS + 0.03), 1.05, 1.12);
+      K.bb(T.dark, ARM_D[1][0] - 0.04, ARM_D[1][0] + 0.02, s * V.hwS, s * (V.hwS + 0.03), 1.05, 1.12);
     }
     /* the intake stack at the right of the cowl [D1] */
-    K.cyl(T.skin, 0.065, 0.95, 10, 0.88, -(V.hwS - 0.10), 1.43, "z");
-    K.cyl(T.dark, 0.08, 0.10, 10, 0.88, -(V.hwS - 0.10), 1.93, "z");
+    /* [L1]: from the fender top (z 1.28) to its cap just above the roof (z 1.80), x 0.80..0.97 */
+    K.cyl(T.skin, 0.065, 0.48, 10, 0.88, -(V.hwS - 0.10), 1.52, "z");
+    K.cyl(T.dark, 0.08, 0.06, 10, 0.88, -(V.hwS - 0.10), 1.77, "z");
+    K.cyl(T.dark, 0.072, 0.05, 10, 0.88, -(V.hwS - 0.10), 1.33, "z");
     K.bb(T.team, 0.10, 0.62, -0.45, 0.45, zr, zr + 0.013);
     /* the turret ring around the hatch */
     K.cyl(T.dark, 0.48, 0.03, 18, RING_ARM, 0, zr + 0.015, "z");
@@ -808,7 +1040,7 @@ var HeroHumvee = (function () {
     tg.position.set(RING_ARM, 0, roof);
     K.bb(T.skin, 0.40, 0.46, -0.56, 0.56, 0.04, 0.78);
     K.bbm(T.skin, -0.02, 0.46, 0.53, 0.59, 0.04, 0.78);   /* short side wings [P3][P6] */
-    K.bbm(T.glass, 0.46, 0.47, 0.08, 0.46, 0.46, 0.68);
+    K.bbm(T.glass, 0.46, 0.50, 0.08, 0.46, 0.46, 0.68);     /* the glass blocks: thick, standing proud */
     K.bb(T.skin, -0.36, 0.40, -0.56, 0.56, 0.04, 0.10);
     K.cyl(T.dark, 0.04, 0.34, 8, 0.10, 0, 0.22, "z");
     K.bb(T.dark, 0.0, 0.22, -0.07, 0.07, 0.38, 0.45);
@@ -822,10 +1054,10 @@ var HeroHumvee = (function () {
       K.bb(T.dark, 0.455, 0.47, by - 0.012, by + 0.012, 0.74, 0.76);
       K.bb(T.dark, 0.455, 0.47, by - 0.012, by + 0.012, 0.08, 0.10);
     }
-    K.bbm(T.dark, 0.455, 0.475, 0.06, 0.48, 0.44, 0.46);
-    K.bbm(T.dark, 0.455, 0.475, 0.06, 0.48, 0.68, 0.70);
-    K.bbm(T.dark, 0.455, 0.475, 0.06, 0.08, 0.46, 0.68);
-    K.bbm(T.dark, 0.455, 0.475, 0.46, 0.48, 0.46, 0.68);
+    K.bbm(T.dark, 0.455, 0.515, 0.045, 0.495, 0.425, 0.46);   /* review 1: their black frames, wider */
+    K.bbm(T.dark, 0.455, 0.515, 0.045, 0.495, 0.68, 0.715);
+    K.bbm(T.dark, 0.455, 0.515, 0.045, 0.08, 0.46, 0.68);
+    K.bbm(T.dark, 0.455, 0.515, 0.46, 0.495, 0.46, 0.68);
     K.bb(T.skin, 0.40, 0.55, -0.16, 0.16, 0.44, 0.47);
     K.bb(T.dark, 0.10, 0.26, -0.20, -0.08, 0.40, 0.50);
     K.flush(tg);
@@ -844,7 +1076,12 @@ var HeroHumvee = (function () {
     K.bbm(T.glass, 0.505, 0.512, 0.07, 0.52, 0.32, 0.62);
     K.bbm(T.glass, -0.42, 0.42, 0.605, 0.612, 0.32, 0.62);
     K.bb(T.glass, -0.505, -0.498, -0.52, 0.52, 0.32, 0.62);
-    K.bb(T.skin, -0.46, -0.04, -0.62, 0.62, 0.66, 0.70);
+    /* batch 2: the rear half is open over the gunner (the old file closed it): the dark ring and
+       hatch opening show through it from above, and the rim of the walls reads as a box */
+    K.bb(T.skin, -0.54, 0.54, -0.64, -0.60, 0.64, 0.68);
+    K.bb(T.skin, -0.54, 0.54, 0.60, 0.64, 0.64, 0.68);
+    K.bb(T.skin, -0.54, -0.46, -0.64, 0.64, 0.64, 0.68);
+    K.bb(T.dark, -0.46, -0.04, -0.56, 0.56, 0.28, 0.29);
     K.bb(T.dark, 0.44, 0.56, -0.12, 0.12, 0.28, 0.54);
     m2(K, T, 0.60, 0.40);
     /* DETAIL PASS 3: the ring's bolts and traverse handle, the corner posts' bolts, the roof's
@@ -885,10 +1122,44 @@ var HeroHumvee = (function () {
     K.prism(T.skin, [[-0.62, 0.0], [0.58, 0.0], [0.58, 0.35], [0.32, 1.30], [-0.62, 1.30]], -0.55, 0.55);
     K.bb(T.skin, -0.66, 0.40, -0.60, 0.60, 1.30, 1.35);                              /* roof */
     K.plate(T.glass, 0.584, 0.35, 0.324, 1.30, 0.016, -0.44, 0.44, "fwd");          /* the glass front */
+    /* batch 2: the canopy's black frame and centre bar, the housing's corner seams, its rear
+       access door outline and the roof's lip, so the housing reads as a cab and not a block */
+    K.rod(T.dark, 0.022, [0.59, 0.45, 0.35], [0.33, 0.45, 1.30], 6);
+    K.rod(T.dark, 0.022, [0.59, -0.45, 0.35], [0.33, -0.45, 1.30], 6);
+    K.rod(T.dark, 0.016, [0.60, 0, 0.35], [0.34, 0, 1.30], 6);
+    K.rod(T.dark, 0.022, [0.59, -0.46, 0.35], [0.59, 0.46, 0.35], 6);
+    K.rod(T.dark, 0.022, [0.33, -0.46, 1.30], [0.33, 0.46, 1.30], 6);
     for (s = -1; s <= 1; s += 2) {
-      K.bb(T.skin, -0.45, 1.15, s * 0.55, s * 0.97, 1.06, 1.48);                     /* the pod: 1.6 x 0.42 x 0.42 */
-      for (i = 0; i < 2; i++) for (j = 0; j < 2; j++)                                /* four tube mouths */
-        K.cyl(T.dark, 0.07, 0.02, 10, 1.155, s * 0.76 + (i - 0.5) * 0.19, 1.27 + (j - 0.5) * 0.19, "x");
+      K.bb(T.dark, -0.635, -0.615, s * 0.53, s * 0.56, 0.02, 1.30);
+      K.bb(T.dark, -0.62, 0.40, s * 0.55, s * 0.56, 0.60, 0.62);
+    }
+    K.bb(T.dark, -0.632, -0.62, -0.30, 0.30, 0.10, 0.12);
+    K.bb(T.dark, -0.632, -0.62, -0.30, 0.30, 1.04, 1.06);
+    K.bb(T.dark, -0.632, -0.62, -0.31, -0.29, 0.10, 1.06);
+    K.bb(T.dark, -0.632, -0.62, 0.29, 0.31, 0.10, 1.06);
+    K.bb(T.dark, -0.66, -0.63, 0.18, 0.24, 0.55, 0.60);
+    for (s = -1; s <= 1; s += 2) {
+      K.bb(T.skin, -0.45, 1.12, s * 0.57, s * 0.97, 1.06, 1.48);                     /* the pod: 1.6 x 0.40 x 0.42 */
+      /* batch 2: the pod reads as a launcher - a black end frame with the four tube ends (2 x 2) in
+         it, their caps a lighter grey; the black rear end, two black clamp bands round the pod,
+         and the elevation trunnion between the pod and the housing [P5][P7] */
+      K.bb(T.dark, 1.12, 1.15, s * 0.565, s * 0.975, 1.055, 1.485);
+      for (i = 0; i < 2; i++) for (j = 0; j < 2; j++) {
+        K.cyl(T.dark, 0.085, 0.03, 12, 1.165, s * 0.77 + (i - 0.5) * 0.19, 1.27 + (j - 0.5) * 0.19, "x");
+        K.cyl(T.skin, 0.062, 0.012, 12, 1.183, s * 0.77 + (i - 0.5) * 0.19, 1.27 + (j - 0.5) * 0.19, "x");
+      }
+      K.bb(T.dark, -0.48, -0.45, s * 0.565, s * 0.975, 1.055, 1.485);
+      K.bb(T.dark, 0.05, 0.11, s * 0.565, s * 0.977, 1.05, 1.49);
+      K.bb(T.dark, 0.72, 0.78, s * 0.565, s * 0.977, 1.05, 1.49);
+      K.cyl(T.dark, 0.10, 0.06, 12, 0.30, s * 0.565, 1.27, "y");
+      /* the pod's stiffening ribs along its top and outer side, the carry handles on top */
+      K.bb(T.dark, -0.45, 1.12, s * 0.66, s * 0.68, 1.48, 1.492);
+      K.bb(T.dark, -0.45, 1.12, s * 0.86, s * 0.88, 1.48, 1.492);
+      K.bb(T.dark, -0.45, 1.12, s * 0.97, s * 0.982, 1.20, 1.22);
+      K.bb(T.dark, -0.45, 1.12, s * 0.97, s * 0.982, 1.34, 1.36);
+      K.rod(T.dark, 0.012, [0.30, s * 0.70, 1.48], [0.30, s * 0.70, 1.53], 5);
+      K.rod(T.dark, 0.012, [0.30, s * 0.84, 1.48], [0.30, s * 0.84, 1.53], 5);
+      K.rod(T.dark, 0.012, [0.30, s * 0.70, 1.53], [0.30, s * 0.84, 1.53], 5);
       K.bb(T.dark, -0.56, -0.44, s * 0.40 - 0.06, s * 0.40 + 0.06, 1.35, 1.41);     /* whip base */
       K.rod(T.dark, 0.008, [-0.50, s * 0.40, 1.41], [-0.50, s * 0.40, 2.65], 4);    /* whip */
     }
@@ -919,13 +1190,38 @@ var HeroHumvee = (function () {
     K.bb(T.skin, x1 - 0.020, x1 - 0.012, -0.37, 0.37, 1.25, 2.47);
     K.bb(T.dark, x1 - 0.04, x1 - 0.02, 0.20, 0.30, 1.80, 1.84);
     for (s = -1; s <= 1; s += 2) {
-      for (i = 0; i < 2; i++) K.torus(T.dark, 0.04, 0.012, i ? x1 + 0.06 : x0 - 0.06, s * 0.94, 2.69, 4, 10);
+      for (i = 0; i < 2; i++) K.torus(T.dark, 0.04, 0.012, i ? x1 + 0.06 : x0 - 0.06, s * 0.94, 2.658, 4, 10);
       /* the corner posts the shelter's sides are framed by */
       K.bb(T.skin, x0 - 0.03, x0 + 0.005, s * 0.97, s * 1.005, 1.12, 2.65);
       K.bb(T.skin, x1 - 0.005, x1 + 0.03, s * 0.97, s * 1.005, 1.12, 2.65);
     }
     K.bb(T.team, -0.95, -0.42, -0.60, 0.60, 2.65, 2.663);
     K.cyl(T.dark, 0.10, 0.04, 10, JAM_X, 0, 2.67, "z");
+    /* batch 2: the S-250's own shape, so it reads as a shelter and not a block: the vertical panel
+       joints of its sides (about 0.45 m apart) and the mid-height extrusion, the environmental
+       control unit standing on the front wall's left half with its black louvred face, the signal
+       entry panel low on the right side, the rear door's black gap and hinges, the roof's edge
+       extrusions.  Sizes and places by the S-250's usual layout, NOT CONFIRMED on this fit. */
+    for (s = -1; s <= 1; s += 2) {
+      for (i = 1; i < 5; i++) { var xj = x0 + (x1 - x0) * i / 5; K.bb(T.dark, xj - 0.012, xj + 0.012, s * 1.0, s * 1.008, 1.14, 2.63); }
+      K.bb(T.skin, x1 + 0.02, x0 - 0.02, s * 1.0, s * 1.018, 1.86, 1.90);
+      K.bb(T.skin, x1, x0, s * 0.96, s * 1.02, 2.63, 2.67);
+    }
+    K.bb(T.skin, x0 - 0.02, x0 + 0.02, -1.0, 1.0, 2.63, 2.67);
+    K.bb(T.skin, x1 - 0.02, x1 + 0.02, -1.0, 1.0, 2.63, 2.67);
+    /* the ECU on the front wall, above the cab roof */
+    K.bb(T.skin, x0, x0 + 0.34, 0.08, 0.86, 1.90, 2.48);
+    K.bb(T.dark, x0 + 0.34, x0 + 0.35, 0.14, 0.80, 1.96, 2.42);
+    for (i = 0; i < 8; i++) K.bb(T.skin, x0 + 0.345, x0 + 0.36, 0.14, 0.80, 1.99 + i * 0.054, 2.005 + i * 0.054);
+    K.bb(T.dark, x0 + 0.04, x0 + 0.30, 0.20, 0.74, 2.48, 2.50);
+    /* the signal entry panel and its cable glands */
+    K.bb(T.dark, -1.30, -0.90, -1.02, -1.0, 1.30, 1.62);
+    for (i = 0; i < 4; i++) K.cyl(T.dark, 0.03, 0.05, 8, -1.24 + i * 0.1, -1.04, 1.42, "y");
+    /* the rear door: its black gap and three hinges */
+    K.bb(T.dark, x1 - 0.016, x1, -0.42, -0.38, 1.22, 2.50);
+    K.bb(T.dark, x1 - 0.016, x1, 0.38, 0.42, 1.22, 2.50);
+    K.bb(T.dark, x1 - 0.016, x1, -0.42, 0.42, 2.46, 2.50);
+    for (i = 0; i < 3; i++) K.bb(T.dark, x1 - 0.05, x1, -0.46, -0.40, 1.35 + i * 0.5, 1.45 + i * 0.5);
   }
   function mastJam(THREE, T, g) {
     var tg = new THREE.Group(), K = new Baker(THREE), i, n = 14;
@@ -1160,70 +1456,6 @@ var HeroHumvee = (function () {
     };
     return D;
   }
-  /* DETAIL PASS 2: the weathered paint.  The module's own paint canvas (or a flat base colour) drawn
-     onto a 512 px tile, then plate seams with a lit edge, bolt rows along some of them, access-panel
-     outlines with corner screws, rain streaks, grime and dust, chipped paint and oil spots.  Plain
-     paint: no markings, numbers or camouflage.  Cached per source. */
-  var __DPW = {};
-  function dpWeather(THREE, src, base, seed) {
-    var key = (src && src.uuid ? src.uuid : "flat") + "|" + base + "|" + seed;
-    if (__DPW[key] !== undefined) return __DPW[key];
-    var t = null;
-    try {
-      var S = 512, cv = document.createElement("canvas"), q, i, k, x, y, w, h, n, xs = [];
-      var rs = (seed * 7 + 13) >>> 0, R = function () { rs = (Math.imul(rs, 1664525) + 1013904223) >>> 0; return rs / 4294967296; };
-      cv.width = cv.height = S; q = cv.getContext("2d");
-      q.fillStyle = base || "#555544"; q.fillRect(0, 0, S, S);
-      if (src && src.image) { try { q.drawImage(src.image, 0, 0, S, S); } catch (e) { /* flat base */ } }
-      /* plate seams: four vertical butts, horizontal seams staggered between them, a bolt row on some */
-      for (i = 0; i < 4; i++) xs.push(Math.floor(i * 128 + 20 + R() * 80) + 0.5);
-      for (i = 0; i < 4; i++) {
-        q.globalAlpha = 1; q.strokeStyle = "rgba(14,15,10,0.42)"; q.lineWidth = 2;
-        q.beginPath(); q.moveTo(xs[i], 0); q.lineTo(xs[i], S); q.stroke();
-        q.strokeStyle = "rgba(255,250,225,0.12)"; q.lineWidth = 1;
-        q.beginPath(); q.moveTo(xs[i] + 2, 0); q.lineTo(xs[i] + 2, S); q.stroke();
-        y = Math.floor(60 + R() * 120) + 0.5;
-        for (k = 0; k < 2; k++) {
-          var xa = xs[i], xb = i < 3 ? xs[i + 1] : xs[0] + S;
-          q.strokeStyle = "rgba(14,15,10,0.38)"; q.lineWidth = 2;
-          q.beginPath(); q.moveTo(xa, y); q.lineTo(xb, y); q.stroke();
-          q.beginPath(); q.moveTo(xa - S, y); q.lineTo(xb - S, y); q.stroke();
-          q.strokeStyle = "rgba(255,250,225,0.10)"; q.lineWidth = 1;
-          q.beginPath(); q.moveTo(xa, y + 2); q.lineTo(xb, y + 2); q.stroke();
-          if ((i + k) % 2 === 0) for (x = xa + 8; x < xb - 4; x += 15) {
-            q.fillStyle = "rgba(12,12,8,0.45)"; q.fillRect(x % S, y - 6, 3, 3);
-            q.fillStyle = "rgba(255,250,225,0.18)"; q.fillRect(x % S, y - 7, 2, 1);
-          }
-          y = (y + 200 + Math.floor(R() * 60)) % S;
-        }
-      }
-      /* access panels, a screw at each corner */
-      for (i = 0; i < 6; i++) {
-        x = Math.floor(R() * (S - 90)) + 10.5; y = Math.floor(R() * (S - 70)) + 10.5; w = 26 + Math.floor(R() * 60); h = 18 + Math.floor(R() * 44);
-        q.strokeStyle = "rgba(14,15,10,0.36)"; q.lineWidth = 1.5; q.strokeRect(x, y, w, h);
-        q.strokeStyle = "rgba(255,250,225,0.10)"; q.lineWidth = 1; q.strokeRect(x + 1.5, y + 1.5, w, h);
-        q.fillStyle = "rgba(12,12,8,0.5)";
-        q.fillRect(x + 3, y + 3, 2, 2); q.fillRect(x + w - 5, y + 3, 2, 2); q.fillRect(x + 3, y + h - 5, 2, 2); q.fillRect(x + w - 5, y + h - 5, 2, 2);
-      }
-      /* rain streaks, grime and dust, chips and scratches, oil spots */
-      for (i = 0; i < 260; i++) { q.fillStyle = (i % 4) ? "rgba(18,16,10,0.08)" : "rgba(230,225,200,0.06)"; q.fillRect(R() * S, R() * S, 1 + R() * 2, 8 + R() * 54); }
-      for (i = 0; i < 70; i++) {
-        q.fillStyle = (i % 3) ? "rgba(30,25,15,0.08)" : "rgba(150,135,100,0.08)";
-        q.beginPath(); q.ellipse(R() * S, R() * S, 8 + R() * 46, 4 + R() * 22, R() * Math.PI, 0, 2 * Math.PI); q.fill();
-      }
-      for (i = 0; i < 180; i++) { q.fillStyle = (i % 2) ? "rgba(205,200,175,0.22)" : "rgba(10,10,8,0.30)"; n = 1 + Math.floor(R() * 3); q.fillRect(R() * S, R() * S, n, n); }
-      q.strokeStyle = "rgba(210,205,180,0.14)"; q.lineWidth = 1;
-      for (i = 0; i < 14; i++) { x = R() * S; y = R() * S; q.beginPath(); q.moveTo(x, y); q.lineTo(x + (R() - 0.5) * 40, y + (R() - 0.5) * 14); q.stroke(); }
-      for (i = 0; i < 8; i++) { q.fillStyle = "rgba(12,10,6,0.16)"; q.beginPath(); q.ellipse(R() * S, R() * S, 5 + R() * 12, 4 + R() * 9, 0, 0, 2 * Math.PI); q.fill(); }
-      t = new THREE.CanvasTexture(cv);
-      t.wrapS = t.wrapT = THREE.RepeatWrapping;
-      if (src && src.repeat && t.repeat) t.repeat.copy(src.repeat);
-      if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
-      t.anisotropy = 4;
-    } catch (e) { t = null; }
-    __DPW[key] = t;
-    return t;
-  }
   /* ------------------------------------------------------------ DETAIL PASS 2
      The fittings the first pass left out, on every body (classes [P1]-[P6] show; places and sizes by
      proportion, NOT CONFIRMED): the bonnet's four rubber T-latches, the lifting shackles at the bonnet's
@@ -1245,15 +1477,15 @@ var HeroHumvee = (function () {
       });
   }
   function hvDetail(K, T, V) {
-    var DP = dpFor(K), D = T.dark, S = T.skin, s, i, nose = V.nose, cowl = nose - 1.25, hw = V.hwF, ys = V.hwS;
+    var DP = dpFor(K), D = T.dark, S = T.skin, s, i, x, y, nose = V.nose, cowl = nose - 1.25, hw = V.hwF, ys = V.hwS;
     var zr = V.kind === "slant" || V.kind === "arm" ? V.roof : null;
     for (s = -1; s <= 1; s += 2) {
       /* the bonnet's T-latches on the fender sides, the lifting shackles at its front corners */
       K.bb(D, nose - 0.30, nose - 0.24, s * hw, s * (hw + 0.025), 1.00, 1.08);
       K.bb(D, cowl + 0.10, cowl + 0.16, s * hw, s * (hw + 0.025), 0.98, 1.06);
-      K.torus(D, 0.035, 0.010, nose - 0.10, s * (hw - 0.14), 1.11, 4, 8);
+      K.torus(D, 0.035, 0.010, nose - 0.10, s * (hw - 0.14), 1.085, 4, 8);
       /* the side marker lamp on the fender */
-      K.bb(T.lampA, nose - 0.45, nose - 0.37, s * hw, s * (hw + 0.012), 0.90, 0.94);
+      K.bb(T.lampA, nose - 0.17, nose - 0.09, s * hw, s * (hw + 0.012), 0.86, 0.91);
       /* the wiper on the windscreen */
       DP.bar(D, [nose - 1.22, s * 0.15, 1.37], [nose - 1.30, s * 0.55, 1.62], 0.009, 4);
       /* the mudflaps behind the four wheels */
@@ -1262,9 +1494,9 @@ var HeroHumvee = (function () {
       /* the rear bumperettes, the guards over the tail lamps, tie-down rings at the corners */
       K.bb(D, V.tail - 0.06, V.tail + 0.10, s * (ys - 0.22), s * (ys - 0.04), 0.46, 0.52);
       DP.guard(D, V.tail + 0.02, s * (ys - 0.13), 0.82, 0.07, -1);
-      K.torus(D, 0.035, 0.010, V.tail + 0.15, s * (ys + 0.012), 0.70, 4, 8);
+      K.torus(D, 0.035, 0.010, V.tail + 0.045, s * (ys - 0.01), 0.70, 4, 8);
       /* the rain gutter along the roof edge */
-      if (zr) K.bb(D, V.kind === "slant" ? -1.08 : -1.19, V.kind === "slant" ? 0.62 : 0.78, s * (ys - 0.012), s * (ys + 0.012), zr - 0.04, zr - 0.02);
+      if (zr) K.bb(D, V.kind === "slant" ? -1.08 : ARM_RE, V.kind === "slant" ? 0.62 : 0.72, s * (ys - 0.012), s * (ys + 0.012), zr - 0.04, zr - 0.02);
       /* the door hinges of the first-generation doors */
       if (V.kind !== "arm") {
         DP.hinge(D, 0.88, s * ys, 0.90, 1.70, s);
@@ -1276,15 +1508,48 @@ var HeroHumvee = (function () {
       for (s = -1; s <= 1; s += 2) { DP.hingeTop(D, V.tail + 0.02, V.tail + 0.02, s * 0.45, s * 0.75, 1.13); K.bb(D, V.tail - 0.02, V.tail, s * 0.30 - 0.06, s * 0.30 + 0.06, 0.95, 0.99); }
     }
     if (V.kind === "arm") {
-      /* the kit bags and a camouflage net strapped on the slant-back, the tailgate's hinges */
-      var a = Math.atan2(1.36 - V.roof, (V.tail + 0.05) - (-1.24)), xm = -1.75, zm = V.roof + (xm + 1.24) * Math.tan(a);
-      for (i = 0; i < 3; i++) {
-        var xb = -1.45 - i * 0.30, zb = V.roof + (xb + 1.24) * Math.tan(a);
-        K.bb(T.skin, xb - 0.13, xb + 0.13, -0.85 + i * 0.12, 0.05 + i * 0.12, zb - 0.02, zb + 0.22 - i * 0.04);
-        K.bb(D, xb - 0.02, xb + 0.02, -0.87 + i * 0.12, 0.07 + i * 0.12, zb - 0.02, zb + 0.23 - i * 0.04);
+      /* the tailgate's hinges (batch 2 review: the kit bags and rolled net the old file strapped on
+         the slant-back are in neither [L1] nor [R4], which shows this truck's slant bare: removed) */
+      for (s = -1; s <= 1; s += 2) DP.hingeTop(D, V.tail + 0.03, V.tail + 0.03, s * 0.45, s * 0.75, ARM_TT - 0.04);
+      /* review 1, off [R4] (this truck from astern and above): the two black blocks at the top
+         corners of the slant where it leaves the roof, the raised ledge across the slant about half way
+         down (a lit line with its shadow under it), the lid's latch in the middle, and the big black
+         rear mudflaps hanging nearly to the ground */
+      var sa = Math.atan2(ARM_TT - (V.roof - 0.04), (V.tail + 0.05) - ARM_RE), sz = function (x) { return V.roof - 0.04 + (x - ARM_RE) * Math.tan(sa); };
+      for (s = -1; s <= 1; s += 2) {
+        K.bb(D, ARM_RE - 0.26, ARM_RE + 0.02, s * (V.hwS - 0.30), s * (V.hwS - 0.06), sz(ARM_RE - 0.13) - 0.06, V.roof + 0.10);
+        DP.flap(D, XR - 0.66, s > 0 ? 0.74 : -(V.hwS - 0.02), s > 0 ? V.hwS - 0.02 : -0.74, 0.10, 0.62);
       }
-      DP.rollY(S, D, xm - 0.05, 0.20, 0.95, zm + 0.11, 0.10);
-      for (s = -1; s <= 1; s += 2) DP.hingeTop(D, V.tail + 0.03, V.tail + 0.03, s * 0.45, s * 0.75, 1.32);
+      /* the armoured roof's edge as [L1] shows it: a plain raised rail along each side (3 cm wide, 1.2 cm
+         high, the cowl's top to the roof's end) with four bolts a side, and a small black slot in the
+         right-hand rail near x -0.28 (review 2: the 0.12 m bolt rows round the roof were invented) */
+      for (s = -1; s <= 1; s += 2) {
+        var ry0 = s * (V.hwS - 0.03), ry1 = s * (V.hwS - 0.06);
+        K.bb(S, ARM_RE + 0.02, 0.70, ry0, ry1, V.roof, V.roof + 0.012);
+        for (i = 0; i < 4; i++) { x = 0.55 - i * 0.50; K.bb(D, x - 0.012, x + 0.012, s * (V.hwS - 0.045) - 0.012, s * (V.hwS - 0.045) + 0.012, V.roof + 0.012, V.roof + 0.020); }
+      }
+      K.bb(D, -0.36, -0.20, -(V.hwS - 0.035), -(V.hwS - 0.055), V.roof + 0.004, V.roof + 0.0125);
+      /* the slant's edge bolts [R4] */
+      for (x = ARM_RE - 0.12; x > V.tail + 0.10; x -= 0.12) for (s = -1; s <= 1; s += 2)
+        K.bb(D, x - 0.013, x + 0.013, s * (V.hwS - 0.05) - 0.013, s * (V.hwS - 0.05) + 0.013, sz(x) - 0.01, sz(x) + 0.014);
+      var xl = (ARM_RE + V.tail) / 2 - 0.05;
+      /* the ledge: a thin bar, at most 1.5 cm proud of the slant (review 2: no step in the side outline) */
+      K.bb(S, xl - 0.05, xl + 0.05, -(V.hwS - 0.12), V.hwS - 0.12, sz(xl) - 0.04, sz(xl - 0.05) + 0.015);
+      K.bb(D, xl - 0.062, xl - 0.05, -(V.hwS - 0.12), V.hwS - 0.12, sz(xl) - 0.04, sz(xl - 0.05) + 0.010);
+      var xh = V.tail + 0.30;
+      K.bb(D, xh - 0.08, xh + 0.08, -0.12, 0.12, sz(xh) - 0.03, sz(xh) + 0.03);
+      /* batch 2: four 20 l jerrycans in their rack across the tail, as [R4] (an M1151 with the GPK,
+         from astern) carries them: 0.165 deep, 0.345 wide, 0.47 tall, feet at z 0.70, x behind the
+         tail face; a black strap across them and the rack's foot rail */
+      for (i = 0; i < 4; i++) {
+        var yc = -0.66 + i * 0.44, xc0 = V.tail - 0.17, xc1 = V.tail;
+        K.bb(S, xc0, xc1, yc - 0.172, yc + 0.172, 0.70, 1.17);
+        K.rod(S, 0.009, [xc0 - 0.002, yc - 0.14, 0.75], [xc0 - 0.002, yc + 0.14, 1.06], 4);
+        K.rod(S, 0.009, [xc0 - 0.002, yc + 0.14, 0.75], [xc0 - 0.002, yc - 0.14, 1.06], 4);
+        for (var hh = -1; hh <= 1; hh++) K.bb(D, xc0 + 0.06, xc0 + 0.11, yc + hh * 0.07 - 0.012, yc + hh * 0.07 + 0.012, 1.17, 1.20);
+      }
+      K.bb(D, V.tail - 0.19, V.tail, -0.90, 0.90, 0.67, 0.70);
+      K.bb(D, V.tail - 0.185, V.tail - 0.17, -0.90, 0.90, 0.98, 1.02);
     }
   }
   /* ------------------------------------------------------------ DETAIL PASS 3 (2026-11, POLICY 10)
@@ -1299,7 +1564,7 @@ var HeroHumvee = (function () {
      strapped by the M1025's roof ring.  No new material, so the draw calls do not grow. */
   function hvDetail3(K, T, V) {
     var DP = dpFor(K), D = T.dark, s, i, nose = V.nose, hw = V.hwF, ys = V.hwS, zr = V.roof;
-    var doors = V.kind === "slant" ? [[0.86, -0.06], [-0.06, -0.92]] : V.kind === "arm" ? [[0.74, -0.29], [-0.29, -1.24]] : [[0.86, -0.22]];
+    var doors = V.kind === "slant" ? [[0.86, -0.06], [-0.06, -0.92]] : V.kind === "arm" ? ARM_D : [[0.86, -0.22]];
     var zh = V.kind === "arm" ? 1.16 : 1.22;
     for (s = -1; s <= 1; s += 2) {
       doors.forEach(function (d) {
@@ -1331,9 +1596,9 @@ var HeroHumvee = (function () {
       K.bb(D, nose - 1.21, nose - 1.17, s * (hw - 0.04), s * (hw + 0.015), 1.12, 1.24);
     }
     /* the black-out drive lamp on the left fender top, in its guard */
-    K.bb(T.lamp, nose - 0.10, nose - 0.04, hw - 0.26, hw - 0.12, 1.08, 1.14);
-    K.bb(D, nose - 0.16, nose - 0.10, hw - 0.27, hw - 0.11, 1.06, 1.15);
-    DP.guard(D, nose - 0.08, hw - 0.19, 1.11, 0.05, 1);
+    K.bb(T.lamp, nose - 0.10, nose - 0.04, hw - 0.26, hw - 0.12, 1.04, 1.10);
+    K.bb(D, nose - 0.16, nose - 0.10, hw - 0.27, hw - 0.11, 1.03, 1.11);
+    DP.guard(D, nose - 0.08, hw - 0.19, 1.07, 0.05, 1);
     /* the grille's surround and its centre bar */
     K.bb(D, nose + 0.010, nose + 0.030, -0.40, 0.40, 0.955, 0.975);
     K.bb(D, nose + 0.010, nose + 0.030, -0.40, 0.40, 0.655, 0.675);
@@ -1365,6 +1630,38 @@ var HeroHumvee = (function () {
       K.bb(D, RING_SLANT - 0.92, RING_SLANT - 0.56, 0.31, 0.33, zr, zr + 0.19);
     }
   }
+  /* ------------------------------------------------------------ BATCH 2: what reads at the game camera
+     Not more small fittings: the panel breaks that give the truck its shape from above and from the
+     front quarter.  The bonnet's two creases where its raised centre meets the fender tops (y +-0.46,
+     the loft's step; the raised air intake is in frontClip), the seam round the
+     slant-back's rear lid with its two hinges at the roof (x -1.16 / -1.24 to the tail), the cab's
+     drip rail over the doors, and the dark gap between the bonnet's rear edge and the cowl. */
+  function hvRead(K, T, V) {
+    var D = T.dark, nose = V.nose, cowl = nose - 1.25, i, s, st, x;
+    for (s = -1; s <= 1; s += 2) {
+      for (i = 0; i < BON.length - 1; i++) {
+        var a = BON[i], b = BON[i + 1];
+        K.rod(D, 0.009, [nose - a[0], s * 0.46, (a[1] + a[2]) / 2 + 0.006], [nose - b[0], s * 0.46, (b[1] + b[2]) / 2 + 0.006], 4);
+      }
+    }
+    /* the bonnet's rear edge: a black gap across the cowl */
+    K.bb(D, cowl - 0.005, cowl + 0.025, -(V.hwF - 0.02), V.hwF - 0.02, 1.30, 1.345);
+    if (V.kind === "slant" || V.kind === "arm") {
+      /* the rear lid: seams down both sides of the slant and across its top, its two hinges */
+      var arm = V.kind === "arm", xa = arm ? ARM_RE : -1.16, za = V.roof - 0.04, xb = V.tail + (arm ? 0.05 : 0.04), zb = arm ? ARM_TT : 1.22;
+      var L = Math.sqrt((xb - xa) * (xb - xa) + (zb - za) * (zb - za)), nx = -(zb - za) / L, nz = (xb - xa) / L;
+      if (nz < 0) { nx = -nx; nz = -nz; }
+      var o = 0.008, yl = V.hwS - 0.09;
+      var sp = function (t) { return [xa + (xb - xa) * t + nx * o, za + (zb - za) * t + nz * o]; };
+      var p0 = sp(0.03), p1 = sp(0.97);
+      for (s = -1; s <= 1; s += 2) {
+        K.rod(D, 0.011, [p0[0], s * yl, p0[1]], [p1[0], s * yl, p1[1]], 4);
+        K.rod(D, 0.022, [xa + 0.03, s * (yl - 0.20), V.roof + 0.012], [xa + 0.03, s * (yl - 0.40), V.roof + 0.012], 8);
+      }
+      K.rod(D, 0.011, [p0[0], -yl, p0[1]], [p0[0], yl, p0[1]], 4);
+      K.rod(D, 0.011, [p1[0], -yl, p1[1]], [p1[0], yl, p1[1]], 4);
+    }
+  }
   /* turret details shared by the weapon stations: the ring's bolts, its traverse lock and handle */
   function ringDetail(K, T, r, z, n) {
     var i, a;
@@ -1384,8 +1681,6 @@ var HeroHumvee = (function () {
   function make(key) {
     return function (THREE, M, C) {
       var V = VAR[key], T = makeMats(THREE, C, V);
-      var dw = dpWeather(THREE, T.skin.map, V.paint === "nato" ? "#515c45" : "#a1977a", key.length * 977 + 13);
-      if (dw) T.skin.map = dw;
       var g = new THREE.Group();
       g.name = "humvee_" + key;
       var K = new Baker(THREE);
@@ -1396,6 +1691,7 @@ var HeroHumvee = (function () {
       else bodyArm(K, T, V);
       hvDetail(K, T, V);
       hvDetail3(K, T, V);
+      hvRead(K, T, V);
       K.flush(g);
       var tgL = tyreGeo(THREE, V.R, 1), tgR = tyreGeo(THREE, V.R, -1), s, i, axs = [XF, XR];
       for (i = 0; i < 2; i++) for (s = -1; s <= 1; s += 2) {
