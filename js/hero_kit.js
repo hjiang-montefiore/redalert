@@ -1981,7 +1981,10 @@ var HeroKit = (function () {
         h = h || 1.8;
         B.panel(K.pen("dull", "dark"), kf, s - fr, s + dw + fr, z0, z0 + h + 0.06, 0.02);
         B.panel(pen, kf, s, s + dw, z0 + 0.03, z0 + h, 0.06);
-        tube(K.pen("metal", "metal"), B.faceAt(kf, s + dw + 2.5 * fr, z0 + 0.9, 0.08), B.faceAt(kf, s + dw + 2.5 * fr, z0 + 1.5, 0.08), 0.02, 0.02, 3, false);
+        /* the bar stands 6 cm out on two legs from the wall (it floated 8 cm off with none) */
+        var gs = s + dw + 2.5 * fr, gm = K.pen("metal", "metal");
+        tube(gm, B.faceAt(kf, gs, z0 + 0.9, 0.06), B.faceAt(kf, gs, z0 + 1.5, 0.06), 0.02, 0.02, 3, false);
+        [0.92, 1.48].forEach(function (zz) { tube(gm, B.faceAt(kf, gs, z0 + zz, -0.005), B.faceAt(kf, gs, z0 + zz, 0.06), 0.012, 0.012, 3, false); });
       },
       /* the share at height z on face kf that is plumb above share s at zr */
       plumbS: function (kf, s, zr, z) {
