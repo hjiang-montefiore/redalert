@@ -156,22 +156,37 @@
    STANCE: CB's gear and CD agree: the belly clears the ground by 0.68 / 0.70 m at the nose-wheel
      station (CB 32 px under a 78 in fuselage; CD 27 : 78 px). Ground z = -1.66; height to the fin
      top 4.74 m against the published 4.78 m.
-   RECOGNITION LIST
-     1. the 1.98 m round fuselage, the T.17's long drooped nose with its black radome cap, the cheek
-        fairings and the little fairing on top (CC, CE)                    [skin, ink]
-     2. the B.2 fighter-type canopy over the cockpit (CC, CD)               [glass]
-     3. the straight wing, 5.79 m root chord, constant chord to the nacelles, tapered outboard;
-        2 deg / 4.35 deg dihedral (CA plan, CB)                              [skin loft]
-     4. the Avon nacelles through the wing at 3.05 m (CA front), the intake ring and starter bullet
-        (CF), the jet pipes (CC)                                             [skin, ink, metal]
-     5. the tip tanks, 4.33 m by 0.81 m (CB; fitted in CC, CD, CF)          [skin]
-     6. the fin with its square top and the tailplane, 10 deg dihedral, low on the tail (CA, CB)
-     7. gear: twin nose wheels at 4.7 m, single mains at 9.1 m on a 4.81 m track (CC, CB) ["gear"]
-     8. paint: one plain dark sea grey; the 360 Sqn disruptive green is NOT drawn (no camouflage
-        patterns); the radome black (CE)                                    [canvas paint]
+   BUILT ON js/hero_kit.js (round 2, spec tools/model3d/specs/gbr_e60_ewair.json): the Canberra alone
+     is drawn with HeroKit (the Valiant and Victor keep this file's own kit and dump byte-identical).
+     The airframe is built in the frame above (z 0 the fuselage axis, ground z -1.66) and stood level
+     by the kit's stance, so the model as loaded stands on z 0. Six materials, ten draw calls (the HF
+     wire is its own frame "hfwire" so a drawing that lacks it can hide it).
+   RECOGNITION LIST (positions in the spec's must_show)
+     1. the T.17 nose: black radome cap (front 0.72 m, CE), square-topped section, a cheek fairing each
+        side (0.77 to 2.2 m, CC / CE), the small dark fairing on the nose top, the light keel fairing
+        under the nose (0.85 to 4.1 m, CC)
+     2. the B.2 bubble canopy 2.45 to 3.85 m, its windscreen and rear frames (CC)
+     3. the straight wing, 2 deg / 4.35 deg dihedral (CA plan, CB), flaps and ailerons as panels
+     4. the Avon nacelles at y 3.05 m: intake lip, dark duct, the starter bullet on three vanes (CF),
+        cooling scoop, the jet pipes (CC)
+     5. tip tanks 4.33 m by 0.81 m (CB), green over grey, a vent fin and pipe aft (CF)
+     6. the fin with its fillet and the aerial fairings each side (CC, CD), the low tailplane, 10 deg
+        dihedral; the T.17's tail-cone fairing, 0.32 m across with a dark cap (CC, CD)
+     7. HF mast at 7.67 m and the wire to the fin (CC, CF); blade aerials, beacons, the tail light
+     8. gear: twin nose wheels at 4.7 m, single mains at 9.1 m on the 4.81 m track, the big outboard
+        leg doors (CC, CB, CF)
+   PAINT: plain grey-green above over light aircraft grey below, as the photographs show (CF dark,
+     CD pale; one plain colour between them, NO camouflage pattern, no roundels, flashes, codes,
+     serials or badges). Authored with HeroKit.authorFor for what the game camera should show (top
+     0x87907c, under 0xb3b7b0, radome 0x3d403f); split low on the fuselage side (24 per cent of the
+     depth), at the leading edge on wing and tailplane, at the widest line on the tanks. A projected
+     paint sheet carries panel lines, the main joints drawn heavier, rivet rows, the bomb-bay (ECM
+     bay) doors, the crew door, walkway shading and light grime. Team colour: a strip on each outer
+     upper wing.
    NOT CONFIRMED: the T.17's overall length (measured, above); the wing thickness (12 to 8 per cent);
-     the nose's plan width (0.7 m half width, from CE by eye); the cheek fairing and top fairing
-     sizes; the T.17's jammer aerials, chaff dispensers and the tail-warning radar fairing.
+     the nose's plan width (0.7 m half width, from CE by eye); the cheek, nose-top and keel fairing
+     depths; the fin aerial fairings' length; the two small light fittings under the inner wing (CF)
+     and under the nacelle tail (CC) - not drawn, no picture shows what they are; the jammers inside.
    ========================================================================================== */
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
@@ -705,87 +720,284 @@ var HeroVForce = (function () {
      CANBERRA T.17 - forward of the nacelle lip CC at 44.2 px/m; aft of it CA (B.2) + 1.70 m
      ====================================================================================== */
   var CAN = (function () {
-    var F = Fus([
-      [0.00, 0.06, 0.03, -0.13], [0.15, 0.45, 0.40, -0.55], [0.40, 0.62, 0.48, -0.80], [0.80, 0.68, 0.49, -0.88],
-      [1.50, 0.71, 0.50, -0.91], [2.00, 0.76, 0.52, -0.93], [2.30, 0.84, 0.66, -0.95], [2.60, 0.90, 0.82, -0.96],
-      [3.00, 0.95, 0.94, -0.97], [3.60, 0.99, 0.96, -0.97], [6.65, 1.00, 0.96, -0.97], [9.00, 1.00, 0.97, -0.93],
-      [11.6, 0.99, 0.97, -0.87], [13.0, 0.98, 0.97, -0.83], [13.9, 0.96, 0.97, -0.77], [14.8, 0.93, 0.97, -0.67],
-      [15.8, 0.87, 0.97, -0.53], [16.7, 0.79, 0.96, -0.36], [17.6, 0.69, 0.95, -0.18], [18.6, 0.56, 0.93, 0.0],
-      [19.5, 0.42, 0.91, 0.18], [20.45, 0.30, 0.89, 0.37], [21.0, 0.22, 0.88, 0.50], [21.4, 0.15, 0.86, 0.60],
-      [21.66, 0.05, 0.80, 0.70]
-    ]);
-    var YN = 3.05;
-    function wz(y) {
-      y = Math.abs(y);
-      return 0.10 + Math.tan(2 * PI / 180) * Math.min(y, YN) + Math.tan(4.35 * PI / 180) * Math.max(0, y - YN);
-    }
-    var W = Wing([
-      [0.60, 8.02, 13.80, 0.12], [1.00, 8.02, 13.80, 0.12], [2.40, 8.05, 13.80, 0.12], [3.80, 8.07, 13.66, 0.115],
-      [5.00, 8.37, 13.21, 0.11], [6.42, 8.72, 12.72, 0.105], [7.85, 9.06, 12.20, 0.10], [9.04, 9.36, 11.78, 0.095],
-      [9.52, 9.53, 11.41, 0.09], [9.75, 9.90, 11.10, 0.08]
-    ], wz, 0.01);
-    var FIN = [[0.85, 16.8, 20.95, 0.08], [1.45, 17.64, 20.95, 0.08], [2.5, 18.55, 20.92, 0.075], [3.0, 19.0, 20.85, 0.07],
-               [3.08, 19.4, 20.6, 0.06]];
+    /* the measured tables (header): d metres aft of the radome tip, z up from the fuselage axis */
+    var FUS = [     /* [d, half width, top z, bottom z, upper exponent] */
+      /* the radome: the 0 / 0.15 / 0.40 / 0.80 stations measured (CC, CE), the rows between them on its round profile */
+      [0.00, 0.06, 0.03, -0.13, 2], [0.02, 0.19, 0.15, -0.24, 2], [0.05, 0.28, 0.25, -0.34, 2.05], [0.10, 0.38, 0.34, -0.46, 2.1],
+      [0.15, 0.45, 0.40, -0.55, 2.2], [0.25, 0.54, 0.45, -0.68, 2.3], [0.40, 0.62, 0.48, -0.80, 2.4], [0.58, 0.66, 0.49, -0.85, 2.45],
+      [0.80, 0.68, 0.49, -0.88, 2.5],
+      [1.50, 0.71, 0.50, -0.91, 2.5], [2.00, 0.76, 0.52, -0.93, 2.4], [2.30, 0.84, 0.66, -0.95, 2.2], [2.60, 0.90, 0.82, -0.96, 2],
+      [3.00, 0.95, 0.94, -0.97, 2], [3.60, 0.99, 0.96, -0.97, 2], [6.65, 1.00, 0.96, -0.97, 2], [9.00, 1.00, 0.97, -0.93, 2],
+      [11.6, 0.99, 0.97, -0.87, 2], [13.0, 0.98, 0.97, -0.83, 2], [13.9, 0.96, 0.97, -0.77, 2], [14.8, 0.93, 0.97, -0.67, 2],
+      [15.8, 0.87, 0.97, -0.53, 2], [16.7, 0.79, 0.96, -0.36, 2], [17.6, 0.69, 0.95, -0.18, 2], [18.6, 0.56, 0.93, 0.0, 2],
+      [19.5, 0.42, 0.91, 0.18, 2], [20.45, 0.30, 0.89, 0.37, 2], [20.95, 0.21, 0.87, 0.49, 2],
+      /* the T.17's tail-cone fairing (CC, CD): a short cylinder 0.32 m across with a dark cap */
+      [21.12, 0.165, 0.845, 0.525, 2], [21.45, 0.16, 0.84, 0.52, 2], [21.6, 0.11, 0.79, 0.57, 2], [21.66, 0.03, 0.70, 0.66, 2]
+    ];
+    var WING = [    /* [y, LE d, TE d, t/c]; 3.05 is the dihedral break at the nacelle */
+      [0.60, 8.02, 13.80, 0.12], [1.00, 8.02, 13.80, 0.12], [2.40, 8.05, 13.80, 0.12], [3.05, 8.06, 13.73, 0.118],
+      [3.80, 8.07, 13.66, 0.115], [5.00, 8.37, 13.21, 0.11], [6.42, 8.72, 12.72, 0.105], [7.85, 9.06, 12.20, 0.10],
+      [9.04, 9.36, 11.78, 0.095], [9.52, 9.53, 11.41, 0.09], [9.75, 9.90, 11.10, 0.08]
+    ];
+    /* the fin's trailing edge after CA side (x -9.98 at z 4.0, -9.91 at 4.4, -9.72 at 4.7 as stood; CC about -9.8) with
+       the top-rear corner rounded as CA draws it */
+    var FIN = [[0.85, 16.8, 20.95, 0.08], [1.45, 17.64, 20.92, 0.08], [2.34, 18.42, 20.81, 0.075], [2.74, 18.79, 20.74, 0.072],
+               [2.95, 19.03, 20.63, 0.07], [3.04, 19.2, 20.5, 0.065], [3.09, 19.42, 20.27, 0.06]];
     var STAB = [[0.15, 18.47, 21.17], [0.70, 18.47, 21.17], [1.89, 19.02, 21.17], [3.08, 19.58, 21.19], [3.80, 19.93, 21.19],
                 [4.15, 20.3, 21.0], [4.27, 20.6, 20.8]];
-    var GROUND = -1.66;
+    var NAC = [[6.65, 0.50], [6.8, 0.58], [7.3, 0.62], [9.5, 0.63], [11.5, 0.60], [13.0, 0.52], [14.0, 0.45], [14.27, 0.42]];
+    var TANK = [[9.0, 0.03], [9.2, 0.2], [9.7, 0.36], [10.5, 0.405], [12.0, 0.40], [12.9, 0.3], [13.33, 0.06]];
+    var YN = 3.05, YT = 9.745, GROUND = -1.66, D2R = PI / 180;
+    function wz(y) {
+      y = Math.abs(y);
+      return 0.10 + Math.tan(2 * D2R) * Math.min(y, YN) + Math.tan(4.35 * D2R) * Math.max(0, y - YN);
+    }
+    /* PAINT (header): a plain grey-green upper finish over light aircraft grey, the colours
+       authored for what they should SHOW at the game camera (HeroKit.authorFor) */
+    var SEEN_TOP = 0x87907c, SEEN_LOW = 0xb3b7b0, SEEN_RADOME = 0x3d403f;
 
-    function build(C) {
-      var kk = kits(), K = kk[0], G = kk[1];
-      /* fuselage; the radome cap black (CE) */
-      split(F.geo(), function (x) { return NOSE - x < 0.72; }, K.ink, K.skin);
-      /* the B.2 canopy (CC: 2.45 to 3.85 m, its top 0.15 m over the spine) and its rear frame */
-      K.glass.push(lathe([[2.45, 0.04], [2.6, 0.24], [2.9, 0.36], [3.3, 0.40], [3.6, 0.36], [3.85, 0.12]], 16, at(0, 0.88), 0.6));
-      K.metal.push(lathe([[3.55, 0.37], [3.6, 0.37]], 16, at(0, 0.88), 0.62, true));
-      /* the cheek fairings: rounded fronts at 0.72 m tapering aft to 2.2 m (CC, CE) */
+    function build(C, THREE, M) {
+      var A = HeroKit.authorFor, TOPC = A(SEEN_TOP, "top"), LOWC = A(SEEN_LOW, "side"), RAD = A(SEEN_RADOME, "top");
+      var K = HeroKit.begin(THREE, M, C, { category: "air", key: "gbr_e60_ewair", len: 21.66,
+        stance: { about: [X(9.1), GROUND], pitchDeg: 0 },
+        paint: { skin: LOWC, frame: 0x2b2f2e, seam: 0x262a27, seamLow: 0x6c706b, strut: 0xa9aca8, burnt: 0x4f4a44,
+                 radome: RAD, dark: 0x252827 } });
+      K.contract(["gear"]);
+      var i;
+      function fus(d) {
+        var k = 0;
+        while (k + 2 < FUS.length && FUS[k + 1][0] <= d) k++;
+        var a = FUS[k], b = FUS[k + 1], t = clamp((d - a[0]) / (b[0] - a[0]), 0, 1);
+        return { hw: lerp(a[1], b[1], t), top: lerp(a[2], b[2], t), bot: lerp(a[3], b[3], t) };
+      }
+      function wingRow(y) {
+        var k = 0;
+        y = Math.abs(y);
+        while (k + 2 < WING.length && WING[k + 1][0] <= y) k++;
+        var a = WING[k], b = WING[k + 1], t = clamp((y - a[0]) / (b[0] - a[0]), 0, 1);
+        return [lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+      }
+      /* chordwise point on the planform: [x, y] at share u of the chord */
+      function wp(y, u) { var r = wingRow(y); return [X(r[0] + u * (r[1] - r[0])), y]; }
+      function wline(u, y0, y1, n) { var o = [], k; for (k = 0; k <= n; k++) o.push(wp(y0 + (y1 - y0) * k / n, u)); return o; }
+      function stabRow(y) { return HeroKit.lin(STAB, Math.abs(y)); }
+      function sp(y, u) { var r = stabRow(y); return [X(r[0] + u * (r[1] - r[0])), y]; }
+      function rect(d0, d1, a0, a1) { return [[X(d0), a0], [X(d1), a0], [X(d1), a1], [X(d0), a1], [X(d0), a0]]; }
+      function ring(d, hw) { return [X(d), hw]; }
+
+      /* ------------------------------------------------ the paint sheet: panel lines as CA / CB draw them */
+      var frames = [0.72, 2.3, 4.05, 5.75, 6.65, 8.0, 9.4, 10.8, 12.2, 13.9, 15.8, 17.6, 19.5, 20.95].map(function (d) { return ring(d, fus(d).hw + 0.03); });
+      var top = [
+        wline(0.13, 0.9, 9.4, 8), wline(0.62, 0.9, 9.4, 8),                              /* front and rear spars */
+        wline(0.76, 1.0, 6.3, 6), wline(0.74, 6.42, 9.2, 4),                             /* flap and aileron hinges */
+        [wp(6.36, 0.74), wp(6.36, 1.0)], [wp(9.2, 0.74), wp(9.2, 1.0)], [wp(3.7, 0.76), wp(3.7, 1.0)], [wp(2.35, 0.76), wp(2.35, 1.0)],
+        [wp(4.4, 0.0), wp(4.4, 0.98)], [wp(5.6, 0.0), wp(5.6, 0.98)], [wp(7.0, 0.0), wp(7.0, 0.98)], [wp(8.3, 0.0), wp(8.3, 0.98)],
+        [wp(1.6, 0.13), wp(1.6, 0.62)],
+        [[X(8.6), 0.55], [X(12.6), 0.55]], [[X(4.05), 0.62], [X(15.8), 0.55]],          /* spine panels */
+        rect(9.4, 10.8, 1.25, 1.9), rect(7.6, 8.6, 0.25, 0.75),                          /* fuel tank hatches over the wing root, spine hatch */
+        [sp(0.25, 0.68), sp(3.9, 0.68)],                                                  /* elevator hinge */
+        [[X(6.9), YN - 0.58], [X(14.0), YN - 0.45]], [[X(6.9), YN + 0.58], [X(14.0), YN + 0.45]],   /* nacelle cowl joints */
+        [[X(8.2), YN - 0.6], [X(8.2), YN + 0.6]], [[X(11.6), YN - 0.6], [X(11.6), YN + 0.6]], [[X(13.0), YN - 0.52], [X(13.0), YN + 0.52]],
+        [[X(10.3), YT - 0.4], [X(10.3), YT + 0.4]], [[X(12.4), YT - 0.37], [X(12.4), YT + 0.37]]   /* tip tank joints */
+      ];
+      var bot = [
+        wline(0.13, 0.9, 9.4, 8), wline(0.62, 0.9, 9.4, 8), wline(0.76, 1.0, 6.3, 6), wline(0.74, 6.42, 9.2, 4),
+        [wp(4.4, 0.0), wp(4.4, 0.98)], [wp(5.6, 0.0), wp(5.6, 0.98)], [wp(7.0, 0.0), wp(7.0, 0.98)], [wp(8.3, 0.0), wp(8.3, 0.98)],
+        rect(7.0, 13.2, 0, 0.56), [[X(7.0), 0], [X(13.2), 0]],                           /* the bomb doors (the T.17's ECM bay) */
+        rect(4.0, 5.4, 0, 0.32),                                                          /* nose wheel doors */
+        rect(8.3, 10.6, YN - 0.42, YN + 0.42),                                            /* main wheel bays */
+        [[X(15.0), 0.3], [X(18.6), 0.25]], rect(16.0, 16.8, 0, 0.22),
+        [sp(0.25, 0.68), sp(3.9, 0.68)],
+        [[X(10.3), YT - 0.4], [X(10.3), YT + 0.4]], [[X(12.4), YT - 0.37], [X(12.4), YT + 0.37]]
+      ];
+      var side = [
+        [[X(0.72), -0.6], [X(0.72), 0.5]],                                                /* the radome joint */
+        [[X(0.8), 0.25], [X(2.3), 0.3], [X(4.05), 0.55], [X(15.8), 0.62], [X(19.5), 0.7]],   /* upper longeron */
+        [[X(0.8), -0.5], [X(4.05), -0.6], [X(14.8), -0.55], [X(19.0), 0.1], [X(20.9), 0.42]],   /* lower longeron */
+        [[X(2.95), -0.62], [X(2.95), 0.32], [X(3.9), 0.32], [X(3.9), -0.62], [X(2.95), -0.62]],   /* the crew door (CE) */
+        [[X(1.1), -0.2], [X(1.1), 0.35], [X(2.1), 0.35], [X(2.1), -0.2], [X(1.1), -0.2]],     /* nose equipment panel (CE) */
+        [[X(5.0), 0.1], [X(5.9), 0.1], [X(5.9), 0.5], [X(5.0), 0.5], [X(5.0), 0.1]],
+        [[X(20.55), 0.95], [X(20.3), 3.0]],                                               /* rudder hinge */
+        [[X(19.6), 1.5], [X(20.75), 1.5]], [[X(19.0), 2.3], [X(20.7), 2.3]],
+        [[X(20.45), 2.9], [X(20.3), 3.05]], [[X(18.0), 1.2], [X(18.4), 2.4]]
+      ];
+      var rivets = [wline(0.25, 1.0, 9.3, 8), wline(0.45, 1.0, 9.3, 8), [[X(4.05), 0.35], [X(15.8), 0.3]], [[X(9.0), YN + 0.3], [X(13.5), YN + 0.3]],
+                    [[X(9.0), YN - 0.3], [X(13.5), YN - 0.3]]];
+      K.paintSheet({ key: "gb_canberra_t17", seed: 360, bounds: { x0: -11.0, x1: 11.0, ymax: 10.3, z0: -1.15, z1: 3.3 }, seam: 0.85, grime: 300,
+        frames: frames, top: top, bot: bot, side: side, rivets: rivets, rivetsBot: rivets.slice(0, 3),
+        walk: [[[X(8.5), 1.1], [X(10.6), 1.1], [X(10.6), 2.2], [X(8.5), 2.2]], [[X(12.0), 0.3], [X(13.2), 0.3], [X(13.2), 0.62], [X(12.0), 0.62]]],
+        draw: function (g, m) {                                          /* the main joints drawn heavier, so they read at the game camera */
+          g.strokeStyle = "rgba(24,26,24,0.7)"; g.lineWidth = 3.4;
+          [1, -1].forEach(function (sg) {
+            [wline(0.76, 1.0, 6.3, 6), wline(0.74, 6.42, 9.2, 4), wline(0.13, 0.9, 9.4, 8)].forEach(function (L) {
+              g.beginPath(); L.forEach(function (q, k) { var u = m.U(q[0]), v = m.top(sg * q[1]); if (k) g.lineTo(u, v); else g.moveTo(u, v); }); g.stroke();
+            });
+          });
+          frames.forEach(function (f) { g.beginPath(); g.moveTo(m.U(f[0]), m.top(f[1])); g.lineTo(m.U(f[0]), m.top(-f[1])); g.stroke(); });
+        },
+        areas: [
+          { band: "top", poly: [[X(8.3), 0.05], [X(13.4), 0.05], [X(13.4), 0.5], [X(8.3), 0.5]], color: "rgba(30,34,30,0.06)" },
+          { band: "side", poly: [[X(2.45), 0.4], [X(4.05), 0.45], [X(4.05), 0.1], [X(2.45), 0.05]], color: "rgba(30,34,30,0.07)" }
+        ],
+        soot: [[X(21.45), 0, 0.68, 0.3, 0.08]] });
+
+      var upr = K.pen("skin", TOPC), uprA = upr.tint(A(0x6f7865, "top")), uprB = upr.tint(A(0x9ca591, "top"));
+      var low = K.pen("skin", LOWC), lowA = low.tint(A(0xa2a69e, "side"));
+      var rad = K.pen("skin", RAD), ink = K.pen("dull", "ink"), dark = K.pen("dull", "dark");
+      var steel = K.pen("metal", "steel"), metal = K.pen("metal", "metal");
+
+      /* ---------------------------------------------------------------- fuselage */
+      K.part("fuselage");
+      /* the radome (front 0.72 m) is its own fine loft (the kit drops stations closer than a fifth of the step), meeting the
+         fuselage exactly on the radome joint: both pass through the same section there */
+      var RJ = 0.72, rj = HeroKit.tab(FUS, RJ), sec = function (r) { return { x: X(r[0]), w: r[1], top: r[2], bot: r[3], eU: r[4] }; };
+      var jr = [RJ, rj[0], rj[1], rj[2], rj[3]];
+      K.loftBody(rad, FUS.filter(function (r) { return r[0] < RJ; }).concat([jr]).map(sec), { n: 22, step: 0.08, capB: true });
+      var secs = [jr].concat(FUS.filter(function (r) { return r[0] > RJ; })).map(sec);
+      var B = K.loftBody(upr, secs, { n: 22, step: 0.5, capA: true,
+        extra: [1.1].map(X),
+        split: { z: function (x) { var q = fus(NOSE - x); return q.bot + 0.24 * (q.top - q.bot); }, below: low, nBelow: 8 },
+        penOf: function (i2, k, f) {
+          var d = NOSE - f.x;
+          if (d < 0.72) return rad;                                   /* the black radome cap (CE) */
+          if (d > 21.45) return rad;                                   /* the tail fairing's cap (CC) */
+          if (f.below) return d > 4.05 && d < 5.75 ? lowA : f.pen;
+          if (d > 2.3 && d < 4.05) return uprB;                        /* the cockpit section */
+          if (d > 13.9 && d < 15.8) return uprA;
+          return f.pen;
+        } });
+      /* the T.17 nose: cheek fairings (CC, CE) - rounded fronts at 0.75 m, tapering to a point at 2.2 m */
       [1, -1].forEach(function (s) {
-        var yy = s * (F.hw(1.2) - 0.02);
-        K.skin.push(lathe([[0.72, 0.03], [0.78, 0.10], [0.9, 0.14], [1.4, 0.14], [1.9, 0.08], [2.2, 0.02]], 10, at(yy, -0.05)));
+        /* 0.48 m deep (CC rows 350-372), the front full and blunt (CE); painted like the nose round it */
+        var yy = s * 0.79, zz = -0.07;
+        K.loftBody(uprA, [{ x: X(0.75), y: yy, w: 0.0, top: zz, bot: zz }, { x: X(0.77), y: yy, w: 0.13, top: zz + 0.15, bot: zz - 0.15 },
+                          { x: X(0.84), y: yy, w: 0.19, top: zz + 0.22, bot: zz - 0.22 }, { x: X(1.0), y: yy, w: 0.21, top: zz + 0.24, bot: zz - 0.24 },
+                          { x: X(1.25), y: yy - s * 0.02, w: 0.2, top: zz + 0.23, bot: zz - 0.23 }, { x: X(1.65), y: yy - s * 0.05, w: 0.15, top: zz + 0.17, bot: zz - 0.17 },
+                          { x: X(2.25), y: yy - s * 0.1, w: 0.0, top: zz, bot: zz }].map(function (q) { q.eU = 2.3; q.eL = 2.3; return q; }),
+                     { n: 14, step: 0.22 });
       });
-      /* the small black fairing on the nose top (CE) */
-      K.ink.push(ell(0.42, 0.22, 0.11, X(0.85), 0, F.top(0.85) - 0.01, 10, 6));
-      /* wings, nacelles, tip tanks, team panels */
+      /* the small dark fairing on the nose top (CE) and the light keel fairing under the nose (CC) */
+      K.loftBody(rad, [{ x: X(0.55), w: 0.0, top: 0.47, bot: 0.44 }, { x: X(0.62), w: 0.17, top: 0.58, bot: 0.40 }, { x: X(0.95), w: 0.2, top: 0.6, bot: 0.4 },
+                       { x: X(1.15), w: 0.18, top: 0.58, bot: 0.4 }, { x: X(1.25), w: 0.0, top: 0.5, bot: 0.42 }], { n: 12, step: 0.15 });
+      K.loftBody(low, [{ x: X(0.85), w: 0.0, top: -0.8, bot: -0.84 }, { x: X(1.2), w: 0.14, top: -0.8, bot: -1.0 }, { x: X(3.8), w: 0.15, top: -0.85, bot: -1.06 },
+                       { x: X(4.1), w: 0.0, top: -0.9, bot: -0.93 }], { n: 10, step: 0.35 });
+      /* the canopy (CC: 2.45 to 3.85 m, 0.15 m over the spine), the windscreen and rear frames */
+      K.air.canopy([{ x: X(3.85), w: 0.08, sill: 0.86, top: 0.95 }, { x: X(3.6), w: 0.36, sill: 0.84, top: 1.10 }, { x: X(3.3), w: 0.40, sill: 0.84, top: 1.12 },
+                    { x: X(2.9), w: 0.36, sill: 0.84, top: 1.10 }, { x: X(2.6), w: 0.24, sill: 0.85, top: 1.01 }, { x: X(2.47), w: 0.06, sill: 0.86, top: 0.9 }],
+                   { frames: [X(2.68), X(3.55)], frameW: 0.05, e: 2.2, n: 10 });
+      /* fuselage fittings: the HF mast over the wing (CC, CF) and its wire to the fin top, blade aerials, beacons */
+      var mastTip = [X(7.67) - 0.2, 0, fus(7.67).top + 0.4];
+      K.tube(dark, [X(7.67), 0, fus(7.67).top - 0.03], mastTip, 0.03, 0.014, 6, true);
+      var HW = K.group("hfwire");                                       /* its own frame, so a drawing that lacks it can hide it */
+      HW.tube(HW.pen("metal", "metal"), mastTip, [X(19.16), 0, 2.98], 0.006, 0.006, 3, false);
+      K.blade(dark, [X(12.4), 0, fus(12.4).top - 0.02], [0, 0, 1], [1, 0, 0], 0.22, 0.26, 0.1, 0.025, 0.08);
+      K.blade(dark, [X(5.4), 0, fus(5.4).bot + 0.03], [0, 0, -1], [1, 0, 0], 0.2, 0.24, 0.1, 0.025, 0.08);
+      K.blade(dark, [X(15.4), 0, fus(15.4).bot + 0.03], [0, 0, -1], [1, 0, 0], 0.26, 0.3, 0.12, 0.025, 0.1);
+      K.air.lamp([X(11.0), 0, fus(11.0).top + 0.01], 0.06, "lampRed");
+      K.air.lamp([X(11.6), 0, fus(11.6).bot - 0.01], 0.06, "lampRed");
+      K.air.lamp([X(21.3), 0, 0.84], 0.04, "lampWhite");
+      [[4.6, 0.45], [9.9, 0.7], [16.3, 0.5]].forEach(function (q) {                       /* static vents, filler caps */
+        [1, -1].forEach(function (s) { var pt = B.pt(X(q[0]), s > 0 ? q[1] : PI - q[1], -0.005); K.disc(ink, pt, B.nrm(X(q[0]), s > 0 ? q[1] : PI - q[1]), 0.05, 8); });
+      });
+      /* the crew door handle and the step (CE) */
+      K.box(steel, X(3.5), X(3.3), -B.sec(X(3.4)).w - 0.012, -B.sec(X(3.4)).w + 0.02, -0.22, -0.18);
+
+      /* -------------------------------------------------------------------- wings */
+      K.part("wing");
+      var W = K.aerofoil(upr, WING.map(function (r) { return { s: r[0], le: X(r[1]), c: r[2] - r[1], t: r[3], z: wz(r[0]) }; }),
+        { lower: low, wrap: 0.04, k: 8, sub: 0, capRoot: true,
+          penOf: function (ri, jj, f) {
+            var flap = f.u > 0.76 && f.s > 1.0 && f.s < 6.3, ail = f.u > 0.74 && f.s > 6.42 && f.s < 9.2;
+            if (f.surf > 0) return ail ? uprB : (flap ? uprA : f.pen);
+            if (f.surf < 0) return (ail || flap) ? lowA : f.pen;
+            return f.pen;
+          } });
       [1, -1].forEach(function (s) {
-        K.skin.push(W.geo(s));
-        var zc = wz(YN) + 0.05, cf = at(s * YN, zc);
-        K.skin.push(lathe([[6.65, 0.50], [6.8, 0.58], [7.3, 0.62], [9.5, 0.63], [11.5, 0.60], [13.0, 0.52], [14.0, 0.45],
-                           [14.27, 0.42]], 20, cf, 1, true));
-        K.metal.push(lathe([[6.62, 0.47], [6.66, 0.52], [6.75, 0.55]], 20, cf, 1, true));
-        K.ink.push(lathe([[6.66, 0.48], [6.9, 0.45], [7.2, 0.44]], 20, cf, 1, true));
-        K.ink.push(disc(0.45, X(7.15), s * YN, zc, 20));
-        K.metal.push(lathe([[6.4, 0.02], [6.5, 0.14], [6.7, 0.22], [6.95, 0.24], [7.15, 0.2]], 12, cf));
-        K.metal.push(lathe([[14.1, 0.43], [14.27, 0.41], [14.32, 0.37]], 18, cf, 1, true));
-        K.ink.push(disc(0.38, X(14.15), s * YN, zc, 18));
-        /* tip tank, centred on the tip (CB), from 0.9 m ahead of the tip LE */
-        var ty = W.tip, tz = wz(ty);
-        K.skin.push(lathe([[9.0, 0.03], [9.2, 0.2], [9.7, 0.36], [10.5, 0.405], [12.0, 0.40], [12.9, 0.3], [13.33, 0.06]], 16,
-          at(s * ty, tz)));
-        teamPanel(K, W, s, 7.6, 8.6, 0.25, 0.6);
+        /* a plain team rectangle on each outer upper wing, about the old panels' area (1.0 m span x 1.1 m chord) */
+        K.teamStrip([0.22, 0.34, 0.46, 0.58].map(function (u) { var q = W.at(8.1, u, 1, s); return [q[0], q[1], q[2] + 0.002]; }), [0, -s * Math.sin(4.35 * D2R), 1], 1.0, 0.003);
+        K.air.seam(W.line(0.76, 1.0, 6.3, 6, 1, s), 0.022);
+        K.air.seam(W.line(0.74, 6.42, 9.2, 4, 1, s), 0.022);
+        [[1.6, 0.3], [5.2, 0.3], [7.2, 0.35]].forEach(function (q) { var c = W.at(q[0], q[1], 1, s); K.disc(steel, [c[0], c[1], c[2] + 0.004], [0, 0, 1], 0.07, 10); });   /* filler caps */
+        [2.0, 4.6, 7.6].forEach(function (y) {                                            /* flap / aileron hinge fairings underneath */
+          var q = W.at(y, 0.8, -1, s);
+          K.box(lowA, q[0] - 0.2, q[0] + 0.25, q[1] - 0.025, q[1] + 0.025, q[2] - 0.07, q[2] + 0.02);
+        });
       });
-      /* tail */
-      K.skin.push(finGeo(FIN));
-      [1, -1].forEach(function (s) { K.skin.push(stabGeo(STAB, s, 0.75, 10, 0.09, 0.07)); });
-      /* gear: twin nose wheels at 4.7 m (CC); single mains at 9.1 m on the 4.81 m track (CB, CC) */
-      var nd = 4.7, nr = 0.29, nz = GROUND + nr;
-      wheelPair(G, nd, 0, nz, nr, 0.16, 0.12);
-      G.leg.push(rod([X(nd - 0.15), 0, F.bot(nd) + 0.1], [X(nd), 0, nz], 0.06, 8));
-      [1, -1].forEach(function (k) { G.door.push(box(1.3, 0.025, 0.45, X(nd - 0.1), k * 0.3, F.bot(nd) - 0.2)); });
+
+      /* ------------------------------------------------------- nacelles (CA front, CF) */
+      K.part("nacelles");
       [1, -1].forEach(function (s) {
-        var yc = s * 2.405, mr = 0.465, mz = GROUND + mr, top = wz(YN) + 0.05 - 0.5;
-        G.tyre.push(cylY(mr, 0.3, X(9.1), yc, mz, 18));
-        G.leg.push(cylY(mr * 0.55, 0.32, X(9.1), yc, mz, 10));
-        G.leg.push(rod([X(9.1), yc + s * 0.2, mz], [X(9.1), yc + s * 0.2, top], 0.08, 8));
-        G.leg.push(rod([X(9.1), yc, mz], [X(9.1), yc + s * 0.24, mz], 0.05, 6));
-        G.leg.push(rod([X(8.3), yc + s * 0.2, top], [X(9.05), yc + s * 0.2, mz + 0.5], 0.04, 6));
-        G.door.push(box(2.2, 0.025, 0.55, X(9.4), s * (YN - 0.58), top - 0.25));
+        var y = s * YN, zc = wz(YN) + 0.05;
+        K.loftBody(upr, NAC.map(function (q) { return { x: X(q[0]), y: y, w: q[1], top: zc + q[1], bot: zc - q[1] }; }),
+          { n: 16, step: 0.5, capA: true, split: { z: zc - 0.05, below: low, nBelow: 6 },
+            penOf: function (i2, k, f) { var d = NOSE - f.x; return (!f.below && d > 8.2 && d < 11.6) ? uprA : f.pen; } });
+        /* the intake: lip ring, dark duct, starter bullet on three vanes (CF) */
+        K.revolve(steel, [[-0.03, 0.43], [0.0, 0.47], [0.04, 0.5], [0.12, 0.505]], { at: [X(6.65), y, zc], axis: [-1, 0, 0], seg: 22, capA: false, capB: false });
+        K.revolve(ink, [[-0.03, 0.43], [0.7, 0.4]], { at: [X(6.65), y, zc], axis: [-1, 0, 0], seg: 18, inward: true, capA: false, capB: true });
+        K.revolve(steel, [[-0.25, 0.0], [-0.17, 0.11], [-0.02, 0.2], [0.25, 0.235], [0.5, 0.22], [0.72, 0.2]], { at: [X(6.65), y, zc], axis: [-1, 0, 0], seg: 14, smooth: true, capB: true });
+        [0, 1, 2].forEach(function (k) {
+          var a = k * 2 * PI / 3 + PI / 2;
+          K.bar(dark, [X(6.65) - 0.3, y + Math.cos(a) * 0.2, zc + Math.sin(a) * 0.2], [X(6.65) - 0.3, y + Math.cos(a) * 0.405, zc + Math.sin(a) * 0.405], 0.03, 0.12);
+        });
+        /* the jet pipe out of the nacelle's tail (CC) */
+        K.air.jetPipe({ x: X(14.36), y: y, z: zc, r: 0.355, lip: 0.1, depth: 0.5 });
+        /* cooling scoops on the cowl and the nacelle's under fairing */
+        K.loftBody(uprA, [{ x: X(9.2), y: y, w: 0.0, top: zc + 0.62, bot: zc + 0.58 }, { x: X(9.5), y: y, w: 0.08, top: zc + 0.70, bot: zc + 0.58 },
+                          { x: X(9.9), y: y, w: 0.06, top: zc + 0.68, bot: zc + 0.58 }], { n: 8, step: 0.1, capB: true });
+        K.disc(ink, [X(9.49), y, zc + 0.64], [1, 0, 0], 0.04, 6);
+        [-1, 1].forEach(function (o) {
+          K.loftBody(lowA, [{ x: X(11.8), y: y + o * 0.42, w: 0.0, top: zc - 0.36, bot: zc - 0.44 }, { x: X(12.1), y: y + o * 0.42, w: 0.05, top: zc - 0.34, bot: zc - 0.5 },
+                            { x: X(12.6), y: y + o * 0.40, w: 0.04, top: zc - 0.32, bot: zc - 0.45 }], { n: 8, step: 0.1, capB: true });
+        });
+
+        /* ------------------------------------------------ tip tanks: green over grey, split at the widest line (CF) */
+        var tz = wz(YT), ty = s * YT;
+        K.loftBody(upr, TANK.map(function (q) { return { x: X(q[0]), y: ty, w: q[1], top: tz + q[1], bot: tz - q[1] }; }),
+          { n: 14, step: 0.45, capA: true, capB: true, split: { z: tz, below: low, nBelow: 7 },
+            penOf: function (i2, k, f) { var d = NOSE - f.x; return d < 9.28 ? steel : f.pen; } });
+        K.air.lamp([X(10.9), ty + s * 0.395, tz + 0.05], 0.045, s > 0 ? "lampRed" : "lampGreen");
+        K.blade(uprA, [X(13.0), ty, tz + 0.2], [0, 0, 1], [1, 0, 0], 0.16, 0.36, 0.14, 0.02, 0.12);     /* the tank's tail vent fin */
+        K.tube(steel, [X(13.2), ty, tz], [X(13.55), ty, tz], 0.02, 0.012, 6, true);                  /* the jettison vent pipe */
       });
-      return assemble(K, G, C, { key: "canberra", base: "#5f676a", line: "rgba(20,24,26,0.22)", seed: 7121,
-                                 rough: 0.75, metal: 0.04, door: 0x5c6467, leg: 0x7e8285 });
+
+      /* --------------------------------------------------------------------- tail */
+      K.part("tail");
+      var FN = K.aerofoil(upr, FIN.map(function (r) { return { s: r[0], le: X(r[1]), c: r[2] - r[1], t: r[3] }; }), { frame: "fin", k: 8, sub: 1,
+        penOf: function (ri, jj, f) { return f.u > 0.72 ? uprA : f.pen; } });
+      /* the fin aerial fairings on each side at 2.45 m (CC, CD) and the fin-top light */
+      [1, -1].forEach(function (f) {
+        var q = FN.at(2.45, 0.42, f > 0 ? 1 : -1);
+        K.revolve(uprB, [[0, 0.0], [0.08, 0.045], [0.3, 0.05], [0.62, 0.04], [0.72, 0.0]], { at: [q[0] + 0.32, q[1] - f * 0.02, q[2]], axis: [-1, 0, 0], seg: 8, smooth: true });
+      });
+      K.air.lamp([X(20.3), 0, 3.06], 0.035, "lampWhite");
+      var TS = K.aerofoil(upr, STAB.map(function (r) {
+        var t = lerp(0.09, 0.07, r[0] / 4.27);
+        return { s: r[0], le: X(r[1]), c: r[2] - r[1], t: t, z: 0.75 + Math.tan(10 * D2R) * r[0] };
+      }), { lower: low, wrap: 0.04, k: 8, sub: 0,
+        penOf: function (ri, jj, f) { return f.u > 0.68 ? (f.surf < 0 ? lowA : uprA) : f.pen; } });
+      [1, -1].forEach(function (s) { K.air.seam(TS.line(0.68, 0.3, 3.9, 4, 1, s), 0.02); });
+
+      /* --------------------------------------------------------------------- gear */
+      var G = K.group("gear"), gl = G.pen("skin", LOWC);
+      /* twin nose wheels at 4.7 m (CC), the doors hanging each side */
+      G.air.gearLeg({ x: X(4.7), y: 0, top: fus(4.7).bot + 0.12, r: 0.29, w: 0.15, twin: true, strut: 0.06 });
+      [1, -1].forEach(function (k) { G.box(gl, X(5.35), X(4.05), k * 0.31 - 0.012, k * 0.31 + 0.012, fus(4.7).bot - 0.42, fus(4.7).bot + 0.06); });
+      /* single mains at 9.1 m on the 4.81 m track (CB, CC), the big leg door outboard (CF) */
+      [1, -1].forEach(function (s) {
+        var zc = wz(YN) + 0.05, top = zc - 0.40;
+        G.air.gearLeg({ x: X(9.1), y: s * 2.62, top: top, r: 0.465, w: 0.3, side: -s, strut: 0.08, rake: 0.02,
+                        brace: [X(8.35), s * 2.62, top + 0.02] });
+        G.box(gl, X(9.75), X(8.55), s * 2.86 - 0.014, s * 2.86 + 0.014, GROUND + 0.55, top + 0.06);
+        G.box(gl, X(10.55), X(8.35), s * (YN - 0.46) - 0.014, s * (YN - 0.46) + 0.014, zc - 0.85, zc - 0.38);
+      });
+
+      var root = K.finish();
+      return root;
     }
     return { build: build };
   })();
 
-  function wrap(T, nose) { return function (THREE, M, C) { V = THREE; NOSE = nose; return T.build(C); }; }
+  function wrap(T, nose) { return function (THREE, M, C) { V = THREE; NOSE = nose; return T.build(C, THREE, M); }; }
   return { valiant: wrap(VAL, 16.26), victor: wrap(VIC, 17.515), canberra: wrap(CAN, 10.83) };
 })();
 
