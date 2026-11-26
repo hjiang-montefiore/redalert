@@ -99,9 +99,12 @@
    4.8 ([A1] reads 5.2-5.7 off a soft waterline; [C1]'s 4.8 kept).  The
    tower: 7.6..17.6 at its foot, 9.8..16.2 at its top [A1][C1] (it was a
    pyramid narrowing to 3 m).  The forward block 7.6..29.5 at the deck,
-   its front back to 25.4 at the bridge roof [A1]; the hangar's forward
-   end and the dome on its post at -44.8 [A1][C1]; the HHQ-10 at its after
-   end [A1].
+   its front back to 25.4 at the bridge roof [A1]; the hangar's front
+   face raked from -37.3 at the deck to -38.2 at its roof (it was read
+   -43.1: [A1] -37.8 at z 9, -38.7 at z 12; [C1] -39.4 at the top) with the after
+   deckhouse on its roof -51.7..-38.25 (13.0), its second tier (14.6) and
+   radome (top 17.0) [A1][C1][A3] -- the old "dome on its post at -44.8"
+   was this radome; the HHQ-10 at the roof's after end [A1][C1].
 
    NOT CONFIRMED -- estimated, not measured:
      - every plan width of a superstructure block (the photographs are side
@@ -512,12 +515,12 @@ var HeroPLADestroyersRedo = (function () {
     s.rotation.x = PI / 2; s.position.set(x, y, z); p.add(s); return s;
   }
   /* a faceted solid between two convex polygons (CCW from above), flat-shaded */
-  function frustum(S, lo, z0, hi, z1, noBottom) {
+  function frustum(S, lo, z0, hi, z1, noBottom, Stop) {
     var n = lo.length, i;
     var c = [0, 0, (z0 + z1) / 2];
     for (i = 0; i < n; i++) { c[0] += (lo[i][0] + hi[i][0]) / (2 * n); c[1] += (lo[i][1] + hi[i][1]) / (2 * n); }
     for (i = 1; i < n - 1; i++) {
-      FK.tri(S, [hi[0][0], hi[0][1], z1], [hi[i][0], hi[i][1], z1], [hi[i + 1][0], hi[i + 1][1], z1], c);
+      FK.tri(Stop || S, [hi[0][0], hi[0][1], z1], [hi[i][0], hi[i][1], z1], [hi[i + 1][0], hi[i + 1][1], z1], c);
       if (!noBottom) FK.tri(S, [lo[0][0], lo[0][1], z0], [lo[i + 1][0], lo[i + 1][1], z0], [lo[i][0], lo[i][1], z0], c);
     }
     /* the sides in rows and columns of a metre or two, so that whatever
@@ -548,13 +551,14 @@ var HeroPLADestroyersRedo = (function () {
             [x1 - cf, hwF], [x0 + ca, hwA], [x0, hwA - ca], [x0, -hwA + ca]];
   }
   /* a superstructure block: base plan at z0, top plan at z1 drawn in by
-     the tumblehome tin, the front set back ff and the after face fa */
+     the tumblehome tin, the front set back ff and the after face fa; the
+     roof into the sink o.roof when given (the 055's non-skid roofs) */
   function blk(S, x0, x1, z0, z1, o) {
     var lo = chamf2(x0, x1, o.hwA, o.hwF === undefined ? o.hwA : o.hwF, o.ca || 0, o.cf || 0);
     var tin = o.tin === undefined ? (z1 - z0) * 0.12 : o.tin;
     var hi = chamf2(x0 + (o.fa || 0), x1 - (o.ff || 0), o.hwA - tin, (o.hwF === undefined ? o.hwA : o.hwF) - tin,
                     o.caT === undefined ? (o.ca || 0) : o.caT, o.cfT === undefined ? (o.cf || 0) : o.cfT);
-    frustum(S, lo, z0, hi, z1, o.noBottom);
+    frustum(S, lo, z0, hi, z1, o.noBottom, o.roof);
     return { lo: lo, hi: hi, z0: z0, z1: z1 };
   }
   /* a point on face k of block B at fraction s along it and height z,
@@ -716,7 +720,10 @@ var HeroPLADestroyersRedo = (function () {
     function halfDeck(x) { return W(x, deckZ(x)) - (bul(x) > 0.02 ? 0.2 : 0); }
     function xs() {
       var a = [], x, i, st = 2.0;
-      for (x = XS0; x < XS1 - 0.01; x += st) a.push(x);
+      /* H0.thin [x0, x1, step]: a prismatic run lofted at a coarser step
+         (the section does not change there; triangles go to fittings) */
+      var th = H0.thin ? [H0.thin[0] * k, H0.thin[1] * k, H0.thin[2]] : null;
+      for (x = XS0; x < XS1 - 0.01; x += st) if (!th || x < th[0] || x > th[1] || Math.abs(x / th[2] - Math.round(x / th[2])) < 1e-6) a.push(x);
       for (i = 0; i < STA.length; i++) a.push(STA[i][0]);
       for (x = XWL - 10; x < XS1; x += 0.9) a.push(x);
       for (x = XS0; x < XS0 + 3; x += 1.0) a.push(x);
@@ -1068,10 +1075,10 @@ var HeroPLADestroyersRedo = (function () {
   /* ================================================ Type 055 [C1][A1]
      Stations off [C1] (x = -90 + (px - 105) / 8.0) and [A1] (x = 90 -
      (px - 48) / 8.47), heights off [A1] (see the header):
-       the pad -90..-63.6 (4.8) with its marks; the hangar -63.6..-43.1
-       (10.4), its two doors, the dome on its post at its forward end, the
-       HHQ-10 at its after end; the gap -43.1..-28.8 with the after cells on
-       the main deck; the step -28.8..-19.4 (9.6) with the boat bays and a
+       the pad -90..-63.6 (4.8) with its marks; the hangar -63.6..-37.3
+       (10.4; front raked -37.3 to -38.2), its two doors, the after deckhouse on its roof -51.7..-38.25
+       (13.0, second tier 14.6, radome to 17.0), the HHQ-10 at its after
+       end; the gap -37.3..-28.8 with the after cells on the main deck; the step -28.8..-19.4 (9.6) with the boat bays and a
        dome on a post; the funnel block -19.4..7.6 (15.2) with its two black
        uptakes; the forward block 7.6..29.5 (bridge roof 18.4, glazing
        16.8-17.9) and the integrated mast rising out of it, its after face
@@ -1085,7 +1092,7 @@ var HeroPLADestroyersRedo = (function () {
      (drawn 7 deg).  Drawn 180.0 m (published), 20.0 m beam at the knuckle
      (published 20), draught 6.6 (published). */
   var H55 = {
-    XS0: -90, XS1: 90, XWL: 83.0, XST: -89.0, fl: 1.25, stemP: 0.6, extra: [-63.6, -63.3, 62, 64],
+    XS0: -90, XS1: 90, XWL: 83.0, XST: -89.0, fl: 1.25, stemP: 0.6, extra: [-63.6, -63.3, 62, 64], thin: [-58, 12, 6],
     deckZ: function (x) {
       if (x < -63.6) return 4.8;
       if (x < -63.3) return 4.8 + 2.3 * (x + 63.6) / 0.3;
@@ -1112,6 +1119,19 @@ var HeroPLADestroyersRedo = (function () {
   function build055(THREE, M, C) {
     var g = new THREE.Group(), T = sealMats(makeMats(THREE, C)), S = sinks(), Hh = makeHull(H55), s, i, x;
     var DK = 7.1, PADZ = 4.8, TH = 0.12;          /* TH: the tumblehome, m per m */
+    /* the 055's decks and roofs are dark grey non-skid, clearly darker than
+       the sides, in every photograph from above [C1][A3]: authored
+       0x444749 = HeroKit.authorFor(0x74797d) on a top face (the canvas
+       takes ~10 % more off: seen about #6c7073).  Its own material, so the
+       052s keep theirs.  The recesses in the after deckhouse's sides are a
+       mid grey about 20 % darker than the wall [A1][C1]: authored 0x787d80
+       = HeroKit.authorFor(0xa0a6a9, "side"); their own sink and material.
+       These two are taken to linear here: the file seals its materials
+       (_srgbDone), so the renderer does not convert them, and the seenAs
+       ramp is for sRGB-authored paint */
+    T.deck.color.setHex(0x444749).convertSRGBToLinear();
+    var SH = new FK.Sink(), shadeM = sealMats({ m: new THREE.MeshStandardMaterial({ color: 0x787d80, map: plateTex(THREE), roughness: 0.88, metalness: 0.06 }) }).m;
+    shadeM.color.convertSRGBToLinear();
     Hh.build(THREE, g, T, S);
     sonarDome(THREE, g, T.under, 79.0, -4.2, 7.0, 1.5, 2.1);
     function hw(x) { return Hh.halfDeck(x) - 0.08; }
@@ -1130,13 +1150,13 @@ var HeroPLADestroyersRedo = (function () {
     FK.hatch(S.sup, 66.0, 1.6, Hh.deckZ(66), 1.2, 1.2, 0);
     FK.mushroom(S.metal, 72.0, -1.8, Hh.deckZ(72), 0.16, 0.5);
     FK.mushroom(S.metal, 72.0, 1.8, Hh.deckZ(72), 0.16, 0.5);
-    FK.tube(S.metal, [89.0, 0, Hh.top(89.0)], [89.0, 0, Hh.top(89.0) + 2.6], 0.06, 0.04, 6, false);
+    FK.tube(S.metal, [89.0, 0, Hh.deckZ(89.0) - 0.05], [89.0, 0, Hh.top(89.0) + 2.6], 0.06, 0.04, 6, false);
 
     /* ---- the forward cells: 64, sixteen along by four across [C1] */
     vlsField(S, 37.4, 16, 4, 1.12, 1.3, Hh.deckZ(37.4) + 0.02, 4);
 
     /* ---- the forward deckhouse 28.6..36.8 (9.6) [A1][C1], the H/PJ-11 */
-    var FDh = blk(S.sup, 28.4, 36.8, DK - 0.05, 9.6, { hwA: 8.6, hwF: 7.0, ca: 0.3, cf: 3.0, ff: 1.2, tin: 0.4, cfT: 2.6 });
+    var FDh = blk(S.sup, 28.4, 36.8, DK - 0.05, 9.6, { roof: S.deck, hwA: 8.6, hwF: 7.0, ca: 0.3, cf: 3.0, ff: 1.2, tin: 0.4, cfT: 2.6 });
     for (s = -1; s <= 1; s += 2) door(S, FDh, s < 0 ? 0 : 4, 0.3, DK, 0.9, 1.9);
     roofRail(S.metal, FDh, 0.25, [0, 1, 2, 3, 4], 1.0);
     FK.ladder(S.metal, [35.6, -3.2, DK], [34.6, -3.2, 9.6], [0, 1, 0], 0.6, 0.4);
@@ -1148,7 +1168,7 @@ var HeroPLADestroyersRedo = (function () {
        its front sloping back to 25.4 at the bridge roof (18.4) [A1]; the
        bridge glazing 16.8-17.9 round the front */
     var ZB = 18.4;
-    var FB = blk(S.sup, 7.6, 29.5, DK - 0.05, ZB, { hwA: hw(7.6), hwF: hw(29.5), ca: 0.4, cf: 4.0, ff: 4.1, fa: 0.0, tin: (ZB - DK) * TH, caT: 0.4, cfT: 2.8 });
+    var FB = blk(S.sup, 7.6, 29.5, DK - 0.05, ZB, { roof: S.deck, hwA: hw(7.6), hwF: hw(29.5), ca: 0.4, cf: 4.0, ff: 4.1, fa: 0.0, tin: (ZB - DK) * TH, caT: 0.4, cfT: 2.8 });
     [1, 2, 3].forEach(function (k) {
       var n = k === 2 ? 9 : 4, j;
       for (j = 0; j < n; j++) panel(S.glass, FB, k, 0.04 + j * 0.92 / n, 0.04 + (j + 0.86) * 0.92 / n, 16.8, 17.9, 0.06, 0);
@@ -1198,7 +1218,7 @@ var HeroPLADestroyersRedo = (function () {
 
     /* ---- the funnel block -19.4..7.6 (15.2) [A1][C1], flush; louvres,
        the two black uptakes, two satcom domes, whips */
-    var FN = blk(S.sup, -19.4, 7.6, DK - 0.05, 15.2, { hwA: hw(-19.4), hwF: hw(7.6), ca: 0.6, cf: 0.1, tin: (15.2 - DK) * TH, caT: 0.6, cfT: 0.1 });
+    var FN = blk(S.sup, -19.4, 7.6, DK - 0.05, 15.2, { roof: S.deck, hwA: hw(-19.4), hwF: hw(7.6), ca: 0.6, cf: 0.1, tin: (15.2 - DK) * TH, caT: 0.6, cfT: 0.1 });
     for (s = -1; s <= 1; s += 2) {
       var kF = s < 0 ? 0 : 4;
       [[0.03, 0.17], [0.56, 0.7]].forEach(function (q) { panel(S.dark, FN, kF, q[0], q[1], 11.2, 14.2, 0.1, 0); });
@@ -1221,41 +1241,95 @@ var HeroPLADestroyersRedo = (function () {
     /* ---- the step -28.8..-19.4 (9.6) [A1]: the boat bays in its sides
        (the dark openings of [C1]; the boats in them NOT CONFIRMED), the
        dome on its tall post [C1] */
-    var ST = blk(S.sup, -28.8, -19.3, DK - 0.05, 9.6, { hwA: hw(-28.8), hwF: hw(-19.3), ca: 1.2, cf: 0.1, tin: (9.6 - DK) * TH, caT: 1.0, cfT: 0.1 });
+    var ST = blk(S.sup, -28.8, -19.3, DK - 0.05, 9.6, { roof: S.deck, hwA: hw(-28.8), hwF: hw(-19.3), ca: 1.2, cf: 0.1, tin: (9.6 - DK) * TH, caT: 1.0, cfT: 0.1 });
     for (s = -1; s <= 1; s += 2) boatBay(S, ST, s < 0 ? 0 : 4, 0.12, 0.9, DK + 0.12, 9.3, s);
     FK.cylZ(S.sup, -26.4, 0, 9.6, 3.0, 0.45, 8, 0.35);
     sphere(THREE, g, 1.1, T.white, -26.4, 0, 13.6, 12, 7);
     roofRail(S.metal, ST, 0.25, [0, 4, 6, 7, 5], 1.0);
     FK.ladder(S.metal, [-28.8, -4.0, DK], [-28.8, -4.0, 9.6], [0, 1, 0], 0.6, 0.4);
 
-    /* ---- the after cells: 48, twelve along by four across, on the main
-       deck in the gap -43.1..-28.8; rails at the deck edge [C1] */
-    vlsField(S, -42.4, 12, 4, 1.06, 1.3, DK + 0.02, 4);
-    Hh.edgeRail(S.metal, -43.0, -28.9, 1.0);
+    /* ---- the after cells: 48 on the main deck in the gap -37.3..-28.8
+       [A1][C1][A3] (the gap is 8.5 m long, so the field is drawn eight
+       along by six across; the layout NOT CONFIRMED); rails at the deck
+       edge [C1] */
+    vlsField(S, -36.85, 8, 6, 0.96, 1.22, DK + 0.02, 4);
+    Hh.edgeRail(S.metal, -37.2, -28.9, 1.0);
     for (s = -1; s <= 1; s += 2) {
-      FK.mushroom(S.metal, -29.8, s * 6.5, DK, 0.18, 0.6);
-      FK.goose(S.metal, -42.0, s * 6.8, DK, 0.12, 0.7, 0);
-      FK.hatch(S.sup, -35.6, s * 6.6, DK, 1.0, 1.0, 0);
+      FK.mushroom(S.metal, -29.8, s * 6.9, DK, 0.18, 0.6);
+      FK.goose(S.metal, -36.9, s * 7.4, DK, 0.12, 0.7, 0);
+      FK.hatch(S.sup, -33.4, s * 7.6, DK, 1.0, 1.0, 0);
     }
 
-    /* ---- the hangar -63.6..-43.1 (10.4) [A1][C1]: two doors down to the
-       pad; on its roof the dome on its post at the front, the HHQ-10 aft */
-    var HG = blk(S.sup, -63.6, -43.1, DK - 0.05, 10.4, { hwA: hw(-63.0), hwF: hw(-43.1), ca: 0.3, cf: 1.2, tin: (10.4 - DK) * TH, caT: 0.3, cfT: 0.9 });
+    /* ---- the hangar -63.6..-37.3 (10.4) [A1][C1][A3]: its front face
+       rakes aft as it rises, -37.3 at the main deck to -38.2 at the roof
+       and on up the deckhouse's front to -38.95 at 13.0 ([A1] level
+       broadside: the edge at -37.8 at z 9, -38.7 at z 12; [C1] -39.4 at
+       the top on the near side).  Two doors down to
+       the pad; the HHQ-10 at the after end of the roof (-59.6..-56.4 [A1],
+       -60.6..-57.2 [C1][A3]: drawn at -59.0) */
+    var HX = -38.2;
+    var HG = blk(S.sup, -63.6, HX + 0.9, DK - 0.05, 10.4, { roof: S.deck, hwA: hw(-63.0), hwF: hw(HX + 0.9), ca: 0.3, cf: 1.2, ff: 0.9, tin: (10.4 - DK) * TH, caT: 0.3, cfT: 0.9 });
     stepFace(S, Hh, -63.6, PADZ - 0.02, DK, 0.0);
     for (s = -1; s <= 1; s += 2) {
       FK.boxZ(S.dark, -63.66, s * 3.7, PADZ, 0.1, 5.6, 5.0, 0);
       for (i = 0; i < 6; i++) FK.boxZ(S.metal, -63.74, s * 3.7, PADZ + 0.45 + i * 0.8, 0.06, 5.5, 0.06, 0);
       door(S, HG, s < 0 ? 0 : 4, 0.85, DK, 0.9, 1.9);
-      rafts(S, -55.0, -50.6, s * 7.4, 10.4, 3);
-      FK.whip(S.metal, -48.0, s * 7.6, 10.4, 5.0, 0.04);
-      dome(THREE, g, S, T, -47.0, s * 4.6, 10.4, 0.7, 0.4);
+      door(S, HG, s < 0 ? 0 : 4, 0.08, DK, 0.9, 1.9);
+      rafts(S, -57.2, -53.0, s * 7.6, 10.4, 3);
+      FK.whip(S.metal, -61.8, s * 7.9, 10.4, 5.0, 0.04);
     }
-    FK.cylZ(S.sup, -44.8, 0, 10.4, 3.4, 0.55, 8, 0.4);
-    sphere(THREE, g, 1.2, T.white, -44.8, 0, 14.6, 12, 7);
-    var hq = new THREE.Group(), Shq = sinks(); hq.position.set(-59.4, 0, 10.4);
+    var hq = new THREE.Group(), Shq = sinks(); hq.position.set(-59.0, 0, 10.4);
     hhq10(THREE, hq, Shq, 1.0); sinkOut(THREE, hq, Shq, T); g.add(hq);
-    roofRail(S.metal, HG, 0.25, [0, 4, 6, 2], 1.0);
-    FK.ladder(S.metal, [-43.0, -5.5, DK], [-43.4, -5.5, 10.4], [0, 1, 0], 0.6, 0.4);
+    roofRail(S.metal, HG, 0.25, [0, 4, 6, 7, 5], 1.0);
+    FK.ladder(S.metal, [HX + 1.0, -7.0, DK], [HX + 0.05, -7.0, 10.4], [0, 1, 0], 0.6, 0.4);
+
+    /* ---- the after deckhouse on the hangar roof -51.7..-38.25, its front
+       carrying on the hangar's raked front face [A1][C1][A3]: the tall block the level
+       broadside shows over x -51..-38.  Its roof 13.0 ([A1] reads 13.2-13.6
+       at -47..-45, soft; the hangar roof reads 0.3 high on the same
+       picture); on its forward part a second tier -45.6..-38.8 (14.6
+       [A1] at -39) carrying the white radome on its drum (centre -41.6, top
+       17.0 [A1] -41..-40; [C1] -43.0..-40.8); the twin poles at its after
+       edge (to 21 [A1] -43), the pole at the house's after end (18.8 [A1]
+       -51), the white director and the dark box on the lower roof [C1].
+       Its after face: [A1] -51.3, [C1] -52.2; drawn -51.7.  The two
+       recesses in each side, -48.0..-46.5 and -42.5..-41.5, mid grey [A1].
+       Plan widths NOT CONFIRMED (5.8 and 3.6 m half widths, inboard of the
+       hangar's roof edge as [C1] shows) */
+    var HZ = 13.0, HZ2 = 14.6, HA = -51.7;
+    /* a recess on face k of block B between stations xa..xb, za..zb: a
+       mid-grey panel lying 0.03 m off the (leaning) wall, its edges closed
+       down to the wall so that it sits on it */
+    function recess(B, k, xa, xb, za, zb) {
+      var L = faceLen(B, k), x0 = B.lo[k][0], dx = B.lo[(k + 1) % B.lo.length][0] - x0;
+      var fa = (xa - x0) / dx, fb = (xb - x0) / dx, f0 = Math.min(fa, fb), f1 = Math.max(fa, fb), ref = faceAt(B, k, (f0 + f1) / 2, (za + zb) / 2, -2);
+      var P = [faceAt(B, k, f0, za, 0.03), faceAt(B, k, f1, za, 0.03), faceAt(B, k, f1, zb, 0.03), faceAt(B, k, f0, zb, 0.03)];
+      var Q = [faceAt(B, k, f0, za, 0), faceAt(B, k, f1, za, 0), faceAt(B, k, f1, zb, 0), faceAt(B, k, f0, zb, 0)], j;
+      FK.quad(SH, P[0], P[1], P[2], P[3], ref);
+      for (j = 0; j < 4; j++) FK.quad(SH, Q[j], Q[(j + 1) % 4], P[(j + 1) % 4], P[j], ref);
+      return L;
+    }
+    var HS = blk(S.sup, HA, HX - 0.05, 10.35, HZ, { roof: S.deck, hwA: 5.8, hwF: 5.8, ca: 0.6, cf: 0.5, ff: 0.7, tin: 0.3, caT: 0.5, cfT: 0.4 });
+    var HS2 = blk(S.sup, -45.6, HX - 0.95, HZ - 0.05, HZ2, { roof: S.deck, hwA: 3.6, hwF: 3.6, ca: 0.4, cf: 0.4, ff: 0.3, tin: 0.2 });
+    for (s = -1; s <= 1; s += 2) {
+      var kH = s < 0 ? 0 : 4;
+      [[-48.0, -46.5], [-42.5, -41.5]].forEach(function (q) { recess(HS, kH, q[0], q[1], 10.6, 12.4); });
+      door(S, HS, kH, 0.8, 10.4, 0.9, 1.9);
+      [0.2, 0.45, 0.7].forEach(function (f) { panel(S.glass, HS2, kH, f, f + 0.12, 13.6, 14.2, 0.04, 0); });
+      FK.whip(S.metal, -44.9, s * 0.9, HZ2, 6.4, 0.06);
+      FK.tube(S.metal, [-44.9, s * 0.9, 18.4], [-44.9, 0, 18.4], 0.04, 0.04, 3, false);
+    }
+    [0.15, 0.4, 0.65].forEach(function (f) { panel(S.glass, HS2, 2, f, f + 0.2, 13.6, 14.2, 0.04, 0); });
+    panel(S.dark, HS, 6, 0.3, 0.6, 10.4, 12.3, 0.02, 0);
+    roofRail(S.metal, HS, 0.25, [0, 4, 6, 7, 5], 1.0);
+    roofRail(S.metal, HS2, 0.2, [0, 1, 2, 3, 4, 6], 0.9);
+    dome(THREE, g, S, T, -41.6, 0, HZ2, 1.1, 0.9);
+    FK.whip(S.metal, -50.9, 0, HZ, 5.8, 0.05);
+    eo(S, -48.6, 2.2, HZ);
+    FK.boxZ(S.dark, -46.8, -2.0, HZ, 1.2, 1.2, 0.9, 0);
+    FK.boxZ(S.white, -46.8, -2.0, HZ + 0.9, 1.3, 1.3, 0.08, 0);
+    FK.ladder(S.metal, [HA - 0.2, 3.0, 10.4], [HA - 0.1, 3.0, HZ], [0, 1, 0], 0.6, 0.4);
+    FK.ladder(S.metal, [-45.75, -2.6, HZ], [-45.7, -2.6, HZ2], [0, 1, 0], 0.5, 0.4);
 
     /* ---- the pad -90..-63.6 [C1]: the touchdown circle, the lines, the
        rail across the stern, the ensign staff, the stern fittings */
@@ -1275,10 +1349,11 @@ var HeroPLADestroyersRedo = (function () {
 
     /* ---- team colour: strips on the bridge roof, the hangar roof, the pad */
     FK.boxZ(S.team, 21.0, 0, ZB, 2.6, 1.2, 0.03, 0);
-    FK.boxZ(S.team, -53.0, 0, 10.4, 2.6, 1.2, 0.03, 0);
+    FK.boxZ(S.team, -55.4, 0, 10.4, 2.6, 1.2, 0.03, 0);
     FK.boxZ(S.team, -88.0, 0, PADZ, 1.8, 0.8, 0.03, 0);
 
     sinkOut(THREE, g, S, T);
+    var shG = SH.geo(THREE, 4); if (shG) g.add(new THREE.Mesh(shG, shadeM));
     var tw = new THREE.Group(), Stw = sinks(); tw.name = "turret";
     tw.position.set(59.2, 0, Hh.deckZ(59.2));
     navalGun(THREE, tw, Stw, { L: 5.4, hw: 2.0, h: 2.9, bar: 6.4, br: 0.1 });
