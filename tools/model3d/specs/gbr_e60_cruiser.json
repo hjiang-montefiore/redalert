@@ -1,0 +1,188 @@
+{
+ "key": "gbr_e60_cruiser",
+ "team": "nato",
+ "name": "Tiger-class cruiser as converted to a helicopter cruiser (HMS Tiger 1972 / HMS Blake 1969)",
+ "category": "ship",
+ "published": {
+  "len": 169.3,
+  "beam": 19.5,
+  "draught": 7.0,
+  "source": "en.wikipedia 'Tiger-class cruiser': 555.5 ft (169.3 m) oa, beam 64 ft (19.5 m), draught 23 ft (7.0 m)"
+ },
+ "len": 169.3,
+ "nodes": [
+  "turret",
+  "helipad"
+ ],
+ "references": [
+  {
+   "name": "[CB] HMS Blake (C99), starboard side, converted (photograph)",
+   "image": "ref/gbr_e60_cruiser/blake_c99.jpg",
+   "source": "Wikimedia Commons 'HMS Blake C99.jpg', 1600 x 785",
+   "view": "quarter",
+   "exact": false,
+   "note": "Starboard side from a little abaft the beam and above: stem px 1375, stern px 262 (1113 px for 169.3 m, 6.57 px/m on average, the stern nearer the camera). The stations in the model's header (and the landmarks below) are read off it with the foreshortening taken out along the hull, NOT to better than about 3 m. Shows, fore to aft: the Mk 26 twin 6 in on the forecastle, the 3 in Mk 6 twin on the bridge front, the bridge block, the lattice foremast with its pole, the two funnels, the mack with the Type 965 AKE-1 bedstead, the boats and davits, the hangar with its door aft, the flight deck over the quarterdeck."
+  },
+  {
+   "name": "[CT] HMS Tiger at Portsmouth Navy Day 1980 (photograph, from ahead)",
+   "image": "ref/gbr_e60_cruiser/tiger_portsmouth_1980.jpg",
+   "source": "Wikimedia Commons 'HMS Tiger (1945) at Portsmouth Navy Day 1980.jpg', 1600 x 2206",
+   "view": "quarter",
+   "exact": false,
+   "note": "From the port bow, close: the bridge block's window rows and its wide bridge wings, the lattice foremast with the Type 992Q, the lattice mast of the ship alongside is not Tiger's. For the reviewer."
+  }
+ ],
+ "must_show": [
+  "the long forecastle to d 113 (x -28.3), the quarterdeck a deck lower aft (z 9.3 -> 7.0)",
+  "the Mk 26 twin 6 in gunhouse on its ring at d 44 (x +40.65), the row's turret",
+  "the 3 in Mk 6 twin on the bridge front at d 55.5 (x +29.2), and one each side abreast the after funnel at d 111 (x -26.4, y +-5)",
+  "the stepped bridge block d 52-96 (x +32.7 .. -11.4) to z 20 with its window band",
+  "the lattice foremast d 83-90 (x +1.7 .. -5.4) to its platform at z 34, the pole to z 44",
+  "two funnels: d 88-94 (x -3.4 .. -9.4) and d 98-107 (x -13.4 .. -22.4), the after one broader",
+  "the mack at d 128.5 (x -43.9) with the Type 965 AKE-1 bedstead on top at z 32.4",
+  "the two Type 903 director domes at d 66 (x +18.65, z 21.4) and d 118 (x -33.35, z 15.6, on its pedestal)",
+  "the hangar d 133-156 (x -48.4 .. -71.4), roof z 19, its door aft, Sea Cat abreast at d 140",
+  "the flight deck d 156-169 (x -71.4 .. -84.65) at z 12 with its circle at d 162 (helipad node x -77.35)"
+ ],
+ "landmarks": [
+  {
+   "name": "6 in Mk 26 ring",
+   "ref": 0,
+   "view": "side",
+   "expect_m": [
+    40.65,
+    null
+   ],
+   "tol_m": 3.0,
+   "model_at": {
+    "node": "turret",
+    "index": 0
+   },
+   "note": "[CB] the forward gunhouse ring at d 44 from the stem (foreshortening taken out)"
+  },
+  {
+   "name": "flight deck circle (helipad)",
+   "ref": 0,
+   "view": "side",
+   "expect_m": [
+    -77.35,
+    null
+   ],
+   "tol_m": 3.0,
+   "model_at": {
+    "node": "helipad",
+    "index": 0
+   },
+   "note": "[CB] the middle of the flight deck d 156-169, d 162"
+  },
+  {
+   "name": "AKE-1 bedstead on the mack",
+   "ref": 0,
+   "view": "side",
+   "expect_m": [
+    -43.85,
+    32.4
+   ],
+   "tol_m": 3.0,
+   "model_at": {
+    "in_m": [
+     -46,
+     -5,
+     30,
+     -41.5,
+     5,
+     34.5
+    ],
+    "point": [
+     "mid",
+     "mid"
+    ]
+   },
+   "note": "[CB] the bedstead at px 530 (d 128.5 on the linear scale, mid-ship where the perspective cancels); its height NOT CONFIRMED beyond 3 m"
+  },
+  {
+   "name": "hangar after face",
+   "ref": 0,
+   "view": "side",
+   "expect_m": [
+    -71.35,
+    null
+   ],
+   "tol_m": 3.0,
+   "model_at": {
+    "material": "gbe_sup",
+    "in_m": [
+     -72.5,
+     -9,
+     13,
+     -70,
+     9,
+     18
+    ],
+    "point": [
+     "min",
+     null
+    ]
+   },
+   "note": "[CB] the hangar door face at d 156"
+  },
+  {
+   "name": "hangar roof",
+   "ref": 0,
+   "view": "side",
+   "expect_m": [
+    null,
+    19.0
+   ],
+   "tol_m": 2.0,
+   "model_at": {
+    "material": "gbe_sup",
+    "in_m": [
+     -70,
+     -9,
+     17,
+     -57.5,
+     9,
+     19.3
+    ],
+    "point": [
+     null,
+     "max"
+    ]
+   },
+   "note": "[CB] the hangar roof against the flight deck (12.0) and the freeboard aft; NOT CONFIRMED beyond 2 m"
+  },
+  {
+   "name": "freeboard at the stem",
+   "ref": 0,
+   "view": "side",
+   "expect_m": [
+    null,
+    11.5
+   ],
+   "tol_m": 1.0,
+   "model_at": {
+    "material": "gbe_hull",
+    "in_m": [
+     82,
+     -3,
+     5,
+     84.65,
+     3,
+     13
+    ],
+    "point": [
+     null,
+     "max"
+    ]
+   },
+   "note": "[CB] the bow's freeboard 11.5 m (the header), NOT CONFIRMED beyond about 1 m"
+  }
+ ],
+ "not_confirmed": [
+  "every height off [CB] (oblique photograph; the header's freeboards and house tops to about 1 m)",
+  "the widths of the houses and mounts (no plan); the Mk 26 and Mk 6 gunhouse widths",
+  "boat, raft, vent and hatch counts",
+  "the under-water hull, the four shafts and screws, the rudder"
+ ]
+}

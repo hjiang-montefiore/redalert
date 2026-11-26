@@ -1,0 +1,267 @@
+{
+  "key": "pact_e80_carrier",
+  "team": "nato",
+  "name": "Project 1143.3 heavy aviation cruiser Novorossiysk (Kiev class)",
+  "category": "ship",
+  "published": {
+    "len": 273.1,
+    "beam": 51.3,
+    "draught": 8.6,
+    "source": "ru.wikipedia 'Novorossiysk (aviation cruiser)' after russian-ships.info: 273.1 m overall, flight deck beam 51.3 m, waterline beam 31.0 m, draught 8 m standard / 9.3 m full, keel to masthead 61.6 m"
+  },
+  "len": 273.1,
+  "nodes": [],
+  "references": [
+    {
+      "name": "[D1] Kiev class recognition profile 1986, starboard",
+      "image": "ref/pact_e80_carrier/kiev_class_profile_1986_960.png",
+      "source": "Wikimedia Commons 'Kiev class aircraft carrier profile 1986.png' (960 px thumbnail of the 1636 px original)",
+      "view": "side",
+      "px_per_m": 3.409,
+      "anchor_px": [
+        12,
+        222
+      ],
+      "anchor_m": [
+        -136.5,
+        0
+      ],
+      "mask": "dark",
+      "mask_opts": {
+        "threshold": 110,
+        "edge_px": 4,
+        "fill": true
+      },
+      "window_m": [
+        -137,
+        0.5,
+        138,
+        56
+      ],
+      "exact": true,
+      "note": "A black recognition silhouette on a grey ground. Scaled on the 273.1 m length overall: the hull spans 931 px (columns 12..943), 3.409 px/m; the drawn 274 m bar is 923 px (3.37 px/m), so the drawing's bar and hull disagree by 1.2% and heights read 1.2% higher at the bar scale. Foot (waterline) at row 222; the scale bar below it (rows 226-229) and the caption are outside the window. At 3.4 px/m one pixel is 0.29 m: masts, whips and rails are one or two pixels wide."
+    },
+    {
+      "name": "[P1] Novorossiysk 1985 (USN DD-ST-85-06598), from above the starboard bow",
+      "image": "ref/pact_e80_carrier/novorossiysk_DD-ST-85-06598_1280.jpg",
+      "source": "Wikimedia Commons 'Kiev-class Novorossiysk DD-ST-85-06598 r.jpg' (US DoD, public domain), 1280 px",
+      "view": "quarter",
+      "exact": false,
+      "note": "For the reviewer only: forecastle battery order, the one red-orange life-raft rack on the starboard forecastle edge forward of the forward Bazalt pair, the whip aerials on the forecastle edges, the island galleries, paint. Its hull number and markings are not part of the spec."
+    }
+  ],
+  "must_show": [
+    "angled flight deck down the port side at 4.5 degrees, flat at z 12.6 from the stern x -136.5 to x +38, port edge out to y +33.4 at x 34..38.5 with its sponson wall and soffit under it [D1, P3, P5]",
+    "long island on the starboard edge y -17.4..-5.0 from x -46.7 to +50.5: stepped tiers 14.8 (x -46.7..-40), 17.8 (-40..-27), 23.5 (-27..-12), the tower to 34.5 (-12..+25, raked faces above 28), 27.3 (+25..+30) with the forward M-11 director high on a pedestal (top 33.7 at x 31..33), 22.5 raked forward (+30..+43) [D1, P1, P2]",
+    "the ball radome (top 51.8) on its lattice tripod at x +11.3 on the tower roof, with its yard at z 45.6 [D1, P2, P4]",
+    "the Top Sail lattice reflector tilted on its cone forward of the ball (x +18.6..+19.5) and the planar array on its post aft of it (x +3.8) [D1, P2, P4]",
+    "the raked funnel casing on the tower's after end, x -10.6..-1.0, cap flat 35.3 aft of x -6 then rising to 37.0 at the front [D1, P2]",
+    "four twin P-500 Bazalt boxes on the forecastle, two each side at x 55 and 73, y +-8.6, raised forward, with the AK-726 on its raised base between the rows at x 64.5 [P1]",
+    "forward of them the M-11 on its tall drum at x 88.5, the SUW-N-1 at x 101, two RBU-6000 at x 112 y +-3.6 [P1, P4]",
+    "raked, flared bow with the high forecastle sheer (deck 14.4 to 15.8 at the stem x 136.6) and a low bulwark round the stem x 126..136.4 [D1, P4, P5]",
+    "red-brown forecastle deck x 38..136.6 against the dark grey flight deck with white strip lines and six spots (x -100 + 24.5 n) [P1, P3]",
+    "AK-630 pairs: island front x 47.6 (z 15.4), the sponson under the angled deck's forward end x 41.2 / 45.0 y +19.0, the stern quarter sponsons x -131.5 / -127.0 y +-16.6 [D1, P4, P6]",
+    "light grey hull with a dark boot-top below z 0.7 and the gallery scuttle row under the flight deck (z 10.9), three boat bays in the starboard and port quarters x -115.5..-87 [P1, D1]",
+    "one rack of six red-orange life-raft canisters on the starboard forecastle edge at x 78.6..85.4, and whip aerials along both forecastle edges x 93..127 [P1]"
+  ],
+  "landmarks": [
+    {
+      "name": "flight deck top at x -60",
+      "ref": 0,
+      "expect_m": [
+        -60.0,
+        12.37
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "material": "#504e52",
+        "in_m": [
+          -80,
+          -15,
+          11,
+          -40,
+          15,
+          14
+        ],
+        "edge": "upper"
+      },
+      "note": "[D1] col 272: edge at row 179.84 -> 12.37 m; read off [D1] at 3.409 px/m (stern col 12, foot row 222), half-intensity edge between bg 202 and ink 40. Drawn 12.6 (0.23 high, under one pixel = 0.29 m): tol 0.3 = one pixel of this drawing"
+    },
+    {
+      "name": "funnel casing top, after part, at x -8",
+      "ref": 0,
+      "expect_m": [
+        -8.0,
+        35.35
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "in_m": [
+          -10.5,
+          -18,
+          34.6,
+          -6.2,
+          -4,
+          37.5
+        ],
+        "edge": "upper"
+      },
+      "note": "[D1] col 450: 35.35 m (flat 35.1-35.4 from x -10.4 to -6); read off [D1] at 3.409 px/m (stern col 12, foot row 222), half-intensity edge between bg 202 and ink 40"
+    },
+    {
+      "name": "funnel casing top, forward, at x -1.5",
+      "ref": 0,
+      "expect_m": [
+        -1.5,
+        36.87
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "in_m": [
+          -5.0,
+          -18,
+          34.6,
+          -1.0,
+          -4,
+          37.5
+        ],
+        "edge": "upper"
+      },
+      "note": "[D1] col 472: 36.87 m, the cap rising from x -6 to the front face; read off [D1] at 3.409 px/m (stern col 12, foot row 222), half-intensity edge between bg 202 and ink 40"
+    },
+    {
+      "name": "island after end at z 13.5",
+      "ref": 0,
+      "expect_m": [
+        -46.65,
+        null
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "material": "#8e9296",
+        "in_m": [
+          -56,
+          -18,
+          12.7,
+          -44,
+          -4,
+          14.4
+        ],
+        "cross": 13.5,
+        "from_h": -56.0,
+        "to_h": -44.0
+      },
+      "note": "[D1] row 176: the island's after face between cols 317 and 318 -> x -46.65; read off [D1] at 3.409 px/m (stern col 12, foot row 222), half-intensity edge between bg 202 and ink 40. The earlier file drew -50.0"
+    },
+    {
+      "name": "forward tier roof at x 27.8",
+      "ref": 0,
+      "expect_m": [
+        27.8,
+        27.25
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "material": "#8e9296",
+        "in_m": [
+          26.5,
+          -17,
+          25.5,
+          29.2,
+          -5,
+          27.9
+        ],
+        "edge": "upper"
+      },
+      "note": "[D1] col 572: 27.25 m (27.3 over x 25.4..28.9); read off [D1] at 3.409 px/m (stern col 12, foot row 222), half-intensity edge between bg 202 and ink 40. The earlier file drew 30.0"
+    },
+    {
+      "name": "forward M-11 director top at x 31.9",
+      "ref": 0,
+      "expect_m": [
+        31.9,
+        33.66
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "material": "#8e9296",
+        "in_m": [
+          30.8,
+          -13,
+          30.5,
+          32.4,
+          -9.4,
+          34.5
+        ],
+        "edge": "upper"
+      },
+      "note": "[D1] col 586: 33.66 m (30.5-33.7 over x 30..34.8); read off [D1] at 3.409 px/m (stern col 12, foot row 222), half-intensity edge between bg 202 and ink 40"
+    },
+    {
+      "name": "ball radome top",
+      "ref": 0,
+      "expect_m": [
+        11.34,
+        51.73
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "material": "#c9cdcf",
+        "in_m": [
+          7,
+          -15,
+          47,
+          15,
+          -6,
+          53
+        ],
+        "point": [
+          "mid",
+          "max"
+        ]
+      },
+      "note": "[D1] cols 512-520 symmetric about col 516 (x 11.34); col 515 top edge 51.73 m; read off [D1] at 3.409 px/m (stern col 12, foot row 222), half-intensity edge between bg 202 and ink 40. The earlier file drew the ball at x 10.0"
+    },
+    {
+      "name": "stern overhang at z 4",
+      "ref": 0,
+      "expect_m": [
+        -133.73,
+        null
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "material": "#8c9193",
+        "in_m": [
+          -137,
+          -12,
+          3.5,
+          -125,
+          12,
+          4.5
+        ],
+        "point": [
+          "min",
+          null
+        ]
+      },
+      "note": "[D1] row 208: the stern face at x -133.73 (-133.39 at z 2, -134.09 at z 6); read off [D1] at 3.409 px/m (stern col 12, foot row 222), half-intensity edge between bg 202 and ink 40. The earlier file drew -131.4 at z 4"
+    }
+  ],
+  "not_confirmed": [
+    "the lift sizes (18.5 x 10.3 m drawn for both)",
+    "the exact y of the mounts and directors; the directors' identities (drawn as dish posts where D1 shows posts)",
+    "the bridge glazing band is drawn on the tower's raked front face at z 32.6",
+    "the boats, rudders (not drawn), the anti-fouling colour (dark red-brown drawn)",
+    "waterline length: 246.3 drawn from D1's foot against 235.8 published",
+    "the masthead whip: D1 shows none above the ball; a 1.2 m whip is a chosen length (the published 61.6 m keel to masthead is not fitted)",
+    "the life-raft rack's station (x 78.6..85.4 starboard, six canisters) and the eight forecastle whip stations are read roughly off P1, an oblique photograph (+-4 m)",
+    "the forward M-11 director's pedestal (x 30..34.4 from the 22.5 roof): D1 shows the director high there, not how it is carried",
+    "D1's island between x -27 and -12 reads 27.3 at -25..-22.7 and 27.0 at -13..-11 against the 23.5 tier drawn; D1's aft island block (14.7-15.0) and the AK-726 (18.5 at -43.8..-39) are drawn at 14.8 and x -42.6; the tiers were not re-cut further",
+    "the forecastle reads 0.5-1 m lower on D1 than drawn (14.4 + sheer); not changed: every forecastle mount and the rails stand on it",
+    "the forecastle whips' drawn height (about 8.4-9 m): P1 shows them but gives no scale for their length; D1 is too coarse to show them"
+  ],
+  "reference_notes": [
+    "Also read by the first builder (not stored here): [P2] 'Kiev-class Novorossiysk DN-SN-86-06938 r.jpg', [P3] 'Aircraft carrier \"Novorossiysk\" in 1984.jpeg', [P4] 'Novorossijsk Kiev-class 1986.jpg', [P5] '... in 1983.jpeg' and '... in 1986.JPEG', [P6] 'Kiev 1985 DN-SN-86-00684r.jpg' (Kiev)."
+  ]
+}

@@ -748,9 +748,9 @@ var HeroDeuUsPattern = (function () {
 })();
 
 /* the MARS row in the M270 module's own table: the European-built M270 of 1990 as the
-   module's 1991 M270 (two six-rocket M26 pods, NATO three-colour).  ord: the round its
+   module's 1991 M270 (two six-rocket M26 pods; plain CARC green 383, the plain-paint policy).  ord: the round its
    weapon is drawn as in flight, as nato_e90_mlrs. */
-HeroUsMlrs.rows.deu_e90_mlrs = { veh: "m270", paint: "nato3", pods: "rocket", turret: true, louvre: false, ord: { w_e90_deu_mlrs: "m26" } };
+HeroUsMlrs.rows.deu_e90_mlrs = { veh: "m270", paint: "carc383", pods: "rocket", turret: true, louvre: false, ord: { w_e90_deu_mlrs: "m26" } };
 
 /* len is the measured X extent of each build (dump.js) */
 UNIT_MODELS["deu_e50_lighttank"] = { len: 8.15, build: function (THREE, M, C) { return HeroM41.build(THREE, M, C, "M41"); } };

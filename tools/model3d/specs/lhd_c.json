@@ -1,0 +1,153 @@
+{
+  "key": "lhd_c",
+  "team": "pla",
+  "name": "Type 075 (Yushen) landing helicopter dock, Hainan class (drawn off Hainan LHD-31 and Anhui LHD-33)",
+  "category": "ship",
+  "published": {
+    "len": 232,
+    "beam": 36.8,
+    "source": "en.wikipedia 'Type 075 landing helicopter dock' (raw wikitext read 2026-11-12): length 232 m, beam 36.8 m (MSA notice), flight deck 226 x 36 m"
+  },
+  "len": 232,
+  "limits": {
+    "boxiness_max": { "value": 0.65, "reason": "flat-deck LHD: the 226 x 36 m flight deck, a real 85 x 20 m well cavity (floor, deckhead and walls; the wellgate contract, seen whenever the gate swings open) and a flat transom are 35% of the area; the hull is lofted (about 59% without the well). Accepted by the lead, batch 3." }
+  },
+  "nodes": [
+    "wellgate"
+  ],
+  "references": [
+    {
+      "name": "[A2] Anhui (LHD-33) 2025-05-16, starboard broadside",
+      "image": "ref/lhd_c/PLANS_Anhui_LHD-33_20250516.jpg",
+      "source": "Wikimedia Commons 'PLANS Anhui (LHD-33) 20250516.jpg' (Japan MoD), 1600 x 452",
+      "view": "side",
+      "px_per_m": 5.85,
+      "anchor_px": [1548, 386],
+      "anchor_m": [116, 0],
+      "mask": "bg",
+      "mask_opts": { "tolerance": 10, "edge_px": 6, "fill": true, "open_px": 1 },
+      "window_m": [-116, 1.5, 116, 58],
+      "align_m": 1.0,
+      "exact": false,
+      "note": "Nearly level starboard broadside from the air: stern x 190, deck front x 1548 (232.1 m at 5.85 px/m), waterline row 386, X = -116 + (px - 190) / 5.85. The photograph is soft (5.85 px/m, 2-3 px blur = 0.4-0.5 m) and the grey ship differs from the blue sea by only 5-15 in blue-minus-red, so its mask is unreliable: kept as an advisory outline and the source of the landmarks, read by column scans of blue-minus-red at half contrast. The camera is a little above the deck, so the flight deck's far side shows over the near deck edge aft of the island."
+    },
+    {
+      "name": "[A1] Anhui (LHD-33), straight down at sea",
+      "image": "ref/lhd_c/Type_075_LHD-33_Anhui.png",
+      "source": "Wikimedia Commons 'Type 075 LHD-33 Anhui.png', 1600 x 898",
+      "view": "top",
+      "px_per_m": 4.81,
+      "anchor_px": [1360, 465],
+      "anchor_m": [116, 0],
+      "mask": "bg",
+      "mask_opts": { "tolerance": 40, "edge_px": 6, "fill": true, "open_px": 2 },
+      "window_m": [-116, -21, 116, 21],
+      "align_m": 1.0,
+      "exact": false,
+      "note": "Overhead, bow right, island on the lower (starboard) edge, so it is already port-up. Stern corners x 245, bow x 1360: 4.81 px/m on the 232 m; deck rows 375..555 = 37.4 m across (deck centre row 465). The deck outline and its stern notches, the six spots to port and the seventh aft of the island, the lineup lines running from the port edge across each spot to the dashed line (Y -5.2), the stern and forward lifts, the island strip x 600..950 (X -42..+31). Helicopters, deck tractors and the wake are on the picture: advisory only."
+    },
+    {
+      "name": "[H1] Hainan (LHD-31), starboard bow",
+      "image": "ref/lhd_c/PLANS_Hainan_LHD-31_starboard_bow_view.jpg",
+      "source": "Wikimedia Commons 'PLANS Hainan (LHD-31) starboard bow view.jpg'",
+      "view": "quarter",
+      "exact": false,
+      "note": "For the reviewer: the square deck front over the deep fascia, the bow flaring hard in to a raked stem, the anchor high on the flare, the island's towers, the bridge with its window band, the deck-edge crane with two rows of raft canisters under it, the guard rail along the deck edge, balconies and doors in the topsides."
+    },
+    {
+      "name": "[H3] Hainan (LHD-31), starboard quarter",
+      "image": "ref/lhd_c/PLANS_Hainan_LHD-31_starboard_aft_view.jpg",
+      "source": "Wikimedia Commons 'PLANS Hainan (LHD-31) starboard aft view.jpg'",
+      "view": "quarter",
+      "exact": false,
+      "note": "For the reviewer: the flat transom, the ribbed well gate in two rows of panels with a dark slot over it, the big recess under the flight deck with a balcony rail, the corner platforms (HHQ-10 box to port, CIWS to starboard), scuttles in the transom, the guard rail round the stern and quarters of the flight deck."
+    }
+  ],
+  "must_show": [
+    "flat flight deck x -112.9..+116, 36 m wide (y -18..+18), square at the bow with small chamfers (x 114.8..116) and two notches at the stern corners (port x -112.9..-107.6, y 15.1..18; starboard x -112.9..-109.4, y -18..-7.4); deck at z 19.6",
+    "seven spots painted on the deck: six to port at y +9.9 (x 96.7, 59.5, 23.1, -13.3, -50.5, -88.1) and one aft of the island at x -74.7, y -10.4; each lineup line from the port edge across the spot to the dashed line at y -5.2",
+    "starboard island x -42..+29 on the deck edge (y -17.9..-8.0): low deckhouse (roof 24.8), after tower x -38..-23 (30.6) with two domes and a lattice mast at x -25, glazed block x -14.3..+1.4 (32.3) with two rows of windows, forward tower x 4.5..14.5 (36.9) with the tapered mast to 45 and the planar array at about 49.6, the bridge x 14..22.8 with its glazing band at z 31..32.6, the forward block x 22.5..29 (26.0) with an HHQ-10 box",
+    "deep fascia from z 15.2 to the deck over a bow that flares hard in to a raked stem (stem at the waterline about x 103, meeting the fascia's underside at x 110), anchors in pockets high on the flare at x 100.2, z 8.2 (the dark pocket on [A2] at X 98.3..102)",
+    "the stern: flat transom at x -112.9 with the 20 m well gate (y -10..+10, z 0.2..8.0, two rows of ribbed panels) in the group 'wellgate', a dark slot over it, the dark recess under the flight deck (y -6.6..+12, z 15.6..19) with a balcony rail",
+    "the corner platforms below the deck at the stern (z 17.1): the HHQ-10 box to port at y +13.4, the 11-barrel CIWS to starboard at y -13.4, both at x -112",
+    "the deck-edge crane forward of the island (x 31..40, y -20.6..-17.9) with ten raft canisters in two rows under it (x 32..38.4, z 15.6..17.1)",
+    "balconies on the topsides at x -92, -69.8, -56, -28.8, -10, 15.6, 53.2, 70 (z 14.4..15.4), the vehicle-deck side door at x -8.5..+0.5, z 6.2..11.8, rows of small windows at z 16.6 and 13, scuttles at z 4.6",
+    "the guard rail round the flight-deck edge (posts and two wires, 1 m) except along the island, x -112.9..+116",
+    "plain PLAN light grey, red anti-fouling below z -0.6, a dark boot top, dark grey non-skid deck; no hull number, spot numbers or flag"
+  ],
+  "landmarks": [
+    {
+      "name": "deck edge at x 60",
+      "ref": 0,
+      "expect_m": [60.0, 19.5],
+      "tol_m": 0.3,
+      "model_at": { "material": "#989ea3", "in_m": [-110, -18.2, 15.3, 115, -17.8, 19.65], "edge": "upper" },
+      "note": "[A2] row 272 = (386 - 272) / 5.85 = 19.5 m, the deck edge under the rail; drawn 19.6"
+    },
+    {
+      "name": "forward tower roof at x 12",
+      "ref": 0,
+      "expect_m": [12.0, 36.9],
+      "tol_m": 0.4,
+      "model_at": { "material": "#9ea5aa", "in_m": [10.5, -17.2, 33, 13.5, -8.2, 37.0], "edge": "upper" },
+      "note": "[A2] column scan at X 12: the sea-to-ship step at row 170 = 36.9"
+    },
+    {
+      "name": "glazed block top at x -6",
+      "ref": 0,
+      "expect_m": [-6.0, 32.0],
+      "tol_m": 0.4,
+      "model_at": { "material": "#232628", "in_m": [-9, -17, 31, -3, -9, 33], "edge": "upper" },
+      "note": "[A2] column scan at X -6: blue-minus-red 47 (sea) to 30 (block); half contrast at z 31.9; drawn 32.3 (the dark band at its top)"
+    },
+    {
+      "name": "low deckhouse roof at x -39.5",
+      "ref": 0,
+      "expect_m": [-39.5, 24.5],
+      "tol_m": 0.4,
+      "model_at": { "material": "#9ea5aa", "in_m": [-40.5, -18, 22, -38.6, -8, 25.0], "edge": "upper" },
+      "note": "[A2] column scan at X -39.5 (aft of the after tower, clear of the whip at -41): half contrast at z 24.5; drawn 24.8"
+    },
+    {
+      "name": "bridge glazing band height",
+      "ref": 0,
+      "expect_m": [null, 31.75],
+      "tol_m": 0.4,
+      "model_at": { "material": "#15181a", "in_m": [14, -18.5, 30.5, 24, -7, 33.5], "point": ["mid", "mid"] },
+      "note": "[A2] column scans at X 15..21: the dark band (lightness 58-76 against 110-130) at z 31.5-32.0; drawn 31.0..32.6 (the earlier model had it at 29.6..31.2)"
+    },
+    {
+      "name": "after-tower mast",
+      "ref": 0,
+      "expect_m": [-25.0, null],
+      "tol_m": 0.5,
+      "model_at": { "material": "#7b8389", "in_m": [-27.5, -14, 32.0, -22.5, -10, 38.5], "point": ["mid", null] },
+      "note": "[A2] the lattice mast stands at px 440 of the 3x island crop = X -25 (tower x -36..-23), top about 36.9; the earlier model had it in the middle of the tower (x -30.5)"
+    },
+    {
+      "name": "stem at z 9",
+      "ref": 0,
+      "expect_m": [105.3, null],
+      "tol_m": 0.5,
+      "model_at": { "material": "#989ea3", "in_m": [98, -4, 8.7, 116, 4, 9.5], "point": ["max", null] },
+      "note": "[A2] 6x crop of the bow with a metre grid: the dark hull against the lighter sea at X 105.3 on the picture's z 10. At the bow every height on [A2] reads 0.9 m high (deck edge 20.4 and fascia underside 16.2 there, against 19.5 at x 60 and 15.2 drawn), so this is model z 9.1. Below z 5 the bow wave hides the stem; the other readings (picture z - 0.9): z 7.1 X 104.6, 11.1 106.1, 13.1 107.4, 15.3 110.0"
+    },
+    {
+      "name": "island aft end",
+      "ref": 1,
+      "expect_m": [-42.2, null],
+      "tol_m": 0.5,
+      "model_at": { "material": "#9ea5aa", "in_m": [-46, -18.2, 19.7, -30, -7.5, 25], "point": ["min", null] },
+      "note": "[A1] the island strip starts at x 600 = (600 - 245) / 4.81 - 116 = -42.2"
+    }
+  ],
+  "not_confirmed": [
+    "the draught (7.2 m) and everything under water: the forefoot, the flat bottom, the two shafts with brackets and screws, the rudders, the bilge keels",
+    "the island's plan widths (side views only; the overhead fixes its outer and inner edges)",
+    "the port side: no port photograph; its balconies and side door mirror the starboard ones",
+    "the two boats on the port sponsons (boat-shaped objects on [A1], identity not seen) and the forward CIWS on the port sponson (the only remaining mount on [A1])",
+    "the size of the planar array on the mast and the exact heights of the mast head (pole 55): [A2] is too soft above 45 m",
+    "the inside of the well (floor 0.2, deckhead 9.9, to x -28): no photograph looks into it",
+    "the domes on the bridge roof (x 17.0 and 17.6): their number and size are not resolved on [A2], which shows white equipment to about 36.5 over x 13..19; the model has the two bridge domes (tops 34.9 and 34.65 by the build; the review read 36.3 and 36.05 off the render) and the two on the forward tower's platform at x 12.4 (top 38.75)"
+  ]
+}

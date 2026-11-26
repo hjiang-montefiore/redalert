@@ -53,6 +53,13 @@
             forward block    X +22.5..+30.0, 25.0, HHQ-10 on it
           the rows of windows in the topsides (rows 290 and 310: 16.5 and
           13 m), the balconies along the deck edge.
+          RE-READ 2026-11-26 (column scans, blue minus red at half contrast;
+          spec tools/model3d/specs/lhd_c.json): the bridge's dark glazing
+          band is at 31.5-32.0 and its roof about 34 (drawn 1.4 m higher
+          than the 31.8 above); the after tower's lattice mast stands at X
+          -25, its two domes at -33.7 and -30.4, a third dome low at -21;
+          the stem meets the fascia's underside at X 110 (z 9 at X 105.3);
+          the anchor pocket is at X 98.3..102.
      [H1] "PLANS Hainan (LHD-31) starboard bow view.jpg" and [H2] "CNS
           Hainan.jpg" -- the bow: the flight deck runs out square over a
           deep fascia and the hull under it flares hard in to a raked stem
@@ -704,12 +711,29 @@ var HeroPLANavyRedo = (function () {
     [  92.0, -6.0, 9.2, 16.4, 1.7, 2.2],
     [  97.0, -4.6, 6.2, 15.3, 1.8, 2.0],
     [ 100.5, -2.4, 3.2, 14.0, 1.6, 2.0],
-    [ 103.0, 0.0, 0.0, 12.6, 1.3, 2.0],
-    [ 106.0, 4.5, 0.0, 10.6, 1.2, 2.0],
-    [ 109.5, 9.5, 0.0, 7.6, 1.15, 2.0],
-    [ 112.0, 13.4, 0.0, 4.0, 1.1, 2.0],
-    [ 113.2, 15.2, 0.0, 0.2, 1.0, 2.0]
+    [ 101.80, -1.43, 1.54, 13.05, 1.45, 2.0],
+    [ 103.00, 0.00, 0.00, 12.00, 1.30, 2.0],
+    [ 103.70, 2.13, 0.00, 11.43, 1.24, 2.0],
+    [ 104.30, 5.00, 0.00, 10.90, 1.20, 2.0],
+    [ 104.60, 7.00, 0.00, 10.60, 1.18, 2.0],
+    [ 104.95, 8.14, 0.00, 10.23, 1.17, 2.0],
+    [ 105.30, 9.00, 0.00, 9.84, 1.16, 2.0],
+    [ 105.70, 10.07, 0.00, 9.36, 1.14, 2.0],
+    [ 106.10, 11.00, 0.00, 8.89, 1.13, 2.0],
+    [ 106.75, 12.13, 0.00, 8.08, 1.12, 2.0],
+    [ 107.40, 13.00, 0.00, 7.12, 1.11, 2.0],
+    [ 108.10, 13.70, 0.00, 5.75, 1.09, 2.0],
+    [ 108.80, 14.27, 0.00, 3.83, 1.06, 2.0],
+    [ 109.40, 14.72, 0.00, 1.98, 1.03, 2.0],
+    [ 110.00, 15.20, 0.00, 0.20, 1.00, 2.0]
   ];
+  /* the stem above the waterline re-read on [A2] (3 px/m crop, the bow's
+     heights 0.9 m high on that picture against the deck edge at x 60):
+     z 5 X 104.3, z 7 104.6, z 9 105.3, z 11 106.1, z 13 107.4, meeting the
+     fascia's underside (15.2) at X 110.0, a strongly rounded flare; the
+     earlier rows ran it out to 113.2. The rows from 101.8 are a monotone
+     cubic through those readings (stem height and the half-beam at 15.2
+     both), so the flare has no crease between knots                      */
   var ABOVE5 = [0.6, 1.8, 3.5, 5.5, 8.0, 10.5, 13.0, 15.2];
   function sec5(x) {
     var r = tab(ST5, x), kz = r[1], hwl = r[2], htop = r[3], p = r[4], n = r[5], out = [];
@@ -767,6 +791,8 @@ var HeroPLANavyRedo = (function () {
         g.lineWidth = 0.25 * K; g.beginPath(); g.arc(U(x), V(y), 2.2 * K, 0, TW); g.stroke();
         var ye = side > 0 ? 17.3 : -17.3;
         line(x, y + side * 4.7, x, ye, WH, 0.35);
+        /* [A1]: the lineup line carries on across the spot to the dashed line */
+        if (side > 0) line(x, y - 4.7, x, -5.2, WH, 0.35);
         line(x - 7.5, y, x + 7.5, y, WH, 0.25);
         line(x, y, x - (ye - y) * 0.85, ye, WH, 0.22);
         line(x, y, x + (ye - y) * 0.85, ye, WH, 0.22);
@@ -813,23 +839,54 @@ var HeroPLANavyRedo = (function () {
 
     /* ------------------------------------------------------- the hull */
     var xs = [];
-    for (x = L.HX0; x < 113.2; x += (x > 70 ? 1.5 : x < -95 ? 2.0 : 6.0)) xs.push(x);
-    xs.push(113.2);
+    for (x = L.HX0; x < 109.9; x += (x > 70 ? 1.5 : x < -95 ? 2.0 : 6.0)) xs.push(x);
+    xs.push(110.0);
+    /* the stem's own stations, so the loft passes through each knot      */
+    xs = xs.filter(function (u) { return u < 100.4 || u > 109.99; });
+    ST5.forEach(function (r) { if (r[0] >= 100.5 && r[0] < 109.99) xs.push(r[0]); });
+    xs.sort(function (a, b) { return a - b; });
     var rings = hullLoft(S, xs, sec5, band5, function () { return 4.0; });
+    /* the lofted skin's half-beam at (x, z), read off the rings exactly as
+       the loft joins them (linear between stations), and its outward
+       normal on side s: fittings on the topsides sit ON the skin, which
+       leans in below the deck-edge fascia (15.2)                          */
+    var ringZY = rings.map(function (R) {
+      return R.map(function (p) { return [p[1], p[0]]; }).filter(function (p, k, a) { return k === 0 || p[0] > a[k - 1][0] + 1e-6; });
+    });
+    function hullY(x, z) {
+      var k = 0;
+      while (k < xs.length - 2 && xs[k + 1] < x) k++;
+      var f = Math.max(0, Math.min(1, (x - xs[k]) / (xs[k + 1] - xs[k])));
+      return lerp(yAt(ringZY[k], z), yAt(ringZY[k + 1], z), f);
+    }
+    function hullN(x, z, s) {
+      var hx = (hullY(x + 0.5, z) - hullY(x - 0.5, z)), hz = (hullY(x, z + 0.25) - hullY(x, z - 0.25)) / 0.5;
+      return nz([-hx, s, -hz]);
+    }
+    /* a flat fitting (window, door, grille, scuttle) laid on the skin    */
+    function onSkin(sk, x, z, s, w, h, round) {
+      var n = hullN(x, z, s), c = [x, s * hullY(x, z), z];
+      c = ad(c, n, 0.015);
+      if (round) disc(sk, c, n, w, 8); else panel(sk, c, n, w, h);
+    }
     /* the transom, with the well opening cut out [H3]                    */
     (function () {
       var R0 = rings[0], P = [], k;
       for (k = 0; k < R0.length; k++) P.push([-R0[k][0], R0[k][1]]);
       for (k = R0.length - 1; k >= 0; k--) P.push([R0[k][0], R0[k][1]]);
       P = P.filter(function (p, q) { return q === 0 || Math.abs(p[0] - P[q - 1][0]) + Math.abs(p[1] - P[q - 1][1]) > 1e-4; });
+      /* the loop starts and ends on the keel point: drop the repeat, or
+         triangulateShape removes it in place and every hole index shifts
+         by one (the well opening came out covered)                      */
+      if (Math.abs(P[0][0] - P[P.length - 1][0]) + Math.abs(P[0][1] - P[P.length - 1][1]) < 1e-4) P.pop();
       /* P is in (y, z) going round; triangulate in the transom plane    */
       var hole = [[-L.WHW, L.WZ0], [-L.WHW, L.WZ1], [L.WHW, L.WZ1], [L.WHW, L.WZ0]];
       var V2 = P.map(function (p) { return new THREE.Vector2(p[0], p[1]); });
       if (THREE.ShapeUtils.isClockWise(V2)) { P.reverse(); V2.reverse(); }
       var H2 = hole.map(function (p) { return new THREE.Vector2(p[0], p[1]); });
       if (!THREE.ShapeUtils.isClockWise(H2)) { hole.reverse(); H2.reverse(); }
-      var all = V2.concat(H2);
-      THREE.ShapeUtils.triangulateShape(V2, [H2]).forEach(function (t) {
+      var TR = THREE.ShapeUtils.triangulateShape(V2, [H2]), all = V2.concat(H2);
+      TR.forEach(function (t) {
         var a = all[t[0]], b = all[t[1]], c = all[t[2]], zm = (a.y + b.y + c.y) / 3;
         tri(S[band5(zm)], [L.HX0, a.x, a.y], [L.HX0, b.x, b.y], [L.HX0, c.x, c.y], [L.HX0 + 1, (a.x + b.x + c.x) / 3, zm]);
       });
@@ -840,8 +897,25 @@ var HeroPLANavyRedo = (function () {
        flush with the hull aft, the deep fascia over the flared bow [H1].
        Its top is the flight deck itself: ONE flat surface, painted.     */
     prism(S.hull, DECK5, L.FB, L.FT, { top: false, bot: false });
-    capPoly(THREE, S.fdeck, DECK5, L.FT, true);
-    capPoly(THREE, S.hull, DECK5, L.FB, false);
+    /* (the island's footprint is left out: the deckhouse stands there)  */
+    capPoly(THREE, S.fdeck, DECK5, L.FT, true, [chamf(-41.9, 28.9, -17.8, -8.1, 1.1).reverse()]);
+    /* the fascia's underside: only where the deck overhangs the skin (the
+       flared bow, from where the skin leaves the deck edge to the deck
+       front). Amidships the skin's top edge IS the deck edge, so a full
+       cap there would be a hidden floor inside the ship.                 */
+    (function () {
+      var bxs = xs.filter(function (v) { return v >= 50; }).concat([114.8, 116.0]), k, e;
+      function dw(v) { return v <= 114.8 ? 18.0 : lerp(18.0, 16.8, (v - 114.8) / 1.2); }
+      function hw(v) { return v >= 110.0 ? 0 : hullY(v, L.FB); }
+      for (k = 0; k < bxs.length - 1; k++) {
+        var xa = bxs[k], xb = bxs[k + 1], ha = hw(xa), hb = hw(xb), da = dw(xa), db = dw(xb);
+        if (da - ha < 0.01 && db - hb < 0.01) continue;
+        for (e = -1; e <= 1; e += 2) quad(S.hull, [xa, e * ha, L.FB], [xb, e * hb, L.FB], [xb, e * db, L.FB], [xa, e * da, L.FB], [(xa + xb) / 2, e * (ha + da) / 2, L.FB + 1]);
+      }
+      /* the skin's top closed in the two stern notches the deck leaves  */
+      quad(S.hull, [L.HX0, 15.1, L.FB], [-107.6, 15.1, L.FB], [-107.6, 18.0, L.FB], [L.HX0, 18.0, L.FB], [-110, 16.5, L.FB - 1]);
+      quad(S.hull, [L.HX0, -18.0, L.FB], [-109.4, -18.0, L.FB], [-109.4, -7.4, L.FB], [L.HX0, -7.4, L.FB], [-111, -12.7, L.FB - 1]);
+    })();
     /* a drip strip under the fascia's lower edge, a rubbing band        */
     for (i = 0; i < DECK5.length; i++) {
       var a = DECK5[i], b = DECK5[(i + 1) % DECK5.length];
@@ -861,6 +935,14 @@ var HeroPLANavyRedo = (function () {
       }
       tube(S.metal, [-104, s * 19.3, L.FT - 0.05], [112, s * 19.3, L.FT - 0.05], 0.05, 0.05, 3, false);
     }
+    /* the guard rail round the flight-deck edge, posts and two wires: up
+       along the stern, the quarters and the bow in harbour [H1][H3] (it
+       stops at the island, which stands on the starboard edge)            */
+    (function () {
+      var E = 0.12, z = L.FT;
+      rail(S.metal, [[-107.6 + E, 18.0 - E, z], [114.8, 18.0 - E, z], [116.0 - E, 16.8, z], [116.0 - E, -16.8, z], [114.8, -18.0 + E, z], [32.0, -18.0 + E, z]], 1.0, 2.6, 0.03);
+      rail(S.metal, [[-43.0, -18.0 + E, z], [-109.4 + E, -18.0 + E, z], [-109.4 + E, -7.4 + E, z], [L.HX0 + E, -7.4 + E, z], [L.HX0 + E, 15.1 - E, z], [-107.6 + E, 15.1 - E, z], [-107.6 + E, 18.0 - E, z]], 1.0, 2.6, 0.03);
+    })();
 
     /* --------------------------------------------------- the well
        a real cavity behind the gate: floor, wing walls, deckhead and its
@@ -888,15 +970,15 @@ var HeroPLANavyRedo = (function () {
     /* --------------------------------------------------- the transom
        the big open recess under the flight deck with its balcony rail,
        scuttles, the stern lights and fairleads [H3]                       */
-    bx(S.dark, L.HX0 - 0.02, L.HX0 + 6.0, -6.6, 12.0, 15.6, 19.0);
+    panel(S.dark, [L.HX0 - 0.02, 2.7, 17.3], [-1, 0, 0], 18.6, 3.4);
     bx(S.deck, L.HX0 - 1.0, L.HX0 + 0.1, -6.6, 12.0, 15.5, 15.7);
     rail(S.metal, [[L.HX0 - 1.0, -6.6, 15.7], [L.HX0 - 1.0, 12.0, 15.7]], 1.1, 1.5, 0.03);
     [[-13.6, 12.6], [-13.6, 6.2], [13.0, 12.6], [13.6, 6.2], [-13.0, 3.0], [13.0, 3.0]].forEach(function (p) {
-      disc(S.dark, [L.HX0 - 0.03, p[0], p[1]], [-1, 0, 0], 0.32, 10);
+      disc(S.dark, [L.HX0 - 0.012, p[0], p[1]], [-1, 0, 0], 0.32, 10);
     });
     for (s = -1; s <= 1; s += 2) {
       fairlead(S.metal, L.HX0 - 0.1, s * 12.0, L.FB + 0.0, PI2, 1.2);
-      panel(S.dark, [L.HX0 - 0.03, s * 15.0, 9.5], [-1, 0, 0], 1.6, 1.1);
+      panel(S.dark, [L.HX0 - 0.012, s * 15.0, 9.5], [-1, 0, 0], 1.6, 1.1);
     }
 
     /* ------------------------------ the stern corner platforms [H3][A1]:
@@ -911,6 +993,7 @@ var HeroPLANavyRedo = (function () {
     ciws11(S, -112.0, -13.4, L.ZP, -PI + 0.6);
     /* a decoy launcher and a satcom dome on the starboard quarter [H3]  */
     for (i = 0; i < 2; i++) for (j = 0; j < 3; j++) tube(S.metal, [-104 + i * 0.4, -18.6, 17.2 + j * 0.35], [-104 + i * 0.4, -19.6, 17.6 + j * 0.35], 0.13, 0.13, 6, true);
+    bx(S.metal, -104.35, -103.25, -18.75, -18.5, 17.0, 18.25);
     bx(S.sup, -106, -101, -19.8, -18.0, 16.6, 17.0);
     rail(S.metal, [[-106, -19.8, 17.0], [-101, -19.8, 17.0]], 1.0, 1.25, 0.03);
 
@@ -924,44 +1007,53 @@ var HeroPLANavyRedo = (function () {
       var A = chamf(x0, x1, y0, y1, c);
       frustum(S.sup, A, z0, inset(A, ins || 0), z1, o || {});
     }
-    block(-42.0, 29.0, YO, -8.0, Z0, 24.8, 1.2, 0.15);                 /* low deckhouse */
+    block(-42.0, 29.0, YO, -8.0, Z0, 24.8, 1.2, 0.15, { top: false });  /* low deckhouse */
+    /* its roof, open under the towers and blocks that stand on it        */
+    capPoly(THREE, S.sup, inset(chamf(-42.0, 29.0, YO, -8.0, 1.2), 0.15), 24.8, true, [
+      chamf(-37.9, -23.1, -17.3, -8.7, 0.9), chamf(-14.2, 1.3, -16.3, -9.3, 0.7), chamf(4.6, 14.4, -16.9, -8.5, 0.9),
+      chamf(14.5, 22.4, -17.5, -8.3, 1.3), chamf(22.6, 28.6, -17.0, -9.0, 1.1)
+    ].map(function (h) { return h.reverse(); }));
     block(-38.0, -23.0, -17.4, -8.6, 24.8, 30.6, 1.0, 0.35);           /* after tower   */
     block(-14.3, 1.4, -16.4, -9.2, 24.8, 31.5, 0.8, 0.1);              /* glazed block  */
     frustum(S.soot, inset(chamf(-14.3, 1.4, -16.4, -9.2, 0.8), 0.1), 31.5, inset(chamf(-14.3, 1.4, -16.4, -9.2, 0.8), 0.3), 32.3, {});
     block(4.5, 14.5, -17.0, -8.4, 24.8, 36.9, 1.0, 0.9);               /* forward tower */
-    block(14.0, 22.8, -17.6, -8.2, 24.8, 29.6, 1.2, 0.1);              /* bridge base   */
+    block(14.0, 22.8, -17.6, -8.2, 24.8, 29.6 + 1.4, 1.2, 0.1);        /* bridge base   */
     block(22.5, 29.0, -17.2, -8.8, 24.8, 26.0, 1.0, 0.1);              /* forward block */
     /* the bridge: glazing leaning out over the front and its chamfers,
-       a roof, the wings out over the deck edge [H1][H2]                  */
+       a roof, the wings out over the deck edge [H1][H2]. Heights: [A2]'s
+       column scan at X 15..21 puts the dark glazing band at 31.5-32.0 and
+       the roof about 34 (the earlier 29.6..31.8 read 1.4 m low): the whole
+       bridge stands DZ higher on a taller base                            */
+    var DZ = 1.4;
     (function () {
       var A = chamf(14.0, 22.8, -17.6, -8.2, 1.2), B = chamf(14.0, 23.4, -17.9, -7.9, 1.2);
-      frustum(S.sup, A, 29.6, B, 31.2, { top: false, face: function (k) { return (k >= 1 && k <= 4) ? S.dark : S.sup; } });
-      frustum(S.sup, B, 31.2, inset(B, 0.15), 31.8, {});
-      bx(S.sup, 15.0, 19.5, -19.6, -17.6, 29.6, 31.0);
-      bx(S.sup, 15.0, 19.5, -8.2, -6.6, 29.6, 31.0);
-      panel(S.dark, [19.53, -18.6, 30.4], [1, 0, 0], 1.6, 0.8);
-      panel(S.dark, [19.53, -7.4, 30.4], [1, 0, 0], 1.2, 0.8);
-      rail(S.metal, [[15.0, -19.6, 31.0], [19.5, -19.6, 31.0]], 0.9, 1.1, 0.03);
-      sphere(S.white, [17.0, -11.0, 32.6], 0.9, 12, false);
-      cylZ(S.sup, 17.0, -11.0, 31.8, 0.4, 0.5, 8);
-      sphere(S.white, [17.6, -15.4, 32.5], 0.75, 12, false);
-      cylZ(S.sup, 17.6, -15.4, 31.8, 0.35, 0.4, 8);
-      rail(S.metal, [[14.2, -17.7, 31.8], [23.2, -17.7, 31.8], [23.2, -8.1, 31.8], [14.2, -8.1, 31.8]], 0.9, 1.3, 0.025);
+      frustum(S.sup, A, 29.6 + DZ, B, 31.2 + DZ, { top: false, face: function (k) { return (k >= 1 && k <= 4) ? S.dark : S.sup; } });
+      frustum(S.sup, B, 31.2 + DZ, inset(B, 0.15), 31.8 + DZ, {});
+      bx(S.sup, 15.0, 19.5, -19.6, -17.6, 29.6 + DZ, 31.0 + DZ);
+      bx(S.sup, 15.0, 19.5, -8.2, -6.6, 29.6 + DZ, 31.0 + DZ);
+      panel(S.dark, [19.53, -18.6, 30.4 + DZ], [1, 0, 0], 1.6, 0.8);
+      panel(S.dark, [19.53, -7.4, 30.4 + DZ], [1, 0, 0], 1.2, 0.8);
+      rail(S.metal, [[15.0, -19.6, 31.0 + DZ], [19.5, -19.6, 31.0 + DZ]], 0.9, 1.1, 0.03);
+      sphere(S.white, [17.0, -11.0, 32.6 + DZ], 0.9, 12, false);
+      cylZ(S.sup, 17.0, -11.0, 31.8 + DZ, 0.4, 0.5, 8);
+      sphere(S.white, [17.6, -15.4, 32.5 + DZ], 0.75, 12, false);
+      cylZ(S.sup, 17.6, -15.4, 31.8 + DZ, 0.35, 0.4, 8);
+      rail(S.metal, [[14.2, -17.7, 31.8 + DZ], [23.2, -17.7, 31.8 + DZ], [23.2, -8.1, 31.8 + DZ], [14.2, -8.1, 31.8 + DZ]], 0.9, 1.3, 0.025);
     })();
     /* the glazed block's two rows of windows, sides and ends [A2]        */
     for (i = 0; i < 7; i++) for (j = 0; j < 2; j++) {
-      var wx = -12.6 + i * 2.0, wz = 26.6 + j * 2.4;
-      panel(S.dark, [wx, -16.43, wz], [0, -1, 0], 1.4, 1.5);
-      panel(S.dark, [wx, -9.17, wz], [0, 1, 0], 1.4, 1.5);
+      var wx = -12.6 + i * 2.0, wz = 26.6 + j * 2.4, gi = 0.1 * (wz - 24.8) / 6.7 - 0.012;
+      panel(S.dark, [wx, -16.4 + gi, wz], [0, -1, 0], 1.4, 1.5);
+      panel(S.dark, [wx, -9.2 - gi, wz], [0, 1, 0], 1.4, 1.5);
     }
     for (j = 0; j < 2; j++) for (i = 0; i < 3; i++) {
-      panel(S.dark, [1.43, -14.4 + i * 2.0, 26.6 + j * 2.4], [1, 0, 0], 1.3, 1.5);
-      panel(S.dark, [-14.33, -14.4 + i * 2.0, 26.6 + j * 2.4], [-1, 0, 0], 1.3, 1.5);
+      var gj = 0.1 * (26.6 + j * 2.4 - 24.8) / 6.7 - 0.012;
+      panel(S.dark, [1.4 - gj, -14.4 + i * 2.0, 26.6 + j * 2.4], [1, 0, 0], 1.3, 1.5);
+      panel(S.dark, [-14.3 + gj, -14.4 + i * 2.0, 26.6 + j * 2.4], [-1, 0, 0], 1.3, 1.5);
     }
     /* the forward tower's after face black from the deckhouse roof to its
        top, where the uptakes come out [H3]; louvres on its side          */
-    quad(S.soot, [4.45, -16.3, 25.5], [4.45, -9.1, 25.5], [5.33, -9.1 + 0.8, 36.5], [5.33, -16.3 - 0.0 + 0.8, 36.5], [8, -12.7, 31]);
-    quad(S.soot, [4.45, -16.3, 25.5], [5.33, -15.5, 36.5], [5.33, -9.9, 36.5], [4.45, -9.1, 25.5], [8, -12.7, 31]);
+    quad(S.soot, [4.540, -15.9, 25.5], [5.358, -15.55, 36.5], [5.358, -9.85, 36.5], [4.540, -9.5, 25.5], [8, -12.7, 31]);
     for (i = 0; i < 3; i++) panel(S.grille, [6.5 + i * 2.6, -17.02 + 0.1 + (25.8 + 2 - 24.8) * 0.9 / 12.1 * 0, 27.0], [0, -1, 0], 2.0, 1.6);
     /* the mast on the forward tower: a tapered square column, platforms
        on its flanks with domes, a long yard, the big planar array and a
@@ -985,15 +1077,20 @@ var HeroPLANavyRedo = (function () {
       panel(S.dark, [8.98, -12.5, 49.6], [-1, 0, 0], 5.2, 3.4);
       tube(S.metal, [9.5, -12.5, 51.5], [9.5, -12.5, 55.0], 0.1, 0.04, 6, false);
       tube(S.metal, [8.0, -14.5, 45.25], [8.0, -14.5, 52.0], 0.06, 0.03, 4, false);
-      sphere(S.white, [11.2, -14.6, 46.0], 0.5, 10, false);
+      sphere(S.white, [11.2, -14.6, 45.73], 0.5, 10, false);
     })();
     /* the after tower: two domes on its roof, a small lattice mast with a
        platform and a yard [A2]                                            */
     (function () {
-      sphere(S.white, [-35.0, -12.0, 31.9], 1.3, 14, false); cylZ(S.sup, -35.0, -12.0, 30.6, 0.3, 0.8, 10);
-      sphere(S.white, [-26.2, -14.8, 31.6], 1.0, 12, false); cylZ(S.sup, -26.2, -14.8, 30.6, 0.2, 0.6, 10);
+      /* [A2] column scan: the two domes side by side at X -33.7 and -30.4
+         (tops 32.8), the lattice mast at the tower's forward end, X -25
+         (top 36.9), a third dome low on the deckhouse roof at X -21 (top
+         28.4)                                                           */
+      sphere(S.white, [-33.9, -12.0, 31.9], 1.3, 14, false); cylZ(S.sup, -33.9, -12.0, 30.6, 0.3, 0.8, 10);
+      sphere(S.white, [-30.6, -14.8, 31.6], 1.0, 12, false); cylZ(S.sup, -30.6, -14.8, 30.6, 0.2, 0.6, 10);
+      sphere(S.white, [-21.0, -15.0, 27.3], 1.1, 12, false); cylZ(S.sup, -21.0, -15.0, 24.8, 1.6, 0.55, 10);
       rail(S.metal, [[-37.6, -17.0, 30.6], [-23.4, -17.0, 30.6], [-23.4, -9.0, 30.6], [-37.6, -9.0, 30.6], [-37.6, -17.0, 30.6]], 1.0, 1.4, 0.025);
-      var m0 = [-30.5, -12.0];
+      var m0 = [-25.0, -12.0];
       for (var k = 0; k < 4; k++) {
         var dx = (k & 1 ? 0.6 : -0.6), dy = (k & 2 ? 0.6 : -0.6);
         tube(S.metal, [m0[0] + dx * 1.6, m0[1] + dy * 1.6, 30.6], [m0[0] + dx * 0.6, m0[1] + dy * 0.6, 34.4], 0.09, 0.07, 4, false);
@@ -1015,17 +1112,16 @@ var HeroPLANavyRedo = (function () {
     rail(S.metal, [[-41.8, -8.1, 24.8], [-38.2, -8.1, 24.8]], 1.0, 1.2, 0.025);
     rail(S.metal, [[-22.8, -8.1, 24.8], [-14.5, -8.1, 24.8]], 1.0, 1.2, 0.025);
     [[-40.0, 1.0], [-20.0, 1.0], [-3.0, 1.0], [20.0, 1.0]].forEach(function (d) {
-      panel(S.dark, [d[0], -8.0 + 0.04 - 0.15 * 0, Z0 + 1.1], [0, 1, 0], d[1], 2.0);
+      panel(S.dark, [d[0], -8.0 - 0.15 * 1.1 / (24.8 - Z0) + 0.012, Z0 + 1.1], [0, 1, 0], d[1], 2.0);
     });
-    for (x = -40; x < 28; x += 3.4) panel(S.dark, [x, YO - 0.03, 23.2], [0, -1, 0], 0.55, 0.45);
-    [-30, -18, -6, 3, 16].forEach(function (xv) { mushroom(S.metal, xv, -10.5, 24.8, 0.25, 0.5); goose(S.metal, xv + 1.2, -15.8, 24.8, 0.15, 0.7, PI2); });
+    for (x = -40; x < 28; x += 3.4) panel(S.dark, [x, YO + 0.15 * (23.2 - Z0) / (24.8 - Z0) - 0.012, 23.2], [0, -1, 0], 0.55, 0.45);
+    [-40.4, -18.2, -16.9, 2.6].forEach(function (xv) {   /* on the open roof between the towers */ mushroom(S.metal, xv, -10.5, 24.8, 0.25, 0.5); goose(S.metal, xv + 1.2, -15.8, 24.8, 0.15, 0.7, PI2); });
     ladder(S.metal, [-22.8, -9.0, 24.8], [-21.0, -9.0, 30.6], [0, 1, 0], 0.6, 0.3);
     ladder(S.metal, [2.0, -9.0, 24.8], [3.8, -9.0, 31.0], [0, 1, 0], 0.6, 0.3);
-    /* whips on the island                                                */
+    /* whips on the island: the deckhouse's after end and the forward
+       block [H1]; the glazed block's roof is clear on [A2] and [H1]      */
     whip(S.metal, -41.0, -17.0, 24.8, 9.0, 0.04);
-    whip(S.metal, -16.0, -16.6, 32.3, 7.0, 0.04);
-    whip(S.metal, 0.0, -16.6, 32.3, 7.0, 0.04);
-    whip(S.metal, 28.4, -17.0, 26.0, 6.0, 0.035);
+    whip(S.metal, 27.6, -16.5, 26.0, 6.0, 0.035);
 
     /* ---------------- the deck-edge crane forward of the island, its jib
        folded aft on an A-frame rest, the life-raft racks under it [H1]   */
@@ -1036,7 +1132,7 @@ var HeroPLANavyRedo = (function () {
     tube(S.metal, [32.0, -19.9, 19.1], [32.0, -19.3, 21.3], 0.08, 0.08, 4, false);
     tube(S.metal, [32.0, -18.7, 19.1], [32.0, -19.3, 21.3], 0.08, 0.08, 4, false);
     rail(S.metal, [[31.0, -20.6, 19.1], [40.0, -20.6, 19.1]], 1.0, 1.2, 0.025);
-    for (i = 0; i < 5; i++) for (j = 0; j < 2; j++) raft(S.white, S.metal, 32.0 + i * 1.6, -20.0, 15.6 + j * 0.9, PI2, 1.3, 0.34);
+    for (i = 0; i < 5; i++) for (j = 0; j < 2; j++) raft(S.white, S.metal, 32.0 + i * 1.6, -20.0, 15.6 + j * 0.75, PI2, 1.3, 0.34);
     bx(S.metal, 31.0, 40.0, -20.7, -18.0, 15.5, 15.6);
 
     /* --------------------- balconies, doors and windows on the topsides
@@ -1048,28 +1144,28 @@ var HeroPLANavyRedo = (function () {
         bx(S.sup, bxv - w / 2, bxv + w / 2, Math.min(y0, y1), Math.max(y0, y1), 14.4, 14.7);
         bx(S.sup, bxv - w / 2, bxv + w / 2, Math.min(y0, y1), Math.max(y0, y1), 14.7, 15.4);
         rail(S.metal, [[bxv - w / 2, y1, 15.4], [bxv + w / 2, y1, 15.4]], 1.0, 1.3, 0.025);
-        panel(S.dark, [bxv, s * 18.03, 16.4], [0, s, 0], 1.0, 2.0);
-        quad(S.sup, [bxv - w / 2, y1, 14.4], [bxv + w / 2, y1, 14.4], [bxv + w / 2, y0, 12.6], [bxv - w / 2, y0, 12.6], [bxv, s * 15, 15]);
+        panel(S.dark, [bxv, s * 18.012, 16.4], [0, s, 0], 1.0, 2.0);
+        quad(S.sup, [bxv - w / 2, y1, 14.4], [bxv + w / 2, y1, 14.4], [bxv + w / 2, s * (hullY(bxv + w / 2, 12.6) - 0.05), 12.6], [bxv - w / 2, s * (hullY(bxv - w / 2, 12.6) - 0.05), 12.6], [bxv, s * 15, 15]);
       });
       /* the rows of small windows [A2] at 16.5 and 13 m                 */
       [[-104, 4], [-80, 3], [-62, 2], [-44, 4], [-20, 3], [-2, 2], [24, 3], [40, 4], [62, 2], [82, 3]].forEach(function (c) {
         for (var q = 0; q < c[1]; q++) {
-          panel(S.dark, [c[0] + q * 1.3, s * 18.03, 16.6], [0, s, 0], 0.8, 0.6);
-          panel(S.dark, [c[0] + 4 + q * 1.3, s * 18.03, 13.0], [0, s, 0], 0.8, 0.6);
+          panel(S.dark, [c[0] + q * 1.3, s * 18.012, 16.6], [0, s, 0], 0.8, 0.6);
+          onSkin(S.dark, c[0] + 4 + q * 1.3, 13.0, s, 0.8, 0.6);
         }
       });
       /* the vehicle-deck side door (the published opening each side)    */
-      panel(S.dark, [-4.0, s * 18.04, 9.0], [0, s, 0], 9.0, 5.5);
-      bx(S.metal, -8.8, 0.8, s * 18.0, s * 18.15, 6.1, 6.25);
+      onSkin(S.dark, -4.0, 9.0, s, 9.0, 5.5);
+      (function () { var hy = hullY(-4.0, 6.17); bx(S.metal, -8.8, 0.8, s * (hy - 0.03), s * (hy + 0.15), 6.1, 6.25); })();
       /* grilles high in the side abaft amidships [H3]                   */
-      panel(S.grille, [-38.0, s * 18.04, 11.5], [0, s, 0], 3.0, 2.2);
-      panel(S.grille, [24.0, s * 18.04, 11.5], [0, s, 0], 2.2, 1.6);
+      onSkin(S.grille, -38.0, 11.5, s, 3.0, 2.2);
+      onSkin(S.grille, 24.0, 11.5, s, 2.2, 1.6);
       /* fender/rubbing band and the scuttles low down                  */
-      for (x = -96; x < 80; x += 6.5) disc(S.dark, [x, s * (yAt([[0, 16.8], [15.2, 18.0]], 4.6) + 0.02 + (x > 64 ? -1.2 : 0)), 4.6], [0, s, 0], 0.22, 8);
+      for (x = -96; x < 80; x += 6.5) onSkin(S.dark, x, 4.6, s, 0.22, 0, true);
     }
     /* boats on the port sponsons [A1] (identity NOT CONFIRMED)           */
     [[-67.0], [81.5]].forEach(function (b) {
-      bx(S.sup, b[0] - 6.5, b[0] + 6.5, 18.0, 21.0, 14.0, 14.3);
+      bx(S.sup, b[0] - 6.5, b[0] + 6.5, Math.min(18.0, hullY(b[0] + 6.5, 14.0) - 0.05), 21.0, 14.0, 14.3);
       rib(S.sup, S.dark, b[0], 19.6, 14.3, 0, 9.0, 2.8);
       rail(S.metal, [[b[0] - 6.5, 21.0, 14.3], [b[0] + 6.5, 21.0, 14.3]], 1.0, 1.4, 0.025);
       [-4, 4].forEach(function (dx) {
@@ -1084,15 +1180,14 @@ var HeroPLANavyRedo = (function () {
     ciws11(S, 51.0, 19.8, 17.4, 0);
 
     /* ------------------------------------------------------------ bow
-       anchors in pockets high on the flare [H1][H2]; the stem fitting; a
+       anchors in pockets high on the flare [H1][H2] (the pocket on [A2] at
+       X 98.3..102, z 6..9.5); a
        jack staff and lights under the deck front                          */
     for (s = -1; s <= 1; s += 2) {
-      var ax0 = 104.0, az0 = 9.0, ay0 = sec5(ax0).reduce(function (m, p) { return Math.abs(p[1] - az0) < Math.abs(m[1] - az0) ? p : m; })[0];
+      var ax0 = 100.2, az0 = 8.2, ay0 = sec5(ax0).reduce(function (m, p) { return Math.abs(p[1] - az0) < Math.abs(m[1] - az0) ? p : m; })[0];
       disc(S.dark, [ax0, s * (ay0 + 0.05), az0], [0.25, s, -0.35], 1.1, 12);
       anchor(S.metal, ax0, s * (ay0 + 0.2), az0 - 0.3, [0.25, s, -0.35], 1.9);
-      bx(S.metal, 108.0, 110.0, s * 3.0, s * 4.2, L.FB - 0.6, L.FB);
     }
-    for (s = -1; s <= 1; s += 2) for (i = 0; i < 3; i++) bollard(S.metal, 108.5 - i * 6, s * 16.6, L.FB - 0.01 - 0.0 + 0.0 * i - 0.05 + 0.0, 0, 1.4);
     panel(S.dark, [116.004, 0, 17.4], [1, 0, 0], 2.4, 1.2);
 
     /* --------------------------------------- under water [NOT CONFIRMED]

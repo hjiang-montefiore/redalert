@@ -1,0 +1,279 @@
+{
+ "key": "nato_e50_carrier",
+ "team": "nato",
+ "name": "USS Forrestal (CVA-59) as completed in 1955",
+ "category": "ship",
+ "published": {
+  "len": 326.1,
+  "beam": 39.4,
+  "draught": 10.9,
+  "source": "en.wikipedia 'Forrestal-class aircraft carrier' (326.1 m overall, 301.7 m waterline, beam 39.4 m waterline, 238 ft flight deck / 252 ft extreme, draft 10.9 m)"
+ },
+ "len": 326.1,
+ "nodes": [
+  "turret"
+ ],
+ "references": [
+  {
+   "name": "[F1] overhead, May 1957 (flight deck outline traced in metres)",
+   "source": "Wikimedia Commons 'Overhead view of USS Forrestal (CVA-59) underway in the Mediterranean sea in May 1957.jpg' (1600 px); turned 189.9 deg, 4.226 px/m along (stern x 262, bow x 1640 = 326.1 m), 4.49 px/m across (extreme width 252 ft)",
+   "view": "top",
+   "outline_m": [
+    [
+     163.05,
+     -16.0
+    ],
+    [
+     163.05,
+     16.0
+    ],
+    [
+     160.0,
+     18.3
+    ],
+    [
+     63.6,
+     18.9
+    ],
+    [
+     57.7,
+     43.4
+    ],
+    [
+     -89.0,
+     43.4
+    ],
+    [
+     -118.6,
+     27.2
+    ],
+    [
+     -163.05,
+     27.2
+    ],
+    [
+     -163.05,
+     -13.0
+    ],
+    [
+     -104.4,
+     -13.0
+    ],
+    [
+     -104.4,
+     -33.6
+    ],
+    [
+     41.2,
+     -33.6
+    ],
+    [
+     41.2,
+     -20.3
+    ],
+    [
+     160.0,
+     -18.4
+    ]
+   ],
+   "exact": false,
+   "note": "Outline read off the photograph in the 2026-11 rebuild (the measurements are in the model file's header). The picture itself was not saved here (Commons API rate-limited in batch 3); the photograph is not quite vertical (reads 7 per cent wide across), so it is advisory, not gated. Centreline to +-1.5 m."
+  },
+  {
+   "name": "[F2] trials 1955, high from the port bow",
+   "image": "ref/nato_e50_carrier/forrestal_trials_1955_80-G-682046.jpg",
+   "source": "Wikimedia Commons 'US Navy 80-G-682046 USS Forrestal (CVA-59) underway on trials 1955.jpg' (1920 px thumb)",
+   "view": "quarter",
+   "exact": false,
+   "note": "Oblique: the open bow on brackets, the island's two masts in its after half, the port 5 in sponsons with sloped bottoms under the forward end of the angled deck, the forward starboard lift, the deck edge's dotted band of catwalk fittings, whips lowered at the bow corners. Hull numbers on deck and island are NOT drawn."
+  }
+ ],
+ "must_show": [
+  "angled landing area about 6 deg to port: the flight deck's port edge out to y +43.4 from X -89.0 to +57.7, its after diagonal to y +27.2 at X -118.6, forward edge diagonal back to y +18.9 at X +63.6 [F1]",
+  "axial bow deck y -18.4..+18.3 forward of X +63.6, ending square at X +163.05 over an OPEN bow (forecastle deck 13.5 m, deck carried on brackets from X 134 to 158) [F1][F2]",
+  "island amidships on the starboard edge, X -21.5..+15.1, y -33.6..-20.7, block to 9 m over the deck, two narrower tiers to 14.7 m, funnel at its after end X -16..-5 to 20.6 m over the deck, lattice mast at X -1 [F1][F3][F2]",
+  "four deck-edge lifts: starboard at X -87.8, -43.4 and +30.0 (out to y -33.6), port at X +44.2 at the forward end of the angled deck; a hangar opening cut through the hull under each, X lift +-8, z 12..18 [F1][F3]",
+  "eight 5 in/54 Mk 42 in single mounts on four sponsons at z 15.5: (71.5, +23.8), (92.7, +23.8), (74, -24) [node turret], (88, -24), (-122, +30), (-137, +30), (-124, -16), (-147, -16) [F1][F2]",
+  "plated sponsons under every overhang: the port gallery X -118..+34.2 out to y +42.4 with a sloped bottom to the knuckle at z 11; starboard X -103.6..-97.6, -78..-53.2, -33.6..+20.2 out to y -32.8, knuckle z 12.5 [F2][F3]",
+  "two bow catapults at y +12.7 and -11.8 from X 60 forward, two waist catapults on the angled deck, painted in the deck canvas with lowered deflectors; five arrester pendants X -128..-100 [F1]",
+  "catwalks with rails, rafts, lockers and lowered whips round the deck edge at z 19.9, broken at the lifts, island and 5 in sponsons [F1][F2]",
+  "flight deck at z 21.5 (waterline z 0), hull 326 m with flared topsides, boot-topping z -0.4..1.0 [F3]"
+ ],
+ "landmarks": [
+  {
+   "name": "island forward face",
+   "ref": 0,
+   "view": "top",
+   "expect_m": [
+    15.1,
+    null
+   ],
+   "model_at": {
+    "material": "#858f98",
+    "in_m": [
+     -25,
+     -34.5,
+     21.3,
+     20,
+     -20,
+     30.6
+    ],
+    "whole": true,
+    "point": [
+     "max",
+     null
+    ]
+   },
+   "note": "[F1] island -21.5..15.1"
+  },
+  {
+   "name": "island after face",
+   "ref": 0,
+   "view": "top",
+   "expect_m": [
+    -21.5,
+    null
+   ],
+   "model_at": {
+    "material": "#858f98",
+    "in_m": [
+     -25,
+     -34.5,
+     21.3,
+     20,
+     -20,
+     30.6
+    ],
+    "whole": true,
+    "point": [
+     "min",
+     null
+    ]
+   },
+   "note": "[F1]"
+  },
+  {
+   "name": "island outboard face",
+   "ref": 0,
+   "view": "top",
+   "expect_m": [
+    null,
+    -33.6
+   ],
+   "model_at": {
+    "material": "#858f98",
+    "in_m": [
+     -25,
+     -34.5,
+     21.3,
+     20,
+     -20,
+     30.6
+    ],
+    "whole": true,
+    "point": [
+     null,
+     "min"
+    ]
+   },
+   "note": "[F1] the island stands on the starboard deck edge, -33.6"
+  },
+  {
+   "name": "angled deck port edge",
+   "ref": 0,
+   "view": "top",
+   "expect_m": [
+    null,
+    43.4
+   ],
+   "model_at": {
+    "material": "#43474b",
+    "in_m": [
+     -60,
+     0,
+     21,
+     40,
+     50,
+     22
+    ],
+    "point": [
+     null,
+     "max"
+    ]
+   },
+   "note": "[F1] port edge +43.4 from X -89 to +57.7"
+  },
+  {
+   "name": "bow deck end",
+   "ref": 0,
+   "view": "top",
+   "expect_m": [
+    163.05,
+    null
+   ],
+   "model_at": {
+    "material": "#43474b",
+    "in_m": [
+     140,
+     -20,
+     21,
+     170,
+     20,
+     22
+    ],
+    "point": [
+     "max",
+     null
+    ]
+   },
+   "note": "[F1] bow x 1640 = 326.1 m overall"
+  },
+  {
+   "name": "flight deck height amidships",
+   "ref": 0,
+   "view": "side",
+   "expect_m": [
+    100.0,
+    21.5
+   ],
+   "tol_m": 1.5,
+   "model_at": {
+    "material": "#43474b",
+    "in_m": [
+     -170,
+     -50,
+     21,
+     170,
+     50,
+     22
+    ],
+    "edge": "upper"
+   },
+   "note": "[F3] 1982 starboard view: deck edge rows 228-245, waterline 295-322, about 3.4 px/m: 21.5 m +-1.5"
+  },
+  {
+   "name": "forward starboard 5 in mount (node turret)",
+   "ref": 0,
+   "view": "top",
+   "expect_m": [
+    74.0,
+    -24.0
+   ],
+   "tol_m": 1.5,
+   "model_at": {
+    "node": "turret",
+    "index": 0
+   },
+   "note": "[F1] the starboard forward pair near X 74..88, y -24 (+-1.5)"
+  }
+ ],
+ "not_confirmed": [
+  "the centreline and so every width to about +-1.5 m; the stern's starboard corner drawn at -13.0 (measured -11.8)",
+  "the flight deck's height, 21.5 m, to about +-1.5 m ([F3] is a 1982 photograph at an angle)",
+  "the island's tiers between its block and funnel, its glazing, and the 1955 masts and radars (SPS-8, SPS-12): [F2] shows where the masts stand, not how tall; the model has one lattice mast and a pole",
+  "the 5 in sponsons' height (15.5 m), the gallery's plumb depth and knuckle heights, the open forecastle's height (13.5 m)",
+  "hangar opening sill and head (12.0 / 18.0 m, from the 25 ft hangar)",
+  "catwalk fittings (rafts, lockers, hose reels, whips) sizes and spacing: typical, not counted off a photograph",
+  "everything below the waterline (keel, four screws, rudders) from the published draft only"
+ ]
+}

@@ -1,0 +1,98 @@
+{
+  "key": "nato_e60_carrier",
+  "team": "nato",
+  "name": "USS Enterprise (CVAN-65) as built, 1962-1964",
+  "category": "ship",
+  "published": {
+    "len": 342.3,
+    "beam": 40.5,
+    "draught": 11.9,
+    "source": "en.wikipedia 'USS Enterprise (CVN-65)': length 1,123 ft (342.3 m) overall, 1,040 ft (317 m) waterline, beam 132.8 ft (40.5 m) waterline, 257.2 ft (78.4 m) extreme, draught 39 ft (11.9 m)"
+  },
+  "len": 342.3,
+  "nodes": [],
+  "references": [],
+  "reference_notes": [
+    "No reference picture is stored with this spec, so no outline is gated. The model (js/hero/us_enterprise_cvn65.js header) was measured off these Wikimedia Commons files, named there in full: [D1] 'USS Enterprise (CVN-65) deck plan, in 1999.png' (the only scale drawing: deck outline, lifts, catapults, pendants, x from the 342.3 m length, y from the 78.4 m extreme width); [P1] 'USS Enterprise (CVAN-65) at Guantanamo in February 1962' (starboard, lifts, island station, quarter sponson); [P2] '... rounds Cape Horn on 17 September 1964' (port broadside: deck height 19.0 m, island heights); [P3] '... underway on 10 April 1962 (USN 1063070)' (dead ahead: island face, bridle horns); [P4] 'Island of USS Enterprise (CVAN-65), in 1963-1964 (NNAM.1996.488.125.038)' (island close-up, SCANFAR, beehive).",
+    "A future builder with the deck plan in specs/ref/nato_e60_carrier/ can add it as a 'top' reference (px_per_m from the 342.3 m length) and gate the plan outline."
+  ],
+  "must_show": [
+    "long narrow hull under a 342 m flight deck, x -171.1 .. 171.1 (bridle horns), deck top z 19.0, W/L about 0.23 [D1, P2]",
+    "angled deck at 9 deg to port, its forward corner standing out to y +42.8 at x 27.7 .. 63.4 [D1]",
+    "four deck-edge lifts: three to starboard at x -92 .. -68, -24.4 .. -0.3, 24.4 .. 48.9 (outer edge y -35.6) and one to port at x -118.4 .. -93 (outer edge y +41), each with the hangar opening under it [D1, P1]",
+    "four catapults: two up the bow to x 164, two in the waist on the angled deck [D1, P3]",
+    "square island at x -47.8, y -23.8 (37 per cent of the length from the stern): a 14 m base column z 19 .. 26.6 under an overhanging 22 m radar box z 26.6 .. 35 [P3, P4]",
+    "SCANFAR: on each face of the box one square SPS-33 array (7.0 x 7.6 m) and one wide SPS-32 array (13 x 6.4 m), pinwheel fashion, z 27 .. 34.6 [P4]",
+    "two raked window tiers z 35 .. 40 wider than the box forward and to starboard, the open top at z 40 with dark screens [P3, P4]",
+    "the conical beehive z 41 .. 51.6 with four rows of dipole arms and two piping radome rings, the mast to z 60.2 with a 25 m yard at z 55 and a dome at the head z 61.35 [P3, P4]",
+    "two bridle-arrester horns jutting from the bow at y +8.8 and -7.2 to x 171.1 [P3]",
+    "flared bow with the stem raked 12 m behind the deck front (x 152 at the waterline), square transom at x -166 under the after overhang, long empty starboard quarter sponson at x -138 .. -97, z 11.6 [P1, P2]",
+    "catwalks, safety nets on outrigger frames and life-raft canister racks along the deck edge; deck-edge whips on hinge blocks on the starboard catwalk at x -140, -62, -36, 22 and the tall pole at x -30 [P1, P3]",
+    "no guns and no missile launchers anywhere on x -171 .. 171: she commissioned with none (Wikipedia)"
+  ],
+  "landmarks": [
+    {
+      "name": "flight deck top at x -60",
+      "view": "side",
+      "expect_m": [-60.0, 19.0],
+      "model_at": {"material": "#484a4c", "in_m": [-175, -50, 18.9, 175, 50, 19.1], "edge": "upper"},
+      "note": "[P2] deck 19.0 m above the waterline, Cape Horn broadside"
+    },
+    {
+      "name": "flight deck forward edge",
+      "view": "side",
+      "expect_m": [164.1, null],
+      "model_at": {"material": "#484a4c", "in_m": [120, -20, 18, 170, 20, 20], "point": ["max", null]},
+      "note": "[D1] deck front 7 m behind the bridle-horn tips"
+    },
+    {
+      "name": "stern corner of the round-down",
+      "view": "side",
+      "expect_m": [-171.1, null],
+      "model_at": {"material": "#484a4c", "in_m": [-175, -20, 18, -150, 25, 20], "point": ["min", null]},
+      "note": "[D1] the aft end of the 342.3 m length"
+    },
+    {
+      "name": "angled deck forward corner, port extent",
+      "view": "top",
+      "expect_m": [null, 42.8],
+      "model_at": {"material": "#484a4c", "in_m": [20, 30, 18, 70, 50, 20], "point": [null, "max"]},
+      "note": "[D1] corner at x 27.7, y 42.8"
+    },
+    {
+      "name": "island centre station (SCANFAR faces)",
+      "view": "side",
+      "expect_m": [-47.8, null],
+      "model_at": {"material": "#8e9296", "in_m": [-62, -40, 26, -33, -6, 36], "point": ["mid", null]},
+      "note": "[P1, D1] island 37 per cent of the length from the stern; the arrays stand on all four faces, so their mid x is the box centre"
+    },
+    {
+      "name": "SPS-33 array top",
+      "view": "side",
+      "expect_m": [null, 34.55],
+      "model_at": {"material": "#8e9296", "in_m": [-62, -40, 26, -33, -6, 36], "point": [null, "max"]},
+      "note": "[P3, P4] box z 26.6 .. 35.0, the square array 7.6 m tall from 0.35 m above its foot"
+    },
+    {
+      "name": "masthead dome top",
+      "view": "side",
+      "expect_m": [null, 61.35],
+      "model_at": {"material": "#d2d5d6", "in_m": [-52, -28, 58, -43, -19, 63], "point": [null, "max"]},
+      "note": "[P2, P3] the masthead 42 m above the deck, its dome on top"
+    },
+    {
+      "name": "keel",
+      "view": "side",
+      "expect_m": [null, -11.9],
+      "model_at": {"material": "#532a27", "in_m": [-60, -10, -13, 60, 10, -10], "point": [null, "min"]},
+      "note": "published 39 ft draught"
+    }
+  ],
+  "not_confirmed": [
+    "the stations of the four deck-edge whips (x -140, -62, -36, 22) and their hinge blocks: whips show along the starboard edge in P1/P3 but no view shows them all",
+    "the hangar-opening head radius 2.0 m",
+    "the after and port faces of the SCANFAR box (only the forward and starboard faces are photographed; the pinwheel pattern is followed)",
+    "deck scorch and stain layout",
+    "displacement: the hull's signed volume gives about 91,500 long tons; the as-built figure could not be confirmed"
+  ]
+}

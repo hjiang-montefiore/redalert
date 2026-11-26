@@ -3,8 +3,8 @@
 
    TRACKED, the M270 (the M993 carrier, a Bradley-derived chassis with the
    launcher-loader module, LLM, on its back):
-     nato_e80_mlrs  M270, 1983: two six-rocket pods (M26), MERDC paint
-     nato_e90_mlrs  M270, 1991: two six-rocket pods (M26), NATO three-colour
+     nato_e80_mlrs  M270, 1983: two six-rocket pods (M26), plain forest green
+     nato_e90_mlrs  M270, 1991: two six-rocket pods (M26), plain CARC green 383
      mlrs_n         M270A2, present day: two six-rocket pods (GMLRS), CARC green
      nato_e90_tel   M270 with MGM-140 ATACMS: two ATACMS pods, one missile each
    WHEELED, the M142 HIMARS (the FMTV 6x6 truck, armoured cab, ONE pod):
@@ -80,18 +80,23 @@
         boxes on the starboard side, the air tanks under the frame [D][H14].
     11. HIMARS: the module over the tandem with three access panels a side and
         the stowed boom lying on its top [D][H14]: launcher(o.boom142).
-    12. Paint by period: MERDC 1984 [R84][R85]; NATO three-colour [K98];
-        plain CARC green [G19][A24][H07][H22].
+    12. Paint by period, one plain coat each (AGENT_POLICY 6, since 2026-11c): the
+        MERDC era's forest green; CARC green 383 [G19][A24][H07][H22].
 
-   Paint, by row and why:
-     nato_e80_mlrs  MERDC four colours (forest green, field drab, sand, black)
-                    as [R84] and [R85] show it in 1984-85.
-     nato_e90_mlrs, nato_e90_tel  NATO three-colour CARC (green, brown,
-                    black) as the 1998 photograph [K98] shows it.  The old
-                    file drew these desert tan for Desert Storm; no dated
-                    photograph of a tan M270 was found in this pass, so the
-                    period's three-colour is drawn (not confirmed: the 1991
-                    desert scheme).
+   Paint, by row and why (REWORK 2026-11c: plain paint, no camouflage - the
+   policy; the photographs [R84][R85][K98] show patterns, which are not drawn):
+     nato_e80_mlrs  "forest": one coat of forest green (FS 34079), the MERDC
+                    era's field colour, the green of [R84][R85].
+     nato_e90_mlrs, nato_e90_tel  "carc383": one coat of CARC green 383, the
+                    field colour of the period's three-colour [K98].  (Not
+                    confirmed: the 1991 desert scheme.)
+                    Both plain coats carry no colour patches at all: only
+                    weathering, panel-joint lines, bolt rows, streaks, chips
+                    and dust (paintCanvas, plainWear), and the tops take the
+                    canvas' middle rows, not the side mud band (topV).
+     deu_e90_mlrs (deu_us_pattern.js) "carc383"; fra_e90_mlrs, fra_e00_mlrs
+                    (fr_armour2.js) "frvert", the French plain green.
+     merdc, nato3   are kept defined, unused by any row since 2026-11c.
      mlrs_n, HIMARS rows  plain CARC green [G19][A24][H07][H22].  The e00
                     HIMARS rows were drawn tan before; the dated 2007 photograph
                     [H07] is green, and no dated tan HIMARS was fetched.
@@ -197,9 +202,21 @@
    Tris: M270 rows 18.3-18.8k -> 19.7-20.0k (gbr_e00_mlrs 20.6k with its B1 fittings);
    HIMARS 15.5-15.6k -> 16.3-16.4k; 16 draw calls each, unchanged.
 
+   REWORK 2026-11c (plain paint, budget, review polish; keys, rows, nodes, cells, ord, len kept):
+     - nato_e80_mlrs, nato_e90_mlrs, nato_e90_tel in a single plain coat (see Paint, above).
+     - M270 triangles -744 a row (gbr_e00_mlrs 20,628 -> 19,884, back under 20k): three rivet
+       pairs a boom girder (were five), road wheels 18/14 sides outside and 12/8 on the inner wheel
+       (were 22/16 and 16/10), the box door hinges 6 sides, the rolled net and its straps 8.
+     - M270 team flash: off the box top (in the dark well under the boom) onto the cab roof
+       starboard of the hatch, and a strip on each girder cross member.
+     - HIMARS: the valance under the grille tucked back 0.16-0.20 m (a sloped ledge and an upright
+       plate at x 3.29-3.33, z 1.06-1.27) so the bumper stands proud [SG]; the frame rails run on
+       to the bumper (x 3.37); the roof marker lenses amber [SG] (glass by vertex colour on the
+       HIMARS, no extra draw call); the starboard box behind the cab closed onto the locker.
+
    Draw calls: 16 a row (hull 5 + ring 1 + elevating module 4 + 6 wheel
-   groups).  Materials: SKIN (camo canvas, metre UVs), DARK, STEEL, GLASS,
-   TEAM (exactly C.team), WHEEL (vertex colours).
+   groups).  Materials: SKIN (paint canvas, metre UVs), DARK, STEEL, GLASS,
+   TEAM (exactly C.team), WHEEL (vertex colours; on the HIMARS the GLASS too).
    Model space: +X nose, +Y left (port), +Z up, metres; tyres and track on
    z = 0.  ASCII only.  Colours authored in sRGB (prepModel linearises). */
 
@@ -216,10 +233,10 @@ var HeroUsMlrs = (function () {
      en.wikipedia M270) and for the 2005 HIMARS row (GMLRS introduced 2005);
      ATACMS and PrSM as the rows say. */
   var ROWS = {
-    nato_e80_mlrs: { veh: "m270",   paint: "merdc", pods: "rocket", turret: true,  louvre: false, ord: { w_e80_nato_mlrs: "m26" } },
-    nato_e90_mlrs: { veh: "m270",   paint: "nato3", pods: "rocket", turret: true,  louvre: false, ord: { w_e90_nato_mlrs: "m26" } },
+    nato_e80_mlrs: { veh: "m270",   paint: "forest", pods: "rocket", turret: true,  louvre: false, ord: { w_e80_nato_mlrs: "m26" } },
+    nato_e90_mlrs: { veh: "m270",   paint: "carc383", pods: "rocket", turret: true,  louvre: false, ord: { w_e90_nato_mlrs: "m26" } },
     mlrs_n:        { veh: "m270",   paint: "carc",  pods: "rocket", turret: true,  louvre: true,  ord: { mlrs: "gmlrs" } },
-    nato_e90_tel:  { veh: "m270",   paint: "nato3", pods: "atacms", turret: true,  louvre: false, ord: { srbm_atacms: "atacms" } },
+    nato_e90_tel:  { veh: "m270",   paint: "carc383", pods: "atacms", turret: true,  louvre: false, ord: { srbm_atacms: "atacms" } },
     nato_e00_mlrs: { veh: "himars", paint: "carc",  pods: "rocket", turret: true,  ord: { w_e00_nato_mlrs: "gmlrs" } },
     nato_e00_tel:  { veh: "himars", paint: "carc",  pods: "atacms", turret: false, ord: { srbm_atacms: "atacms" } },
     tel_n:         { veh: "himars", paint: "carc",  pods: "prsm",   turret: false, ord: { srbm_mod: "prsm" } }
@@ -240,7 +257,21 @@ var HeroUsMlrs = (function () {
   var PAINT = {
     merdc: { base: "#4a5537", blots: [["#6b5b40", 9, 34], ["#a7946c", 7, 20], ["#1d1d19", 9, 10]], hub: 0x4a5537 },
     nato3: { base: "#424d2f", blots: [["#4f3e2b", 10, 36], ["#1c1c18", 8, 22]], hub: 0x424d2f },
-    carc:  { base: "#4b5442", blots: [["#454e3d", 8, 30], ["#525b48", 8, 26]], hub: 0x4b5442 }
+    carc:  { base: "#4b5442", blots: [["#454e3d", 8, 30], ["#525b48", 8, 26]], hub: 0x4b5442 },
+    /* REWORK 2026-11c, the plain-paint policy (AGENT_POLICY 6): one coat, no patches.  forest:
+       the MERDC era's single forest green (FS 34079, the merdc field colour); carc383: CARC green
+       383 (the carc field colour).  plain: no blots at all; the canvas carries the weathering and
+       the panel-joint lines, drawn a little heavier (plainWear) so the coat still reads at the
+       game camera; on "forest" (the review of 2026-11c: the MERDC rows lost the most contrast)
+       the lines are drawn 1.8 times as strong and 2 px wide, the hubs are dust-lightened and
+       the dark parts (tracks, wells, seams) a shade darker.  merdc and nato3 stay for the rows other files add (deu_us_pattern.js,
+       fr_armour2.js). */
+    forest:  { base: "#4a5537", blots: [], plain: true, wear: 1.8, hub: 0x5a6545, dark: 0x171813 },
+    carc383: { base: "#4b5442", blots: [], plain: true, hub: 0x4b5442 },
+    /* frvert: the French army's plain "vert armee", for the rows fr_armour2.js adds (its
+       Centre-Europe three-tone is a national camouflage; NOT CONFIRMED: the exact shade,
+       authored by eye at about 0.8 of an olive drab chip) */
+    frvert:  { base: "#4f5439", blots: [], plain: true, hub: 0x4f5439 }
   };
   var _cv = {};
 
@@ -311,9 +342,48 @@ var HeroUsMlrs = (function () {
         q.fillStyle = "rgba(14,12,8,0.12)";
         q.beginPath(); q.ellipse(R() * W, R() * W, 3 + R() * 8, 2 + R() * 6, R() * 3, 0, 6.2832); q.fill();
       }
+      if (P.plain) plainWear(q, R, W, P.wear || 1);
     } catch (e) { cv = null; }
     _cv[kind] = cv;
     return cv;
+  }
+
+  /* REWORK 2026-11c: the surface of a plain coat, where no patches break it up [G19][A24]:
+     the plate joints as dark grime lines with a pale worn lip beside them, bolt heads along
+     them, rain streaks run down from each horizontal joint, chipped edges, and a fine dust
+     speckle.  All of it is small (a few px, 2-15 cm) and none of it is a colour patch. */
+  function plainWear(q, R, W, st) {
+    var i, x, y, k, lw = st > 1.2 ? 2 : 1;
+    function a(v) { return Math.min(0.9, v * st).toFixed(3); }
+    for (i = 0; i < 8; i++) {
+      x = Math.floor(i * W / 8 + 4 + R() * 8) + 0.5;
+      q.strokeStyle = "rgba(14,14,9," + a(0.26) + ")"; q.lineWidth = lw;
+      q.beginPath(); q.moveTo(x, 0); q.lineTo(x, W); q.stroke();
+      q.strokeStyle = "rgba(205,196,164," + a(0.12) + ")"; q.lineWidth = 1;
+      q.beginPath(); q.moveTo(x + lw, 0); q.lineTo(x + lw, W); q.stroke();
+      for (y = 3 + R() * 4; y < W; y += 9) { q.fillStyle = "rgba(20,20,14," + a(0.30) + ")"; q.fillRect(x + 1 + lw, y, 2, 2); }
+    }
+    for (i = 0; i < 6; i++) {
+      y = Math.floor(i * W / 6 + 6 + R() * 10) + 0.5;
+      q.strokeStyle = "rgba(14,14,9," + a(0.26) + ")"; q.lineWidth = lw;
+      q.beginPath(); q.moveTo(0, y); q.lineTo(W, y); q.stroke();
+      q.strokeStyle = "rgba(205,196,164," + a(0.12) + ")"; q.lineWidth = 1;
+      q.beginPath(); q.moveTo(0, y - lw); q.lineTo(W, y - lw); q.stroke();
+      for (x = 2 + R() * 4; x < W; x += 9) { q.fillStyle = "rgba(20,20,14," + a(0.30) + ")"; q.fillRect(x, y + 1 + lw, 2, 2); }
+      /* streaks run down (the canvas' v runs up the sides, so down is +y on the canvas) */
+      for (k = 0; k < 10; k++) {
+        q.fillStyle = (k & 1) ? "rgba(22,22,15," + a(0.12) + ")" : "rgba(30,28,20," + a(0.09) + ")";
+        q.fillRect(R() * W, y + 1, 1 + R() * 1.5, 8 + R() * 30);
+      }
+    }
+    for (i = 0; i < 160; i++) {
+      q.fillStyle = (i % 4) ? "rgba(196,186,150," + a(0.20) + ")" : "rgba(12,12,8," + a(0.26) + ")";
+      q.fillRect(R() * W, R() * W, 1 + R() * 2, 1 + R() * 1.5);
+    }
+    for (i = 0; i < 700; i++) {
+      q.fillStyle = (i & 1) ? "rgba(255,248,220," + a(0.07) + ")" : "rgba(0,0,0," + a(0.08) + ")";
+      q.fillRect(R() * W, R() * W, 1, 1);
+    }
   }
 
   function canvasTex(THREE, cv) {
@@ -331,7 +401,10 @@ var HeroUsMlrs = (function () {
     T.skin = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.90, metalness: 0.04 });
     if (tx) T.skin.map = tx; else T.skin.color.setHex(parseInt(PAINT[kind].base.slice(1), 16));
     T.skin.userData.worldUV = 6.0;
-    T.dark  = new THREE.MeshStandardMaterial({ color: 0x23241f, roughness: 0.82, metalness: 0.20 });
+    /* REWORK 2026-11c: on a plain coat the tops take the canvas' middle rows, not the mud band
+       thrown up over the first metre of the sides (it read as a brown patch on the roofs) */
+    if (PAINT[kind].plain) T.skin.userData.topV = 0.5;
+    T.dark  = new THREE.MeshStandardMaterial({ color: PAINT[kind].dark || 0x23241f, roughness: 0.82, metalness: 0.20 });
     T.steel = new THREE.MeshStandardMaterial({ color: 0x4a4d4f, roughness: 0.50, metalness: 0.38 });
     T.glass = new THREE.MeshStandardMaterial({ color: 0x1c2a31, roughness: 0.14, metalness: 0.30 });
     T.wheel = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.92, metalness: 0.04 });
@@ -377,7 +450,8 @@ var HeroUsMlrs = (function () {
 
   /* Box projection by each triangle's own facing, 6 m of paint to the
      canvas: a side takes (along, height), a top takes (x, y). */
-  function worldUV(P, U, S) {
+  function worldUV(P, U, S, tv) {
+    tv = tv || 0;
     for (var t = 0; t < P.length / 9; t++) {
       var o = t * 9;
       var ux = P[o + 3] - P[o], uy = P[o + 4] - P[o + 1], uz = P[o + 5] - P[o + 2];
@@ -385,7 +459,7 @@ var HeroUsMlrs = (function () {
       var nx = Math.abs(uy * vz - uz * vy), ny = Math.abs(uz * vx - ux * vz), nz = Math.abs(ux * vy - uy * vx);
       for (var k = 0; k < 3; k++) {
         var x = P[o + k * 3], y = P[o + k * 3 + 1], z = P[o + k * 3 + 2], u, v;
-        if (nz >= nx && nz >= ny) { u = x / S; v = y / S; }
+        if (nz >= nx && nz >= ny) { u = x / S; v = y / S + tv; }
         else if (nx >= ny) { u = y / S + 0.5; v = z / S; }
         else { u = x / S; v = z / S; }
         U[t * 6 + k * 2] = u; U[t * 6 + k * 2 + 1] = v;
@@ -405,9 +479,11 @@ var HeroUsMlrs = (function () {
   Baker.prototype.add = function (mat, geo) {
     var g = geo.index ? geo.toNonIndexed() : geo;
     if (this.pre) g.applyMatrix4(this.pre);
-    if (this.vc) {
+    /* REWORK 2026-11c: a material may name the vertex colour its parts take by default (vcd) */
+    var vc = this.vc || (mat.userData && mat.userData.vcd) || null;
+    if (vc) {
       var n = g.attributes.position.count, c = new Float32Array(n * 3), i;
-      for (i = 0; i < n; i++) { c[i * 3] = this.vc[0]; c[i * 3 + 1] = this.vc[1]; c[i * 3 + 2] = this.vc[2]; }
+      for (i = 0; i < n; i++) { c[i * 3] = vc[0]; c[i * 3 + 1] = vc[1]; c[i * 3 + 2] = vc[2]; }
       g.setAttribute("color", new this.T.BufferAttribute(c, 3));
     }
     for (var j = 0; j < this.by.length; j++) if (this.by[j].mat === mat) { this.by[j].g.push(g); return; }
@@ -527,7 +603,7 @@ var HeroUsMlrs = (function () {
         o += c;
       }
       var S = e.mat.userData && e.mat.userData.worldUV;
-      if (S) worldUV(P, U, S);
+      if (S) worldUV(P, U, S, e.mat.userData.topV);
       var geo = new THREE.BufferGeometry();
       geo.setAttribute("position", new THREE.BufferAttribute(P, 3));
       geo.setAttribute("normal", new THREE.BufferAttribute(N, 3));
@@ -620,14 +696,20 @@ var HeroUsMlrs = (function () {
         for (j = -1; j <= 1; j += 2) {
           KE.bb(T.skin, o.x1 - 0.12, gx, j * (o.hw - 0.08), j * (o.hw - 0.24), o.z1 - 0.26, o.z1 + 0.05);
           KE.bb(T.dark, o.x1 + 0.02, gx - 0.04, j * (o.hw - 0.075), j * (o.hw - 0.085), o.z1 - 0.20, o.z1 - 0.02);
-          for (k = 0; k < 5; k++) {
-            var xr = o.x1 + 0.06 + k * (gx - o.x1 - 0.12) / 4;
+          /* REWORK 2026-11c: three rivet pairs a girder, at the root, the middle and the tip
+             (were five: the triangle budget; at the game camera they read the same) */
+          for (k = 0; k < 3; k++) {
+            var xr = o.x1 + 0.06 + k * (gx - o.x1 - 0.12) / 2;
             KE.box(T.steel, 0.03, 0.02, 0.03, xr, j * (o.hw - 0.07), o.z1 + 0.015);
             KE.box(T.steel, 0.03, 0.02, 0.03, xr, j * (o.hw - 0.07), o.z1 - 0.22);
           }
         }
         KE.bb(T.skin, gx - 0.12, gx, -(o.hw - 0.24), o.hw - 0.24, o.z1 - 0.12, o.z1 + 0.04);
         KE.bb(T.skin, (o.x1 + gx) / 2 - 0.05, (o.x1 + gx) / 2 + 0.05, -(o.hw - 0.24), o.hw - 0.24, o.z1 - 0.02, o.z1 + 0.03);
+        /* REWORK 2026-11c: the team flash on the tops of the two cross members (it lay on the box
+           top under the girders before, in their shadow, and read as a broken sliver) */
+        KE.bb(T.team, gx - 0.11, gx - 0.01, -0.60, 0.60, o.z1 + 0.04, o.z1 + 0.055);
+        KE.bb(T.team, (o.x1 + gx) / 2 - 0.045, (o.x1 + gx) / 2 + 0.045, -0.60, 0.60, o.z1 + 0.03, o.z1 + 0.045);
       }
     }
     /* the HIMARS boom, stowed: lying on top of the module, its cross frame at
@@ -831,9 +913,11 @@ var HeroUsMlrs = (function () {
     for (s = -1; s <= 1; s += 2) for (k = 0; k < 2; k++) {
       yc = s * (k ? 1.355 : 1.085);
       W.vc = lin(0x1b1c1a);
-      W.cyl(T.wheel, RW, 0.17, k ? 22 : 16, 0, yc, 0, "y");
+      /* REWORK 2026-11c: 18 / 14 sides outside, 12 / 8 on the half-hidden inner wheel (were
+         22 / 16 and 16 / 10: the triangle budget; under 1.3 px of sagitta on the review sheet) */
+      W.cyl(T.wheel, RW, 0.17, k ? 18 : 12, 0, yc, 0, "y");
       W.vc = lin(hub);
-      W.cyl(T.wheel, 0.23, 0.18, k ? 16 : 10, 0, yc, 0, "y");
+      W.cyl(T.wheel, 0.23, 0.18, k ? 14 : 8, 0, yc, 0, "y");
       if (!k) continue;                      /* the inner wheel hides behind the outer and the belt */
       W.vc = lin(0x2a2b27);
       W.cyl(T.wheel, 0.085, 0.20, 8, 0, yc, 0, "y");
@@ -978,16 +1062,15 @@ var HeroUsMlrs = (function () {
       K.box(T.dark, BX1 - BX0 - 0.14, 0.02, 0.022, (BX0 + BX1) / 2, yo, 1.92);
       K.box(T.dark, BX1 - BX0 - 0.14, 0.02, 0.022, (BX0 + BX1) / 2, yo, 1.12);
       for (k = 0; k < 2; k++) {
-        K.cyl(T.steel, 0.025, 0.12, 8, BX0 + 0.11, s * (HW + 0.02), 1.30 + k * 0.45, "z");
-        K.cyl(T.steel, 0.025, 0.12, 8, 1.19, s * (HW + 0.02), 1.30 + k * 0.45, "z");
+        K.cyl(T.steel, 0.025, 0.12, 6, BX0 + 0.11, s * (HW + 0.02), 1.30 + k * 0.45, "z");
+        K.cyl(T.steel, 0.025, 0.12, 6, 1.19, s * (HW + 0.02), 1.30 + k * 0.45, "z");
         K.box(T.steel, 0.10, 0.04, 0.035, 1.08 + k * 0.46, s * (HW + 0.02), 1.55);
       }
     }
     for (k = 0; k < 7; k++) K.bb(T.steel, 1.20, 1.56, -HW - 0.018, -HW - 0.004, 1.24 + k * 0.085, 1.27 + k * 0.085);
     K.bb(T.dark, 1.18, 1.58, -HW - 0.004, -HW + 0.01, 1.20, 1.84);
-    K.cyl(T.skin, 0.075, 2.30, 10, 1.30, 0, BZ + 0.07, "y");
-    for (k = -1; k <= 1; k++) K.cyl(T.dark, 0.08, 0.05, 10, 1.30, k * 0.80, BZ + 0.07, "y");
-    K.bb(T.team, 0.80, 1.10, -1.05, -0.20, BZ, BZ + 0.02);
+    K.cyl(T.skin, 0.075, 2.30, 8, 1.30, 0, BZ + 0.07, "y");
+    for (k = -1; k <= 1; k++) K.cyl(T.dark, 0.08, 0.05, 8, 1.30, k * 0.80, BZ + 0.07, "y");
     /* the sloped cab front [F][S][G19][IDF]: three panes in heavy armoured frames.  The 1980s rows
        keep the louvred shutters lowered over all three, as the firing photographs show them; the
        A1/A2 rows (louvre) show the glass in the upper part of each frame [G19] and the folded
@@ -1041,6 +1124,10 @@ var HeroUsMlrs = (function () {
     for (k = -1; k <= 1; k += 2) K.bb(T.dark, 1.66, 3.00, k * 0.95 - 0.018, k * 0.95 + 0.018, 2.45, 2.456);
     K.bb(T.dark, 1.95, 1.986, -1.38, 1.38, 2.45, 2.456);
     K.bb(T.dark, 0.74, 1.58, 0.43, 0.466, BZ, BZ + 0.006);
+    /* REWORK 2026-11c: the hull's team flash back on the cab roof, starboard of the hatch, where it
+       was before the box was drawn (on the box top it sat in the dark well under the girders); the
+       girders' cross members carry a strip each too (launcher()) */
+    K.bb(T.team, 2.00, 2.60, -0.85, -0.15, 2.45, 2.47);
     /* the rear plate: a stowage box and the tail beam */
     K.bb(T.dark, -3.46, -3.42, -0.80, 0.80, 0.62, 0.98);
 
@@ -1189,8 +1276,11 @@ var HeroUsMlrs = (function () {
       K.rod(T.steel, [[-3.45, s * 0.88, 1.20], [-3.48, s * 0.88, 1.20], [-3.48, s * 1.08, 1.20], [-3.45, s * 1.08, 1.20]], 0.012, 5);
       K.torus(T.steel, 0.05, 0.014, -3.42, s * 0.55, 0.88, Math.PI / 2, 0, 0, Math.PI);
     }
-    /* lenses in the five roof marker lamps (amber, drawn glass) */
+    /* lenses in the five roof marker lamps, amber [SG] (REWORK 2026-11c: they were dark glass);
+       the glass material carries vertex colours on the HIMARS (build()), so this costs no draw call */
+    K.vc = lin(0xd08a1c);
     for (i = 0; i < 5; i++) K.bb(T.glass, 3.27, 3.28, -0.70 + i * 0.35 - 0.04, -0.70 + i * 0.35 + 0.04, 2.96, 3.02);
+    K.vc = null;
     /* the gunner's hatch hinge and two periscopes beside it */
     K.bb(T.steel, 1.78, 1.86, 0.10, 0.50, 3.00, 3.07);
     K.bb(T.dark, 2.48, 2.60, 0.62, 0.78, 2.98, 3.06);
@@ -1213,7 +1303,8 @@ var HeroUsMlrs = (function () {
     var s, i, j, DECK = 1.22, CHW = 1.17;
 
     /* chassis: frame rails, cross members, axle housings, the tandem's walking beams */
-    for (s = -1; s <= 1; s += 2) K.bb(T.dark, -3.42, 3.30, s * 0.52, s * 0.38, 0.82, 1.08);
+    /* (REWORK 2026-11c: the rails run on to the bumper, x 3.37 (were 3.30), which the tucked valance no longer reaches) */
+    for (s = -1; s <= 1; s += 2) K.bb(T.dark, -3.42, 3.37, s * 0.52, s * 0.38, 0.82, 1.08);
     for (i = 0; i < 6; i++) K.bb(T.dark, -3.3 + i * 1.25, -3.3 + i * 1.25 + 0.10, -0.52, 0.52, 0.86, 1.04);
     for (i = 0; i < 3; i++) {
       K.cyl(T.dark, 0.09, 1.70, 10, AX142[i], 0, RT, "y");
@@ -1253,7 +1344,11 @@ var HeroUsMlrs = (function () {
       K.box(T.steel, 0.03, 0.03, 0.016, 1.95 + i * 0.24, j * 0.68, 2.988);
       K.box(T.steel, 0.03, 0.03, 0.016, 2.66, j * (0.15 + i * 0.16), 2.988);
     }
-    K.bb(T.skin, 3.40, 3.46, -0.86, 0.86, 1.08, 1.31);
+    /* REWORK 2026-11c: under the grille the valance is tucked 0.16-0.20 m back from the plate,
+       a short ledge sloping in from the grille's foot and the upright plate behind it, so the
+       bumper stands proud of it as [SG] shows (it ran straight down at 3.40-3.46 before) */
+    K.prism(T.skin, [[3.40, 1.31], [3.47, 1.31], [3.33, 1.25], [3.29, 1.25]], -0.86, 0.86);
+    K.bb(T.skin, 3.29, 3.33, -0.86, 0.86, 1.06, 1.27);
     K.bb(T.dark, 3.36, 3.52, -1.14, 1.14, 0.78, 1.08);
     K.bb(T.dark, 3.30, 3.50, -0.70, 0.70, 0.62, 0.78);
     for (i = 0; i < 3; i++) K.bb(T.steel, 3.50, 3.515, -0.66, 0.66, 0.645 + i * 0.045, 0.665 + i * 0.045);
@@ -1294,7 +1389,7 @@ var HeroUsMlrs = (function () {
     K.box(T.dark, 0.60, 0.012, 0.02, 0.925, 1.126, 1.95);
     K.bb(T.skin, 0.95, 1.81, -1.15, -0.55, 1.35, 2.55);
     for (i = 0; i < 2; i++) K.box(T.dark, 0.012, 0.012, 1.0, 1.10 + i * 0.47, -1.156, 1.95);
-    K.bb(T.skin, 0.30, 0.92, -1.15, -0.55, 1.25, 1.85);
+    K.bb(T.skin, 0.30, 0.96, -1.15, -0.55, 1.25, 1.85);          /* REWORK 2026-11c: closed onto the locker (was 28 mm off) */
     /* the rear deck under the module, narrower than the tyres' inner faces */
     K.bb(T.skin, -3.45, 0.30, -0.76, 0.76, 1.06, DECK);
 
@@ -1336,6 +1431,13 @@ var HeroUsMlrs = (function () {
 
   function build(key, THREE, M, C) {
     var V = ROWS[key], T = makeMats(THREE, C, V.paint);
+    /* REWORK 2026-11c: on the HIMARS the glass is coloured per vertex - its own dark tint by
+       default (the same colour as the material's, linear), amber in the roof marker lamps */
+    if (V.veh === "himars") {
+      T.glass.color.setHex(0xffffff);
+      T.glass.vertexColors = true;
+      T.glass.userData.vcd = lin(0x1c2a31);
+    }
     var root = V.veh === "m270" ? buildM270(THREE, T, V) : buildHimars(THREE, T, V);
     root.name = key;
     root.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });

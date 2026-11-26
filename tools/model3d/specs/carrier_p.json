@@ -1,0 +1,236 @@
+{
+  "key": "carrier_p",
+  "team": "pact",
+  "name": "Project 1143.5 heavy aviation cruiser Admiral Kuznetsov, as last photographed in service (2016-17); same builder as pact_e00_carrier",
+  "category": "ship",
+  "published": {
+    "len": 305.0,
+    "beam": 72.0,
+    "draught": 10.5,
+    "source": "en.wikipedia / ru.wikipedia 'Admiral Kuznetsov': length overall 305 m, waterline about 270 m, waterline beam 35 m, flight deck beam 72 m, draught 10.5 m"
+  },
+  "len": 305.0,
+  "nodes": [],
+  "references": [
+    {
+      "name": "[P1] HMS Liverpool escorts Admiral Kuznetsov, port broadside (UK MoD, Jan 2017)",
+      "image": "ref/carrier_p/kuznetsov_2017_port_broadside.jpg",
+      "source": "Wikimedia Commons 'HMS Liverpool Escorts Russian Carrier Admiral Kuznetsov MOD 45153590 (cropped).jpg', 1600 x 579",
+      "view": "side",
+      "flip": true,
+      "px_per_m": 4.31,
+      "anchor_px": [
+        130,
+        498
+      ],
+      "anchor_m": [
+        152.5,
+        0.0
+      ],
+      "mask": "bg",
+      "mask_opts": {
+        "tolerance": 28,
+        "open_px": 2
+      },
+      "window_m": [
+        -155.0,
+        0.0,
+        155.0,
+        26.0
+      ],
+      "exact": false,
+      "note": "Scaled on the published 305 m: ramp lip px 130 to the stern px 1445 = 1315 px, 4.31 px/m; waterline row 498 (about 0.23 m a pixel). Taken from a little above and abaft the beam: the far-side island reads about 13 m forward of D1's plan, so only heights are taken off it, and the window stops at 26 m (smoke above the island). The hull number on her side is not part of the spec. Perspective: reported, not gated."
+    },
+    {
+      "name": "[P7] port beam view underway south of Italy (USN, 1991, from above)",
+      "image": "ref/carrier_p/kuznetsov_1991_port_beam_above.jpg",
+      "source": "Wikimedia Commons 'A port beam view of the Soviet aircraft carrier FLEET ADMIRAL of the SOVIET UNION KUZNETSOV underway south of Italy', 1600 x 1053",
+      "view": "quarter",
+      "exact": false,
+      "note": "Kept for the reviewer: the island's port face (galleries at both ends of the base, the main block, the flat array on the tower, the two white domes at the drum's foot, the drum, the Top Plate, the oval funnel with its sloped black top, the after pole), the deck-edge catwalks and nets. Taken from above: no scale."
+    }
+  ],
+  "must_show": [
+    "ski-jump bow: the flat deck at z 16.5 from the stern to x +90, then a parabolic ramp to a broad rounded lip at x +152.5, 12 degrees at the lip, deck 23.1 m and rim 24.1 m over the water [P1: rim 24.4]",
+    "angled deck to port at 7.5 degrees with its long sponson out to y +38.6 at x +38..+47 and the painted foul lines [D1]",
+    "island far outboard on the starboard sponson, y -21.8..-34.6, x +5..-63 [D1, P7]",
+    "island tiers: the long base with galleries at both ends to 23.5 m, the bridge block forward (x -26..-6.5) to 33.0, the main block (x -55..-21) to 37.0, the tower (x -39.5..-21.8) to 44.0 with four flat array faces [P1, P3, P7]",
+    "the drum on the tower roof, x -31, 8.6 m across, 44.0 to 51.2 m, ribbed bands, the Top Plate's back-to-back frames over it to 57.9 m, two big white domes at its forward foot (x -24.6) [P1, P5, P7]",
+    "the oval funnel abaft the drum (x -52.5..-40.5) with its sloped black top at about 45 m [P1, P7]",
+    "concave bow flare from a raked stem (x +121.9 at the waterline, 12 m up at x +137) up to the ramp's lip [P1, P4]",
+    "the knuckle along the side at z 9.3 with the paler flare and the sponson walls above it [P1]",
+    "corner weapons sponsons below deck level (z 13.3) at x +43..+85 and x -145..-111 each side, with the Kashtan pairs and AK-630s; the port gallery at x -69..-24 [D1, P4]",
+    "catwalks with guard rails (posts and two wires) and safety nets under the deck edges, walkway at z about 15.1, rail to 16.15, along x -146..+88 where the sponsons leave room [P3, P7]",
+    "two starboard deck-edge lifts painted on the deck, x +9..+28 and x -89..-73, over dark openings in the side [D1, P2]",
+    "plain grey paint over the whole hull (x -152.5..+152.5), red boot-top at the waterline z 0; no hull number, name, ensign or star"
+  ],
+  "landmarks": [
+    {
+      "name": "flight deck height near the stern",
+      "ref": 0,
+      "expect_m": [
+        -135.0,
+        16.7
+      ],
+      "tol_m": 0.5,
+      "model_at": {
+        "in_m": [
+          -137.0,
+          -10.0,
+          12.0,
+          -133.0,
+          10.0,
+          20.0
+        ],
+        "edge": "upper"
+      },
+      "note": "[P1] deck edge at the stern 16.7 m over the waterline (+-2 px at 4.31 px/m); the model's flat deck is 16.5 (P1 reads 16.2 at the ramp's foot)"
+    },
+    {
+      "name": "flight deck height at the ramp's foot",
+      "ref": 0,
+      "expect_m": [
+        85.0,
+        16.2
+      ],
+      "tol_m": 0.5,
+      "model_at": {
+        "in_m": [
+          83.0,
+          -8.0,
+          12.0,
+          87.0,
+          8.0,
+          20.0
+        ],
+        "edge": "upper"
+      },
+      "note": "[P1] 16.2 m at the ramp's foot"
+    },
+    {
+      "name": "ski-jump lip rim height",
+      "ref": 0,
+      "expect_m": [
+        152.0,
+        24.4
+      ],
+      "tol_m": 0.5,
+      "model_at": {
+        "in_m": [
+          151.6,
+          -6.0,
+          22.0,
+          152.5,
+          6.0,
+          26.0
+        ],
+        "point": [
+          null,
+          "max"
+        ]
+      },
+      "note": "[P1] the lip's rim 24.4 m over the water (px row 393, +-2 px); the model's rim coaming tops out at 23.9 (deck 23.1 at the lip, 12 degrees): about 0.5 m low"
+    },
+    {
+      "name": "stem at the waterline",
+      "ref": 0,
+      "expect_m": [
+        121.9,
+        null
+      ],
+      "tol_m": 0.5,
+      "model_at": {
+        "in_m": [
+          100.0,
+          -6.0,
+          -3.0,
+          140.0,
+          6.0,
+          -0.01
+        ],
+        "point": [
+          "max",
+          null
+        ]
+      },
+      "note": "[P1] the stem meets the water 30.6 m abaft the lip (132 px); model: the forward end of the shell below the waterline"
+    },
+    {
+      "name": "drum top",
+      "ref": 0,
+      "expect_m": [
+        -31.0,
+        51.3
+      ],
+      "tol_m": 0.5,
+      "model_at": {
+        "in_m": [
+          -35.0,
+          -32.0,
+          46.0,
+          -27.0,
+          -25.0,
+          51.25
+        ],
+        "point": [
+          null,
+          "max"
+        ]
+      },
+      "note": "[P1] the drum 43.6 to 51.3 m (heights from the far-side deck edge, row 418); x from D1/P7, not this photograph"
+    },
+    {
+      "name": "Top Plate frame top",
+      "ref": 0,
+      "expect_m": [
+        -31.0,
+        58.4
+      ],
+      "tol_m": 0.6,
+      "model_at": {
+        "in_m": [
+          -33.0,
+          -32.0,
+          53.0,
+          -29.0,
+          -24.0,
+          58.2
+        ],
+        "point": [
+          null,
+          "max"
+        ]
+      },
+      "note": "[P1] the frame's top at 58.4 m (+-2 px, and P1 is seen from a little above: it reads high, see the model header)"
+    },
+    {
+      "name": "bridge block roof",
+      "ref": 0,
+      "expect_m": [
+        -14.0,
+        33.0
+      ],
+      "tol_m": 0.5,
+      "model_at": {
+        "in_m": [
+          -20.0,
+          -35.0,
+          24.0,
+          -6.0,
+          -21.0,
+          33.3
+        ],
+        "edge": "upper"
+      },
+      "note": "[P1] the forward (bridge) block to 33.0 m"
+    }
+  ],
+  "not_confirmed": [
+    "everything under water (keel, bilge, forefoot); no sonar bulb drawn",
+    "the Granit hatch field's layout (12 flush covers, painted)",
+    "the Kashtan and AK-630 places on the corner sponsons; the lift sizes",
+    "the island's plan widths and which face carries which array; the smaller radars, aerials and dishes",
+    "galleries, rafts, scuttle rows, anchors: places estimated",
+    "the refitted ship (2018 onward): no photograph in service; carrier_p is drawn as in 2016-17"
+  ]
+}

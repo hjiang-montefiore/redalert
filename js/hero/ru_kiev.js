@@ -8,8 +8,9 @@
    after russian-ships.info): length overall 273.1 m (drawn 273.1), flight
    deck beam 51.3 m (drawn 51.2), waterline beam 31.0 m (drawn 31.0; the
    previous file used English Wikipedia's 32.6), draught 8 m standard and
-   9.3 m full (drawn 8.6), keel to masthead 61.6 m (drawn 62.2 to the whip
-   on the ball), waterline length 235.8 m (NOT matched: D1's foot gives
+   9.3 m full (drawn 8.6), keel to masthead 61.6 m (the ball's top
+   is 51.8, read off D1 at the hull-length scale; the whip above it is a
+   chosen length, 1.2 m, D1 shows none), waterline length 235.8 m (NOT matched: D1's foot gives
    246.3, stern -128.5 to stem +117.8, and that is drawn), the angled
    deck at 4.5 degrees (drawn), two lifts - the aircraft lift "in the
    midships area", the helicopter lift "behind the superstructure".
@@ -19,11 +20,15 @@
 
    REFERENCES (Wikimedia Commons, fetched at 960 px, all read):
      D1 "Kiev class aircraft carrier profile 1986.png" - recognition profile
-        from starboard with a 274 m bar (3.36 px/m): the waterline length
+        from starboard with a 274 m bar (923 px, 3.37 px/m; the hull spans
+        931 px, so it is read at 3.409 px/m on the 273.1 m length overall,
+        stern at column 12, foot at row 222): the waterline length
         (stern -128.5, stem +117.8 at the drawing's foot), the flight deck at
         12.6, the island tiers (14.6, 17.8, 23.5, the tower 34.5 from x -12 to
-        +25, 30.0 and 22.5 forward), the funnel's raked top on the tower's
-        after end, the ball at x +10 (top 51.8), the tilted antenna forward
+        +25, 27.3 and 22.5 forward; re-read in batch 3: the island's after end
+        at x -46.7, the 27.3 tier, the forward director high on a pedestal to
+        33.7 at x 31..33, the stern overhang), the funnel's raked top on the tower's
+        after end, the ball at x +11.3 (top 51.8), the tilted antenna forward
         of it, the dish posts at x -26, -20, +31, +40, the gallery scuttle
         row under the flight deck, the open boat bays in the quarters.
      P1 "Kiev-class Novorossiysk DD-ST-85-06598 r.jpg" (USN 1985, starboard
@@ -157,7 +162,8 @@ var HeroKiev = (function () {
     return 117.8 - 9.0 * Math.pow(Math.min(1, -z / 8.6), 1.5);
   }
   function xSternAt(z) {
-    if (z >= 0) return -128.5 - 8.0 * Math.min(1, z / 11.0);
+    /* D1: the stern overhang reaches -133.3 by z 1.5, -134.2 at 7, -136.5 at 11 */
+    if (z >= 0) return tab([[0, -128.5], [1.5, -133.3], [7.0, -134.2], [9.4, -135.9], [11.0, -136.5]], z);
     return -128.5 + 12.0 * Math.pow(Math.min(1, -z / 8.6), 1.6);
   }
   function xAt(xn, z) {
@@ -282,6 +288,30 @@ var HeroKiev = (function () {
       g.save(); g.translate(px(wx), py(wy)); g.rotate(-TAN45);
       g.fillRect(0, -1, (6 + R() * 16) * sx, 1.2 + R() * 2.4); g.restore();
     }
+    /* weathering: exhaust scorch on the six VTOL spots and the two stern
+       circles (darker, browner rings round each), rust streaks off the
+       deck edges, oil stains along the strip */
+    var scorch = function (cx2, cy2, r2) {
+      var gr = g.createRadialGradient(px(cx2), py(cy2), 0, px(cx2), py(cy2), r2 * sx);
+      gr.addColorStop(0, "rgba(18,14,12,0.62)"); gr.addColorStop(0.5, "rgba(70,50,38,0.42)");
+      gr.addColorStop(1, "rgba(60,44,34,0)");
+      g.fillStyle = gr; g.beginPath(); g.ellipse(px(cx2), py(cy2), r2 * sx, r2 * sy, 0, 0, PI * 2); g.fill();
+    };
+    for (i = 0; i < 6; i++) scorch(-100 + i * 24.5, axisA(-100 + i * 24.5), 6.5);
+    scorch(-114.0, -2.5, 7.5); scorch(-108.5, -1.0, 7.5);
+    g.fillStyle = "#3a2a22";
+    for (i = 0; i < 70; i++) {
+      var rx2 = XD0 + R() * (XD1 - XD0 - 8), up = R() < 0.5;
+      var ry2 = up ? Math.min(edgeP(rx2), 33) - 0.2 : -edgeS(rx2) + 0.2;
+      g.globalAlpha = 0.10 + R() * 0.12;
+      g.fillRect(px(rx2), py(ry2) + (up ? 0 : -(3 + R() * 9) * sy), (0.3 + R() * 0.5) * sx, (3 + R() * 9) * sy);
+    }
+    g.fillStyle = "#0e0e0e";
+    for (i = 0; i < 40; i++) {
+      var ox = -120 + R() * 150, oy = axisA(ox) + (R() - 0.5) * 14;
+      g.globalAlpha = 0.10 + R() * 0.10;
+      g.beginPath(); g.ellipse(px(ox), py(oy), (0.6 + R() * 1.6) * sx, (0.4 + R() * 1.0) * sy, R() * PI, 0, PI * 2); g.fill();
+    }
     g.globalAlpha = 1;
     var L = PAINT.line;
     var seg = function (x0, y0, x1, y1, w) {
@@ -312,6 +342,11 @@ var HeroKiev = (function () {
       g.strokeStyle = L; g.lineWidth = 0.4 * sx;
       g.beginPath(); g.ellipse(px(c[0]), py(c[1]), 5.6 * sx, 5.6 * sy, 0, 0, PI * 2); g.stroke();
     });
+    /* the dark gutter strip round the deck edge (grime, both sides) */
+    g.globalAlpha = 0.45; g.strokeStyle = "#1c1a1c"; g.lineWidth = 0.7 * sx;
+    g.beginPath(); for (x = -134; x <= 38; x += 2) { var ey = edgeP(x) - 0.5; if (x === -134) g.moveTo(px(x), py(ey)); else g.lineTo(px(x), py(ey)); } g.stroke();
+    g.beginPath(); for (x = -134; x <= 38; x += 2) { var ez = -edgeS(x) + 0.5; if (x === -134) g.moveTo(px(x), py(ez)); else g.lineTo(px(x), py(ez)); } g.stroke();
+    g.globalAlpha = 1;
     /* starboard deck-edge line and the round-down line at the stern */
     seg(-128, -16.6, 0, -16.6, 0.3);
     seg(-134.6, -14.0, -134.6, 15.0, 0.4);
@@ -331,6 +366,7 @@ var HeroKiev = (function () {
       dark:  flat(0x16191b, 0.9, 0.05),
       metal: flat(0x5c6368, 0.55, 0.5),
       white: flat(0xc9cdcf, 0.6, 0.04),
+      raft:  flat(0xb8432a, 0.75, 0.04),
       team:  flat(team, 0.8, 0.08),
       glass: new THREE.MeshStandardMaterial({ color: 0x101a22, roughness: 0.12, metalness: 0.0,
                                               transparent: true, opacity: 0.88 })
@@ -440,7 +476,11 @@ var HeroKiev = (function () {
     for (var i = 0; i < pts.length; i++) {
       var q = pts[i];
       strut(THREE, g, T.metal, q[0], q[1], q[2], q[0], q[1], q[2] + h, 0.035, 3);
-      if (i) { var r = pts[i - 1]; strut(THREE, g, T.metal, r[0], r[1], r[2] + h, q[0], q[1], q[2] + h, 0.03, 3); }
+      if (i) {
+        var r = pts[i - 1];   /* the top rail and the middle wire */
+        strut(THREE, g, T.metal, r[0], r[1], r[2] + h, q[0], q[1], q[2] + h, 0.03, 3);
+        strut(THREE, g, T.metal, r[0], r[1], r[2] + h * 0.5, q[0], q[1], q[2] + h * 0.5, 0.02, 3);
+      }
     }
   }
 
@@ -481,7 +521,9 @@ var HeroKiev = (function () {
     }
     for (j = 0; j < n - 1; j++) {
       var P0 = base + 2 * j, S0 = P0 + 1, P1 = P0 + 2, S1 = P0 + 3;
-      idx.push(P0, S0, P1, S0, S1, P1);
+      /* at the keel the two sides meet (y = 0): that row is one triangle */
+      if (Math.abs(pos[P0 * 3 + 1]) > 1e-4) idx.push(P0, S0, P1);
+      idx.push(S0, S1, P1);
     }
     return orient(THREE, pos, idx, uv, m, function (x, y, zz) { return x < xAt(xn, zz) + 0.3 ? [-1, 0, 0] : [0, y, 0]; });
   }
@@ -631,16 +673,19 @@ var HeroKiev = (function () {
       var a = -PI * 0.8 + i * (PI * 1.6 / 11);
       cylX(THREE, c, 0.13, 0.13, 1.9, 4, T.metal, 0.4, Math.sin(a) * 0.55, Math.cos(a) * 0.55);
     }
+    /* the barrels ride round a central cradle on a trunnion post */
+    cylX(THREE, c, 0.44, 0.44, 1.7, 8, T.metal, 0.4, 0, 0);
+    strut(THREE, g, T.metal, 0, 0, 0.85, 0.2, 0, 1.6, 0.22, 6);
   }
   /* a director: a pedestal, a cabin and one or two dishes facing forward */
   function director(THREE, g, T, x, y, z, h, r, twin) {
     cylZ(THREE, g, 0.45, 0.6, h, 8, T.sup, x, y, z + h / 2);
-    blk(THREE, g, T.sup, x - 0.9, x + 0.9, y - 0.8, y + 0.8, z + h, z + h + 1.3, true);
+    blk(THREE, g, T.sup, x - 0.9, x + 0.9, y - 0.8, y + 0.8, z + h, z + h + 1.3, false);
     var n = twin ? 2 : 1;
     for (var k = 0; k < n; k++) {
       var yy = twin ? y + (k ? 1.1 : -1.1) : y;
       var dg = new THREE.CylinderGeometry(r, r * 0.3, 0.35, 12, 1); dg.rotateZ(-PI / 2);
-      var d = new THREE.Mesh(dg, T.white); d.position.set(x + 1.1, yy, z + h + 0.8); g.add(d);
+      var d = new THREE.Mesh(dg, T.white); d.position.set(x + 1.06, yy, z + h + 0.8); g.add(d);
     }
   }
   /* a lattice mast: four legs braced, from a base square to a top square */
@@ -695,8 +740,11 @@ var HeroKiev = (function () {
     }
     g.add(orient(THREE, fp, fi, fu, T.fc, function () { return [0, 0, 1]; }));
     /* the step face at the angled deck's forward end, from 12.6 to the forecastle */
+    /* (it starts at zero height at x = 38: the first metre is one triangle) */
     var sa = [], sb = [];
-    for (x = XFD1; x <= 46.01; x += 1) { sa.push([x, 17.6, FD]); sb.push([x, 17.6, deckZ(x)]); }
+    for (x = XFD1 + 1; x <= 46.01; x += 1) { sa.push([x, 17.6, FD]); sb.push([x, 17.6, deckZ(x)]); }
+    g.add(orient(THREE, [XFD1, 17.6, FD, XFD1 + 1, 17.6, FD, XFD1 + 1, 17.6, deckZ(XFD1 + 1)], [0, 1, 2],
+                 [XFD1 / 6, 0, (XFD1 + 1) / 6, 0, (XFD1 + 1) / 6, 0.2], T.sup, function () { return [0, 1, 0]; }));
     g.add(ruled(THREE, sa, sb, T.sup, function () { return [0, 1, 0]; }, function (p, q) { return [p[0] / 6, 0, p[0] / 6, 0.2]; }));
 
     flightDeck(THREE, g, T);
@@ -705,31 +753,35 @@ var HeroKiev = (function () {
     var YO = -17.4, YN = -5.0;                    /* outboard and inboard faces */
     /* after end: the low block (14.6) with the AK-726, the second tier
        (17.8) with the M-11, the third (23.5) with the director posts */
-    blk(THREE, g, T.sup, -50.0, -40.0, YO + 0.6, YN - 0.6, FD, 14.8, true);
+    blk(THREE, g, T.sup, -46.7, -40.0, YO + 0.6, YN - 0.6, FD, 14.8, true);   /* after end -46.7 on D1 */
     blk(THREE, g, T.sup, -40.0, -27.0, YO + 0.4, YN - 0.3, FD, 17.8, true);
     blk(THREE, g, T.sup, -27.0, -12.0, YO + 0.4, YN - 0.2, FD, 23.5, true);
     /* the tower: lower body upright to 28, then raked faces to its roof at 34.5 (P2) */
     blk(THREE, g, T.sup, -12.0, 25.0, YO + 0.3, YN, FD, 28.0, true);
     rake(THREE, g, T.sup, -12.0, 25.0, YO + 0.3, YN, 28.0, -9.6, 21.6, YO + 2.2, YN - 1.9, 34.5);
     /* the forward tiers: 30.0 to x +30, 22.5 to +43, 18.5 to +45, 14.8 to +50 */
-    blk(THREE, g, T.sup, 25.0, 30.0, YO + 0.6, YN - 0.6, FD, 30.0, true);
+    blk(THREE, g, T.sup, 25.0, 30.0, YO + 0.6, YN - 0.6, FD, 27.3, true);   /* 27.3 on D1 */
     rake(THREE, g, T.sup, 30.0, 43.0, YO + 0.6, YN - 0.4, FD, 30.0, 41.6, YO + 1.0, YN - 0.8, 22.5);
     blk(THREE, g, T.sup, 43.0, 45.5, YO + 0.6, YN - 0.6, deckZ(43), 18.5, true);
     blk(THREE, g, T.sup, 45.5, 50.5, YO + 0.6, YN - 0.6, deckZ(45.5), 15.4, true);
     /* the funnel casing on the tower's after end, its raked top falling aft (D1, P2) */
-    rake(THREE, g, T.sup, -10.4, 0.0, YO + 3.2, YN - 2.6, 34.5, -10.6, -1.0, YO + 3.6, YN - 3.0, 36.0);
-    /* the casing's sloped cap: higher forward (37.2) than aft (36.0) */
-    var cp = [-10.6, YO + 3.6, 36.0, -1.0, YO + 3.6, 37.2, -1.0, YN - 3.0, 37.2, -10.6, YN - 3.0, 36.0];
-    g.add(orient(THREE, cp, [0, 1, 2, 0, 2, 3], [0, 0, 1, 0, 1, 1, 0, 1], T.dark, function () { return [0, 0, 1]; }));
-    [[YO + 3.6, -1], [YN - 3.0, 1]].forEach(function (q) {
-      var tri = [-10.6, q[0], 36.0, -1.0, q[0], 37.2, -1.0, q[0], 36.0];
+    rake(THREE, g, T.sup, -10.4, 0.0, YO + 3.2, YN - 2.6, 34.5, -10.6, -1.0, YO + 3.6, YN - 3.0, 35.3);
+    /* the casing's cap (D1): flat at 35.3 over its after half, then rising
+       to 37.0 at its forward face */
+    var ya = YO + 3.6, yb = YN - 3.0;
+    var cp = [-10.6, ya, 35.31, -6.0, ya, 35.31, -6.0, yb, 35.31, -10.6, yb, 35.31,
+              -6.0, ya, 35.3, -1.0, ya, 37.0, -1.0, yb, 37.0, -6.0, yb, 35.3];
+    g.add(orient(THREE, cp, [0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7], [0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1],
+                 T.dark, function () { return [0, 0, 1]; }));
+    [[ya, -1], [yb, 1]].forEach(function (q) {
+      var tri = [-6.0, q[0], 35.3, -1.0, q[0], 37.0, -1.0, q[0], 35.3];
       g.add(orient(THREE, tri, [0, 1, 2], [0, 0, 1, 0, 1, 1], T.sup, function () { return [0, -q[1], 0]; }));
     });
-    var fr = [-1.0, YO + 3.6, 36.0, -1.0, YN - 3.0, 36.0, -1.0, YN - 3.0, 37.2, -1.0, YO + 3.6, 37.2];
+    var fr = [-1.0, ya, 35.3, -1.0, yb, 35.3, -1.0, yb, 37.0, -1.0, ya, 37.0];
     g.add(orient(THREE, fr, [0, 1, 2, 0, 2, 3], [0, 0, 1, 0, 1, 1, 0, 1], T.sup, function () { return [1, 0, 0]; }));
 
     /* galleries with rails round the tiers */
-    [[-50.4, -40.0, 14.8], [-40.4, -27.0, 17.8], [-27.4, -12.0, 23.5], [-12.4, 25.4, 28.0], [25.0, 30.4, 30.0], [41.6, 50.8, 18.5]].forEach(function (q) {
+    [[-47.1, -40.0, 14.8], [-40.4, -27.0, 17.8], [-27.4, -12.0, 23.5], [-12.4, 25.4, 28.0], [25.0, 30.4, 27.3], [41.6, 50.8, 18.5]].forEach(function (q) {
       blk(THREE, g, T.sup, q[0], q[1], YO - 0.6, YN + 0.5, q[2] - 0.25, q[2], false);
       var po = [], pi = [];
       for (x = q[0] + 0.3; x <= q[1] - 0.2; x += 3.6) { po.push([x, YO - 0.5, q[2]]); pi.push([x, YN + 0.4, q[2]]); }
@@ -737,17 +789,31 @@ var HeroKiev = (function () {
     });
     /* windows: rows on both faces of the tiers, the bridge band on the tower front */
     /* D1: two short rows high on the tower's middle, single rows on the tiers */
-    var wr = [[-48, -42, 13.6], [-38, -29, 16.0], [-25, -14, 20.6], [-7, 8, 19.6], [-7, 8, 22.4], [12, 22, 25.0], [26, 29, 27.4]];
+    var wr = [[-45, -42, 13.6], [-38, -29, 16.0], [-25, -14, 20.6], [-7, 8, 19.6], [-7, 8, 22.4], [12, 22, 25.0], [26, 29, 25.0]];
+    /* each set into its own tier's faces (outboard, inboard insets as the blocks above) */
+    var face = function (xx) {
+      return xx < -40 ? [0.6, -0.6] : xx < -27 ? [0.4, -0.3] : xx < -12 ? [0.4, -0.2] : xx < 25 ? [0.3, 0.0] : [0.6, -0.6];
+    };
     wr.forEach(function (q) {
       for (x = q[0]; x <= q[1]; x += 3.0) {
-        box(THREE, g, 1.2, 0.1, 0.75, T.dark, x, YO + 0.25, q[2]);
-        box(THREE, g, 1.2, 0.1, 0.75, T.dark, x, YN + 0.05 - (q[0] > -12 && q[0] < 25 ? 0 : 0.3), q[2]);
+        var fo = face(x);
+        box(THREE, g, 1.2, 0.1, 0.75, T.dark, x, YO + fo[0] - 0.03, q[2]);
+        box(THREE, g, 1.2, 0.1, 0.75, T.dark, x, YN + fo[1] + 0.03, q[2]);
       }
     });
-    box(THREE, g, 0.12, (YN - 0.6) - (YO + 0.6) - 1.0, 1.0, T.glass, 30.06, (YO + YN) / 2, 28.6);
-    box(THREE, g, 0.12, (YN - 0.8) - (YO + 1.0) - 1.2, 0.9, T.glass, 25.06, (YO + YN) / 2, 32.6);
-    for (i = 0; i < 3; i++) box(THREE, g, 0.1, 1.8, 2.6, T.dark, -50.05, YO + 2.6 + i * 3.6, FD + 1.4);
-    for (i = 0; i < 4; i++) box(THREE, g, 2.0, 0.1, 2.6, T.dark, -36 + i * 18, YN + 0.08 - (i > 1 ? 0 : 0.3), FD + 1.4);
+    /* the 27.3 tier's front windows, either side of the director pedestal */
+    box(THREE, g, 0.12, 3.2, 1.0, T.glass, 30.06, YO + 0.6 + 2.2, 25.6);
+    box(THREE, g, 0.12, 3.2, 1.0, T.glass, 30.06, YN - 0.6 - 2.2, 25.6);
+    /* the bridge band on the tower's raked front face (25.0 at 28 to 21.6 at 34.5) */
+    (function () {
+      var fz = (32.6 - 28.0) / 6.5, ang = Math.atan2(25.0 - 21.6, 34.5 - 28.0);
+      var y0 = YO + 0.3 + 1.9 * fz, y1 = YN - 1.9 * fz;
+      var gb = new THREE.Mesh(new THREE.BoxGeometry(0.12, (y1 - y0) - 1.2, 1.0), T.glass);
+      gb.position.set(25.0 - 3.4 * fz + 0.02 * Math.cos(ang), (y0 + y1) / 2, 32.6 + 0.02 * Math.sin(ang));
+      gb.rotation.y = -ang; g.add(gb);
+    })();
+    for (i = 0; i < 3; i++) box(THREE, g, 0.1, 1.8, 2.6, T.dark, -46.75, YO + 2.6 + i * 3.6, FD + 1.4);
+    for (i = 0; i < 4; i++) box(THREE, g, 2.0, 0.1, 2.6, T.dark, -36 + i * 18, YN + face(-36 + i * 18)[1] + 0.03, FD + 1.4);
     /* bridge wings */
     blk(THREE, g, T.sup, 22.0, 25.0, YO - 1.8, YO + 0.3, 28.4, 29.0);
     blk(THREE, g, T.sup, 22.0, 25.0, YN, YN + 1.6, 28.4, 29.0);
@@ -759,17 +825,19 @@ var HeroKiev = (function () {
 
     /* ---------------- masts and antennas on the tower roof (D1, P2, P4) */
     var TY = (YO + 2.2 + YN - 1.9) / 2;          /* the roof's middle line */
-    /* the ball on its lattice tripod at x +10, with its yard */
-    lattice(THREE, g, T, 10.0, TY, 2.4, 0.8, 34.5, 46.6, 0.16);
-    cylZ(THREE, g, 0.5, 0.65, 1.4, 10, T.dark, 10.0, TY, 47.3);
-    sphere(THREE, g, T.white, 2.2, 10.0, TY, 50.0);
-    strut(THREE, g, T.dark, 10.0, TY - 6.0, 45.6, 10.0, TY + 6.0, 45.6, 0.12, 5);
-    strut(THREE, g, T.dark, 7.6, TY, 45.6, 12.4, TY, 45.6, 0.1, 4);
+    /* the ball on its lattice tripod at x +11.3 (D1), with its yard */
+    var XB1 = 11.3;                               /* the ball's station on D1 */
+    lattice(THREE, g, T, XB1, TY, 2.4, 0.8, 34.5, 46.6, 0.16);
+    blk(THREE, g, T.dark, XB1 - 0.9, XB1 + 0.9, TY - 0.9, TY + 0.9, 46.5, 46.7);   /* the masthead platform */
+    cylZ(THREE, g, 0.5, 0.65, 1.4, 10, T.dark, XB1, TY, 47.3);
+    sphere(THREE, g, T.white, 2.2, XB1, TY, 49.6);   /* top 51.8 (D1) */
+    strut(THREE, g, T.dark, XB1, TY - 6.0, 45.6, XB1, TY + 6.0, 45.6, 0.12, 5);
+    strut(THREE, g, T.dark, XB1 - 2.4, TY, 45.6, XB1 + 2.4, TY, 45.6, 0.1, 4);
     [-5.6, -3.0, 3.0, 5.6].forEach(function (d) {
-      strut(THREE, g, T.dark, 10.0, TY + d, 45.6, 10.0, TY + d, 46.8, 0.05, 3);
-      strut(THREE, g, T.dark, 10.0, TY + d, 45.6, 10.0, TY + d, 44.6, 0.05, 3);
+      strut(THREE, g, T.dark, XB1, TY + d, 45.6, XB1, TY + d, 46.8, 0.05, 3);
+      strut(THREE, g, T.dark, XB1, TY + d, 45.6, XB1, TY + d, 44.6, 0.05, 3);
     });
-    strut(THREE, g, T.dark, 10.0, TY, 52.2, 10.0, TY, 53.6, 0.05, 3);
+    strut(THREE, g, T.dark, XB1, TY, 51.8, XB1, TY, 53.0, 0.05, 3);
     /* the Top Sail: a lattice reflector tilted back on its cone, facing forward */
     cylZ(THREE, g, 0.7, 1.8, 3.6, 10, T.sup, 19.5, TY, 36.3);
     /* it turns: drawn trained 45 degrees to port, as P2 and P4 show its face */
@@ -791,32 +859,42 @@ var HeroKiev = (function () {
     [-3.0, 0, 3.0].forEach(function (zz) { strut(THREE, ts, T.dark, -0.8, -3.2, zz, -0.8, 3.2, zz, 0.07, 3); });
     strut(THREE, ts, T.dark, -0.8, 0, -4.0, -2.6, 0, 0, 0.12, 4);
     strut(THREE, ts, T.dark, -0.8, 0, 4.0, -2.6, 0, 0, 0.12, 4);
-    strut(THREE, ts, T.dark, 0.0, 0, -3.6, 2.4, 0, -1.0, 0.1, 4);
+    strut(THREE, ts, T.dark, -0.68, 0, -3.6, 2.4, 0, -1.0, 0.1, 4);
     /* the planar array aft of the ball, on its post (P2) */
     /* (it turns; drawn trained 45 degrees to port, so both profiles show it) */
-    strut(THREE, g, T.dark, 3.8, TY, 34.5, 3.8, TY, 38.0, 0.3, 6);
+    strut(THREE, g, T.dark, 3.8, TY, 34.5, 3.8, TY, 38.6, 0.3, 6);
     var pa = new THREE.Group(); pa.position.set(3.8, TY, 40.2); pa.rotation.z = PI / 4; g.add(pa);
     var pb = new THREE.Group(); pb.rotation.y = -0.35; pa.add(pb);
     box(THREE, pb, 0.35, 7.2, 4.6, T.metal, 0, 0, 0);
     for (k = -2; k <= 2; k++) box(THREE, pb, 0.45, 0.08, 4.65, T.dark, 0.02, k * 1.45, 0);
     for (k = -1; k <= 1; k++) box(THREE, pb, 0.45, 7.25, 0.08, T.dark, 0.02, 0, k * 1.5);
+    /* the yoke from the post's head to the array's lower edge */
+    g.updateMatrixWorld(true);
+    var yk = pb.localToWorld(new THREE.Vector3(-0.1, 0, -2.2));
+    strut(THREE, g, T.dark, 3.8, TY, 38.3, yk.x, yk.y, yk.z, 0.2, 6);
     /* small dishes and whips on the roof */
-    director(THREE, g, T, -6.0, TY + 1.0, 34.5, 1.4, 0.9, false);
+    /* (a roof director drawn at x -6 stood inside the funnel casing; D1 shows
+       nothing above the casing there, so it is not drawn) */
     director(THREE, g, T, 20.4, TY - 2.0, 34.5, 1.0, 0.8, false);
-    [[-4, YN - 2.0], [5, YO + 2.6], [-30, YO + 1.2], [-46, YN - 1.2], [14, YO + 2.2]].forEach(function (q, k2) {
+    [[-4, YN - 2.0], [5, YO + 2.6], [-30, YO + 1.2], [-44.5, YN - 1.2], [14, YO + 2.2]].forEach(function (q, k2) {
       var zt = q[0] < -40 ? 14.8 : (q[0] < -27 ? 17.8 : 34.5);
       strut(THREE, g, T.metal, q[0], q[1], zt, q[0], q[1], zt + 3.6 + k2 * 0.5, 0.04, 3);
     });
 
     /* ---------------- directors at the island's ends (D1 posts, P1, P2) */
     director(THREE, g, T, -20.0, (YO + YN) / 2, 23.5, 5.0, 1.3, true);   /* aft M-11's director  */
-    director(THREE, g, T, -26.0, YN - 2.0, 17.8, 4.6, 0.9, false);
-    director(THREE, g, T, 31.4, (YO + YN) / 2, 30.0, 2.4, 1.3, true);    /* fwd M-11's director  */
+    /* the x -26 post stands on the 23.5 tier (it was buried inside that tier) */
+    director(THREE, g, T, -26.0, YN - 2.0, 23.5, 1.6, 0.9, false);
+    /* D1: the forward M-11's director stands high (top 33.7 at x 31..33)
+       ahead of the 27.3 tier: drawn on a pedestal from the 22.5 roof (its
+       post had stood in the air at x 31.4 in the earlier file) */
+    blk(THREE, g, T.sup, 30.0, 34.4, (YO + YN) / 2 - 1.6, (YO + YN) / 2 + 1.6, 22.5, 30.0, true);
+    director(THREE, g, T, 31.6, (YO + YN) / 2, 30.0, 2.4, 1.3, true);    /* fwd M-11's director  */
     director(THREE, g, T, 40.0, YO + 2.6, 22.5, 1.0, 0.9, false);
     director(THREE, g, T, 40.0, YN - 2.2, 22.5, 1.0, 0.9, false);
 
     /* ---------------- the after weapons on the island's after tiers */
-    var aw = new THREE.Group(); aw.position.set(-45.0, -11.2, 14.8); ak726(THREE, aw, T); g.add(aw);
+    var aw = new THREE.Group(); aw.position.set(-42.6, -11.2, 14.8); ak726(THREE, aw, T); g.add(aw);
     aw.rotation.z = PI;                                   /* the after mount looks aft */
     var am = new THREE.Group(); am.position.set(-33.5, -11.2, 17.8); shtorm(THREE, am, T, 0.8); am.rotation.z = PI; g.add(am);
 
@@ -849,6 +927,24 @@ var HeroKiev = (function () {
       director(THREE, g, T, 106.5, s * 3.4, deckZ(106.5), 1.6, 0.6, false);
     }
     strut(THREE, g, T.metal, 135.4, 0, deckZ(135.4), 135.4, 0, deckZ(135.4) + 3.0, 0.05, 4);
+    /* the life-raft rack P1 shows on the starboard forecastle edge just
+       forward of the forward Bazalt pair: six canisters lying athwartships,
+       red-orange, in one cradle (P1; x read about 78-86, not confirmed) */
+    (function () {
+      var rx = 82.0, zr = deckZ(rx), yr = -(sideY(rx, zr) - 2.2);
+      blk(THREE, g, T.metal, 78.6, 85.4, yr - 0.75, yr + 0.75, zr, zr + 0.3);
+      for (var q = 0; q < 6; q++) {
+        var cg = new THREE.CylinderGeometry(0.34, 0.34, 1.4, 8, 1);
+        var cn = new THREE.Mesh(cg, T.raft); cn.position.set(79.2 + q * 1.12, yr, zr + 0.62); g.add(cn);
+      }
+    })();
+    /* whip aerials on the forecastle deck edges (P1: about eight, tall, on
+       both edges forward of the M-11; stations read roughly off P1) */
+    [[93.0, -1], [101.0, -1], [110.0, -1], [121.0, -1], [96.0, 1], [106.0, 1], [117.0, 1], [127.0, 1]].forEach(function (w) {
+      var zw = deckZ(w[0]), yw = w[1] * (sideY(w[0], zw) - 0.5);
+      cylZ(THREE, g, 0.16, 0.2, 0.6, 6, T.metal, w[0], yw, zw + 0.3);
+      strut(THREE, g, T.metal, w[0], yw, zw + 0.6, w[0], yw, zw + 9.0, 0.045, 3);
+    });
     /* the low bulwark round the stem (P1) */
     [1, -1].forEach(function (sg) {
       var A = [], B = [];
@@ -902,7 +998,7 @@ var HeroKiev = (function () {
 
     /* ---------------- team: three modest strips on up-facing island roofs */
     box(THREE, g, 4.0, 1.2, 0.05, T.team, -18.0, YO + 2.0, 23.53);
-    box(THREE, g, 3.0, 1.2, 0.05, T.team, 27.5, YN - 2.0, 30.03);
+    box(THREE, g, 3.0, 1.2, 0.05, T.team, 27.5, YN - 2.0, 27.33);
     box(THREE, g, 3.0, 1.2, 0.05, T.team, 37.5, -11.2, 22.53 - 0.0);
 
     g.updateMatrixWorld(true);
