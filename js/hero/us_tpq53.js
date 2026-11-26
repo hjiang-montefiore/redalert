@@ -64,7 +64,10 @@
    each, both tyres), "hull".  Team colour: C.team panels on the cab roof and the rear-deck box.
    Model space: +X nose, +Y port, +Z up, metres, tyres and stabiliser feet on z = 0.  ASCII only.
    DETAIL PASS 2 (the owner: the models looked plainer than the old ones): detail() and arrayDetail() on dpKit; the paint takes dpWeather.  nato_e00_radarv / radarv_n 8588 ->
-     11116 tris, 15 draw calls.  */
+     11116 tris, 15 draw calls.
+   BATCH 4 (floating parts): the cab's lowest section is now full width (1.16, it tapered to 1.10), so the door
+   frame, its bolt rows and handles sit on the plate; the round convex mirrors hang from their heads; the frame
+   rails run forward to the bumper; the front springs sit on the axle; the housing ladder stands on its face.  */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
@@ -400,8 +403,8 @@ var HeroTpq53 = (function () {
   function chassis(B) {
     var s, i, AX = [XF, XR1, XR2];
     for (s = -1; s <= 1; s += 2) {
-      box(B.dark, X_PIN + 0.20, 3.30, s * 0.44 - 0.06, s * 0.44 + 0.06, 0.78, 1.06);          /* frame rail */
-      box(B.dark, XF - 0.50, XF + 0.50, s * 0.62 - 0.05, s * 0.62 + 0.05, 0.70, 0.80);         /* front springs */
+      box(B.dark, X_PIN + 0.20, X_BUMP - 0.19, s * 0.44 - 0.06, s * 0.44 + 0.06, 0.78, 1.06);  /* frame rail, its horn to the bumper */
+      box(B.dark, XF - 0.50, XF + 0.50, s * 0.62 - 0.05, s * 0.62 + 0.05, 0.67, 0.80);         /* front springs, on the axle */
       box(B.dark, XR2 - 0.35, XR1 + 0.35, s * 0.62 - 0.05, s * 0.62 + 0.05, 0.62, 0.74);
       bar(B.dark, [XR1 + 0.55, s * 0.60, 1.00], [(XR1 + XR2) / 2, s * 0.60, 0.70], 0.12);
     }
@@ -428,7 +431,7 @@ var HeroTpq53 = (function () {
   }
 
   /* the cab: horizontal sections of the armoured shell (D, A): z, face x, back x, half width, front chamfer */
-  var CABS = [[1.20, 3.46, CAB_X0, 1.10, 0.10], [1.95, 3.46, CAB_X0, 1.16, 0.20], [2.06, 3.43, CAB_X0, 1.16, 0.22],
+  var CABS = [[1.20, 3.46, CAB_X0, 1.16, 0.14], [1.95, 3.46, CAB_X0, 1.16, 0.20], [2.06, 3.43, CAB_X0, 1.16, 0.22],
               [2.78, 3.32, CAB_X0, 1.16, 0.22], [2.86, 3.38, CAB_X0, 1.16, 0.20], [CAB_Z1, 3.36, CAB_X0 + 0.05, 1.12, 0.18]];
   function cabRing(st) {
     var z = st[0], xf = st[1], xr = st[2], w = st[3], ch = st[4];
@@ -477,7 +480,7 @@ var HeroTpq53 = (function () {
       bar(B.dark, [3.15, s * 1.16, 2.10], [3.45, s * 1.42, 2.12], 0.035);
       box(B.dark, 3.42, 3.50, s * 1.36, s * 1.56, 2.02, 2.70);
       box(B.glass, 3.50, 3.51, s * 1.38, s * 1.54, 2.05, 2.67);
-      cylX(B.dark, 3.42, 3.50, s * 1.46, 1.90, 0.08, 10);
+      cylX(B.dark, 3.42, 3.50, s * 1.46, 1.945, 0.08, 10);   /* the convex mirror hung under the head */
     }
     /* the roof: hatch, team panel; two whip aerials at the back corners (A, E) */
     box(B.paint, 1.95, 2.65, -0.40, 0.40, CAB_Z1, CAB_Z1 + 0.06);
@@ -893,8 +896,8 @@ var HeroTpq53 = (function () {
     /* jerrycans on the rear deck */
     DP.jerry(P, D, -2.60, 0.86, DECK, 1); DP.jerry(P, D, -2.22, 0.86, DECK, 1);
     /* the ladder up the housing's rear face */
-    for (s = -1; s <= 1; s += 2) DP.bar(D, [HX0 - 0.06, 0.10 + s * 0.20, DECK + 0.55], [HX0 - 0.06, 0.10 + s * 0.20, HZ], 0.016, 6);
-    for (k = 0; k < 4; k++) DP.bar(D, [HX0 - 0.06, -0.10, DECK + 0.70 + k * 0.17], [HX0 - 0.06, 0.30, DECK + 0.70 + k * 0.17], 0.013, 5);
+    for (s = -1; s <= 1; s += 2) DP.bar(D, [HX0 - 0.045, 0.10 + s * 0.20, DECK + 0.55], [HX0 - 0.045, 0.10 + s * 0.20, HZ], 0.016, 6);
+    for (k = 0; k < 4; k++) DP.bar(D, [HX0 - 0.045, -0.10, DECK + 0.70 + k * 0.17], [HX0 - 0.045, 0.30, DECK + 0.70 + k * 0.17], 0.013, 5);
   }
   function arrayDetail(B) {
     var D = B.dark, k, s, hw = AW / 2, x0 = -0.16, z;

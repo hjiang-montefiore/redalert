@@ -1,0 +1,77 @@
+{
+ "key": "nato_e00_radarv",
+ "team": "nato",
+ "name": "AN/TPQ-53 counterfire target acquisition radar on the FMTV M1083-series 6x6 (armoured cab), working pose",
+ "category": "veh",
+ "published": {
+  "len": 7.27,
+  "width": 2.44,
+  "source": "M1083A1P2 FMTV 5-ton MTV published 7.27 m x 2.44 m, 395/85R20 tyres (1.18 m) - as js/hero/us_tpq53.js header. The 7.27 m is not gated: the model's 7.31 m X extent runs from the bumper face 3.62 (plus its tow eyes and the frame horns) to the pintle -3.65, and the figure does not say whether the pintle counts. The array's size is not published."
+ },
+ "len": 7.31,
+ "nodes": ["turret", "roadwheel", "hull"],
+ "engine_contract": {
+  "rows": "nato_e00_radarv (js/eras.js, tan coat e00) and radarv_n (js/rules.js, green coat e20) are both built by HeroTpq53.build(THREE, M, C, variant) in js/hero/us_tpq53.js; radarv_n is first assigned in js/units3d_salvage.js and overwritten here (last wins)",
+  "current_nodes": "'hull' group; three 'roadwheel' groups (one axle each, origin on the axle, render3d spins each about local Y); one 'turret' group (turntable centre on the housing roof, array face along +X at rest, trained by render3d; radar has no weapon)",
+  "len_rule": "UNIT_MODELS[key].len = HeroTpq53.len = 7.31 = the measured X extent"
+ },
+ "references": [
+  {
+   "name": "[A] Q-53 Counterfire Target Acquisition Radar, front-left three-quarter, tan",
+   "source": "Wikimedia Commons 'Q-53 Counterfire Target Acquisition Radar.jpg' (US Army, public domain, 19 Nov 2014), read at 960 px by the builder of 2026-10-24; not cached here",
+   "view": "quarter",
+   "exact": false,
+   "note": "Perspective photograph: the cab front, the array raised above the cab roof, the outrigger out under the bed front. Array h:w 1.42 measured on it against the 1.18 m tyre. No outline is taken from it."
+  },
+  {
+   "name": "[C] ANTPQ-53 Weapon Locating Radar AOH 2022, rear-left quarter",
+   "source": "Wikimedia Commons 'ANTPQ-53 Weapon Locating Radar AOH 2022 300522.jpg' (CC BY-SA), shape only",
+   "view": "quarter",
+   "exact": false,
+   "note": "The plain radome face, the heavy port column with its foot brace, the tail jacks."
+  },
+  {
+   "name": "[D] 240911-F-DL909-1032 Arctic Angels deploy to Aleutian Islands, cab side close up",
+   "source": "Wikimedia Commons (USAF, public domain, 11 Sep 2024)",
+   "view": "quarter",
+   "exact": false,
+   "note": "The LSAC armoured cab side: bolted plates, the rounded door window, the mirrors on long arms, three amber markers each side of the brow."
+  },
+  {
+   "name": "[E] U S - ROU Joint Radar Training (9956466), port side from above, green",
+   "source": "Wikimedia Commons (US Army, public domain, 9 Sep 2026, Grafenwoehr)",
+   "view": "quarter",
+   "exact": false,
+   "note": "High oblique: the housing on the bed, the turntable, both columns, the module bays on the array's back, the spare wheel and cabinet behind the cab, the cab whips. The housing's fore-and-aft place is read off it (estimate)."
+  }
+ ],
+ "must_show": [
+  "the FMTV armoured cab: a tall square shell over the front axle, cab face x 3.46, back x 1.25, roof z 3.04, chamfered front corners with small quarter windows at x 3.25, y +-1.16",
+  "two separate raked armoured windscreens in thick frames between z 2.06 and 2.78 at x 3.43 .. 3.32, the brow over them at z 2.86 .. 2.92 with three amber marker lamps each side at y +-0.60 .. +-0.94",
+  "the grille band (x 3.46 .. 3.50, z 1.40 .. 1.88) and the deep bumper x 3.42 .. 3.62, z 0.66 .. 1.06 with its lamps and tow eyes",
+  "the rounded door window on each cab side x 1.99 .. 3.02, z 2.08 .. 2.77, the mirror heads on long arms out to y +-1.56 at x 3.42 .. 3.50, the round convex mirror under each head",
+  "three axles with single big tyres: x 2.40 (under the cab), -0.94 and -2.26 (the tandem), tyre radius 0.59, track y +-1.02",
+  "the spare wheel standing upright and the louvred cabinet behind the cab, x 0.45 .. 1.15",
+  "the square equipment housing on the bed x -1.95 .. 0.05, roof z 2.60, with the turntable on its roof at x -0.95",
+  "the tall flat array 2.0 m wide, 2.85 m tall, raised on the turntable at x -0.95: lower edge z 3.05 (just over the cab roof), top z 5.90, plain face, module bays across its back",
+  "the outriggers angled out under the bed front, feet at x 0.05 .. 0.45, y +-1.62 .. +-2.02, and the jacks at the tail",
+  "two whip aerials on the cab's back corners at x 1.42, y +-1.02, standing to z 5.14"
+ ],
+ "landmarks": [
+  {"name": "front axle", "ref": 3, "expect_m": [2.40, null, 0.59], "tol_m": 0.08, "model_at": {"node": "roadwheel", "index": 0}, "note": "[E] axle under the cab; header station"},
+  {"name": "first rear axle", "ref": 3, "expect_m": [-0.94, null, 0.59], "tol_m": 0.08, "model_at": {"node": "roadwheel", "index": 1}, "note": "[E] tandem, front axle"},
+  {"name": "last rear axle", "ref": 3, "expect_m": [-2.26, null, 0.59], "tol_m": 0.08, "model_at": {"node": "roadwheel", "index": 2}, "note": "[E] tandem, rear axle"},
+  {"name": "turntable axis on the housing roof", "ref": 3, "expect_m": [-0.95, 0.0, 2.60], "tol_m": 0.10, "model_at": {"node": "turret", "index": 0}, "note": "[E, C] read off a high oblique: an estimate"},
+  {"name": "array top edge", "ref": 0, "expect_m": [null, null, 5.90], "tol_m": 0.15, "model_at": {"in_m": [-0.785, -0.6, 4.5, -0.70, 0.6, 6.3], "point": [null, null, "max"]}, "note": "the face frame at rest (face along +X), the top cap behind it left out; [A, E] array 2.85 m tall over a 3.05 m lower edge; scaled on the tyre, +-10 per cent"},
+  {"name": "bumper face", "ref": 0, "expect_m": [3.62, null, null], "tol_m": 0.08, "model_at": {"in_m": [3.3, -1.2, 0.66, 3.9, 1.2, 0.74], "point": ["max", null, null]}, "note": "[A] bumper below the tow eyes' tops"},
+  {"name": "cab roof", "ref": 2, "expect_m": [null, null, 3.04], "tol_m": 0.08, "model_at": {"in_m": [1.25, -1.2, 2.95, 3.4, 1.2, 3.045], "point": [null, null, "max"]}, "note": "[D] the roof plate (centroids up to z 3.045, under the hatch and team panels)"},
+  {"name": "cab back wall", "ref": 3, "expect_m": [1.25, null, null], "tol_m": 0.08, "model_at": {"in_m": [1.18, -1.1, 2.75, 1.6, -0.3, 2.95], "point": ["min", null, null]}, "note": "[E] cab back wall above the spare wheel"}
+ ],
+ "not_confirmed": [
+  "the array's size (2.0 x 2.85 m) and its lower edge: scaled off A and E against the tyre, +-10 per cent",
+  "the housing's fore-and-aft place (E, a high oblique)",
+  "the starboard-side fittings: no photograph shows them; drawn as the port side",
+  "the detail-pass fittings (bolt rows, grab handles, hinges, tie-down rings, jerrycans, ladder, latches): places and sizes by proportion",
+  "the travel pose (array lowered over the bed) is not drawn: neither row is deploy:true"
+ ]
+}
