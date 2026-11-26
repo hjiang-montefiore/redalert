@@ -1,0 +1,50 @@
+{
+  "key": "nato_e60_fighter",
+  "team": "nato",
+  "name": "McDonnell Douglas F-4C Phantom II (USAF)",
+  "category": "air",
+  "published": { "len": 17.76, "span": 11.71, "height": 5.02,
+                 "source": "en.wikipedia 'McDonnell Douglas F-4 Phantom II', specifications: span 38 ft 4.75 in, height 16 ft 5 in; length 58 ft 3 in for the short-nosed F-4B/C/D (63 ft for the F-4E/G); wing outer panels 12 deg dihedral, stabilators 23 deg anhedral" },
+  "len": 17.65,
+  "nodes": ["gear", "wingfold"],
+  "references": [],
+  "reference_notes": "No drawing or broadside photograph was fetched for this batch-4 fix round, so there are no outline references and the outline rule is skipped. The landmarks below are PUBLISHED figures (span, height, dihedral, anhedral) placed in model space, not points measured on a picture. The model length 17.65 m is the radome tip to the nozzle ends, -0.6 per cent on the published 17.76 m.",
+  "must_show": [
+    "short F-4C nose: black radome from x 8.10 to about 6.5 m, no gun fairing under it, a matt anti-glare panel on top from x 6.5 to 5.0 m ahead of the windscreen",
+    "tandem two-seat canopy from x 5.2 to 0.5 m on the spine (top z about 1.36 m), framed windscreen bow at x 4.55 m and a divider between the cockpits at x 3.05 m",
+    "two side intakes with their splitter plates: mouths at x 3.3 m, y +-1.2 m, the ducts running aft along the fuselage sides to x -6.6 m",
+    "wing: flat inner panel to the fold at y +-4.0 m, outer panels with 12 deg of dihedral (tip z about 0.04 m at y +-5.85 m), a 'wingfold' group per side",
+    "stabilators set low at the tail with 23 deg of anhedral (root x -6.7 m, tips at y +-2.85 m, z about -1.35 m)",
+    "tall fin from x -3.4 m at the root to the tip at z 2.97 m (5.02 m above the ground), the rudder raked",
+    "two J79 nozzles standing proud of the tail at y +-0.58 m, ends at x -9.55 m",
+    "four AIM-7 Sparrow half-sunk in the belly at x 2.6 and -1.3 m, y +-0.62 m",
+    "inboard pylons at y +-2.6 m (x -1.4 m) each carrying a LAU-7 rail and AIM-9 either side; outboard pylons at y +-3.4 m with a 370 US gal tank each; the 600 US gal centreline tank under the belly from x 3.6 to -1.0 m",
+    "tricycle gear: nose leg at x 4.3 m, main legs at x -1.5 m with the wheels at y +-2.14 m, tyres on z -2.05 m"
+  ],
+  "landmarks": [
+    { "name": "port wing tip (published span 11.71 m)", "view": "top", "expect_m": [null, 5.855],
+      "model_at": { "in_m": [-6.0, 4.5, -1.0, -3.0, 6.2, 1.0], "point": [null, "max"] }, "tol_m": 0.05,
+      "note": "half the published span" },
+    { "name": "starboard wing tip (published span 11.71 m)", "view": "top", "expect_m": [null, -5.855],
+      "model_at": { "in_m": [-6.0, -6.2, -1.0, -3.0, -4.5, 1.0], "point": [null, "min"] }, "tol_m": 0.05,
+      "note": "half the published span" },
+    { "name": "fin tip (published height 5.02 m over tyres at z -2.05)", "view": "side", "expect_m": [null, 2.97],
+      "model_at": { "in_m": [-9.0, -0.3, 2.0, -5.5, 0.3, 3.2], "point": [null, "max"] }, "tol_m": 0.05,
+      "note": "published height 5.02 m on the ground line z -2.05" },
+    { "name": "ground line: the lowest point of the tyres", "view": "side", "expect_m": [null, -2.05],
+      "model_at": { "path": "gear", "point": [null, "min"] }, "tol_m": 0.02,
+      "note": "the model's ground datum" },
+    { "name": "outer-panel tip height (12 deg dihedral from the fold at y 4.0, z -0.35)", "view": "front", "expect_m": [5.85, 0.043],
+      "model_at": { "in_m": [-5.5, 5.6, -0.5, -3.5, 5.9, 0.5], "point": [null, "mid"] }, "tol_m": 0.06,
+      "note": "tan(12 deg) x 1.85 m = 0.393 m above the inner panel's chord plane z -0.35" },
+    { "name": "stabilator tip height (23 deg anhedral from the root at y 0.85, z -0.5)", "view": "front", "expect_m": [2.8, -1.35],
+      "model_at": { "in_m": [-9.2, 2.7, -1.6, -7.9, 2.9, -1.0], "point": [null, "mid"] }, "tol_m": 0.06,
+      "note": "tan(23 deg) x 2.0 m = 0.849 m below z -0.5" }
+  ],
+  "not_confirmed": [
+    "no reference picture in the spec: the outline, the nose and canopy stations, the intake mouth and the pylon stations come from the model's own build notes (a three-view and photographs consulted for the original build, not kept)",
+    "wheel track (model 4.28 m) and wheelbase (model 5.8 m) not checked against a published figure",
+    "paint: plain FS 34102-like green over a light grey underside is a stand-in for the SEA camouflage (AGENT_POLICY rule 6), not a scheme the F-4C wore; the anti-glare panel's extent is estimated",
+    "the F-4C's AIM-9 and the wing tanks together on one sortie (the row's fit) is typical, not taken from one photograph"
+  ]
+}

@@ -4,8 +4,8 @@
                        thinner main tyres without the C's wing bulges, four AIM-7 and the centreline tank (photographs show no other
                        store; AIM-9 and wing tanks left off as unconfirmed). Launch bar, slats, hook and pitot are not drawn.
      nato_e60_fighter  F-4C of the USAF (1963 on): the short nose of the F-4B/C/D
-                       (58 ft 3 in, 17.76 m), no gun, southeast-Asia camouflage
-                       (tan, two greens over light grey, from 1966-67), four
+                       (58 ft 3 in, 17.76 m), no gun, plain green over light grey (the base
+                       colours of the SEA scheme, camouflage left off), four
                        AIM-7 Sparrow in the belly recesses, a pair of AIM-9 on the
                        LAU-7 rails of each inboard pylon, the 600 US gal centreline
                        tank and a 370 US gal tank on each outboard pylon (the
@@ -15,16 +15,16 @@
      nato_e80_sead     F-4G Advanced Wild Weasel (1978 on): the F-4E airframe, 63 ft
                        (19.2 m) with the longer radome, the gun replaced by the
                        APR-47 / APR-38 fairing under the nose, an extra antenna cap on
-                       the fin, European I camouflage (FS 34092 / 34102 / 36081 - the
-                       scheme the A-10 hero in this repo uses for the same decade),
+                       the fin, plain FS 34092 green wrap-around (the base colour of
+                       European I, camouflage left off),
                        an AGM-88 HARM on each inboard pylon, the centreline tank and
                        a pair of AIM-7 in the aft belly recesses.
      deu_e80_fighter   F-4F of the Luftwaffe (1973 on), 1980s: the F-4E airframe and long
                        nose, the M61 fairing under the nose, the leading-edge manoeuvring
                        slats (drawn as the slat seams on the upper skin), two seats (the
                        single-seat F-4E was proposed and dropped on cost); no Sparrow
-                       capability, so the belly wells are empty. Norm 81 three-grey
-                       waves, black radome. AIM-9 on the inboard LAU-7 rails, 370 US
+                       capability, so the belly wells are empty. Plain Norm 81 medium
+                       grey (the waves left off), black radome. AIM-9 on the inboard LAU-7 rails, 370 US
                        gal tanks outboard, the 600 US gal centreline tank.
      deu_e90_fighter   F-4F ICE (1992 on): the same airframe, Norm 90 grey (medium grey
                        above, lighter below) with the light tan-grey radome of the APG-65
@@ -52,7 +52,7 @@
    underside carried the waves (drawn wrap-around); the forward pair of belly wells
    with AIM-120 (no photo; left empty); AIM-9 on the 1980s row (the photo with them,
    P8, is of the 2000s); the slat chord (seam at 12% chord, estimated); the gun-gas
-   vents. Not drawn: the refuelling receptacle, ICE's extra RWR antennas, markings.
+   vents. Not drawn: ICE's extra RWR antennas, markings.
    Published figures: span 11.71 m (38 ft 4.75 in), height 5.02 m (16 ft 5 in),
    wing area 49.2 m2, two GE J79; length 19.2 m (F-4E/G) and 17.76 m (F-4B/C/D).
    The geometry follows the known layout of the type: wing with a flat inner
@@ -63,7 +63,7 @@
    Not confirmed from a drawing and so only approximate: the wheel track and
    wheelbase, the exact pylon stations, the extent of the camouflage pattern.
    Not drawn: leading-edge slats and flaps, the pitot boom (it would set the
-   renderer's scale), the refuelling receptacle, the arrestor hook.
+   renderer's scale), the arrestor hook (the receptacle: see BATCH 4).
    DETAIL PASS (all rows; HeroF4's API, groups and mesh names unchanged):
    the canopy sill rails and mirrors, a spine UHF blade and two belly
    blades, the ram-air scoop, the red beacons above and below (one new
@@ -92,6 +92,23 @@
    inboard of the hinge (y 3.40 m, where the three-view has the outer
    stores), the aileron line onto the inner panel, and the team patch from
    the outer panel to a band on the inner one.
+   BATCH 4 FIX (all rows): plain paint (AGENT_POLICY rule 6) authored with
+   HeroKit.authorFor so it shows as the photographs' shade at the game
+   camera; panel tones, skin seams, control-surface gaps and J79 soot on
+   the sheet. Floating parts seated: the spine and belly blades, the aux
+   air doors, the engine-bay scoops, the beacon; the Sparrows and AIM-120
+   half-sunk in the belly (z -0.60 / -0.62), the HARM, AIM-9 and wing
+   tanks on their pylons and rails. Removed as invented: a plate inside
+   each nozzle and a "dorsal airbrake" plate on the spine (the F-4's
+   airbrakes are under the wings). Added: the dorsal refuelling
+   receptacle (not on the Navy F-4B), AIM-9 seeker domes, tank joint
+   bands, and on the F-4E family (F, G) the formation-light strips and the
+   slotted stabilator's slot. The missiles' nose rings start at 8 mm (no
+   zero-area triangles). plainWear (after js/hero/us_m270_himars.js): the
+   access doors with fastener rows and fluid streaks, the wing-root and
+   intake-top walkways, the splitter bleed stains, the F-4F slat skins;
+   the Norm 81 row's joints drawn 1.6x heavier (P3-P5). Door and walkway
+   positions placed by eye off the photographs, NOT measured.
    ================================================================ */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
@@ -109,34 +126,120 @@ var HeroF4 = (function () {
   function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
   function pxX(x) { return clamp((x - XMIN) * PXM, 2, TW - 2); }
 
+  /* PLAIN PAINT (AGENT_POLICY rule 6: no camouflage patterns, numbers or
+     markings): each row keeps one colour above and, where the real scheme
+     has one, a lighter underside. The camouflaged rows get the plain base
+     colour of their scheme (NOT a scheme the aircraft wore): F-4C FS 34102
+     green over 36622 grey (SEA), F-4G FS 34092 green wrap-around (Euro I),
+     F-4F Norm 81 medium grey wrap-around. */
   var SCHEMES = {
-    /* SEA camouflage: FS 30219 tan, 34102 green, 34079 dark green over 36622 grey */
-    sea: { name: "sea", seed: 40403, base: "#8b7a52", blot: ["#47573a", "#2f4130"], belly: "#a9afb0",
-           nTop: 40, nSide: 16, nBelly: 0, flat: 0x8b7a52 },
-    /* European I: 34092 / 34102 / 36081, wrap-around */
+    sea: { name: "sea", seed: 40403, base: "#76805e", blot: [], belly: "#c2c5c1", glare: [5.0, 6.5],
+           nTop: 0, nSide: 0, nBelly: 0, flat: 0x5c6648 },
     /* Navy light gull grey (FS 36440) over white (17875), the F-4B of 1961-1970s fleet squadrons */
-    gull: { name: "gull", seed: 40405, base: "#b9bdbc", blot: ["#aeb2b1", "#c4c7c5"], belly: "#e6e6e1",
-            nTop: 10, nSide: 6, nBelly: 0, flat: 0xb9bdbc },
-    euro1: { name: "euro1", seed: 40404, base: "#56603c", blot: ["#333f2f", "#47494a"], belly: null,
-             nTop: 46, nSide: 20, nBelly: 34, flat: 0x56603c },
-    /* Luftwaffe Norm 81: three greys in long horizontal waves, wrap-around
-       (P3, P4, P5: a dark grey, a medium grey and a narrow light-grey wave) */
-    norm81: { name: "norm81", seed: 40406, base: "#74767c", blot: [], belly: null,
-              wave: ["#505257", "#9b9c9d"], nTop: 0, nSide: 0, nBelly: 0, flat: 0x74767c },
+    gull: { name: "gull", seed: 40405, base: "#c3c7c6", blot: [], belly: "#ecece8",
+            nTop: 0, nSide: 0, nBelly: 0, flat: 0xb9bdbc },
+    euro1: { name: "euro1", seed: 40404, base: "#626b52", blot: [], belly: null, glare: [5.0, 7.15],
+             nTop: 0, nSide: 0, nBelly: 0, flat: 0x485238 },
+    /* the Norm 81 aircraft of the 1980s photographs (P3, P4, P5) show the
+       panel joints weathered dark and strong: the sheet is drawn heavier */
+    norm81: { slats: true, name: "norm81", seed: 40406, base: "#909398", blot: [], belly: null, gunSoot: true, wear: 1.6,
+              nTop: 0, nSide: 0, nBelly: 0, flat: 0x74767c },
     /* Luftwaffe Norm 90: plain medium grey above, a lighter grey below (P6, P7, P8) */
-    norm90: { name: "norm90", seed: 40407, base: "#8b9293", blot: ["#858c8d", "#939a9b"], belly: "#a3a9aa",
-              nTop: 8, nSide: 4, nBelly: 0, flat: 0x8b9293 }
+    norm90: { slats: true, name: "norm90", seed: 40407, base: "#a3aaab", blot: [], belly: "#bdc3c4", gunSoot: true,
+              nTop: 0, nSide: 0, nBelly: 0, flat: 0x8b9293 }
   };
 
+  /* the paint colours are what the model should SHOW at the game camera
+     (sunlit photographs); HeroKit.authorFor turns them into the colour to
+     author, so the plain greys and greens do not wash out to near-white */
+  function au(css) {
+    if (typeof HeroKit === "undefined" || !HeroKit.authorFor) return css;
+    var h = HeroKit.authorFor(parseInt(css.slice(1), 16));
+    return "#" + ("000000" + h.toString(16)).slice(-6);
+  }
+  /* the surface of the plain coat (after js/hero/us_m270_himars.js
+     plainWear): the access doors as dark joint lines with a pale worn lip
+     and fastener rows, at a contrast the game camera resolves; the
+     anti-slip walkways on the wing roots and the intake tops; the bleed
+     louvres' stain behind the splitter plates; fluid streaks running aft
+     from the lower doors. Doors and walkways placed off the F-4 photographs
+     (P3, P7, P8 and the F-4C/G photographs of the original build), by eye. */
+  var DOORS_SIDE = [   /* x0, x1, z0, z1 on the fuselage / duct / fin sides */
+    [6.6, 5.5, 0.30, -0.30], [5.3, 4.4, 0.18, -0.45], [3.0, 2.0, 0.40, -0.05], [1.4, 0.3, 0.30, -0.30],
+    [0.0, -1.3, 0.30, -0.42], [-1.8, -3.5, -0.08, -0.55], [-3.8, -5.3, -0.05, -0.55], [-5.6, -6.8, 0.35, -0.20],
+    [-4.7, -5.9, 1.25, 0.80], [-6.3, -7.3, 2.40, 1.85],
+    [4.2, 3.2, 0.62, 0.30], [2.8, 2.1, -0.25, -0.65], [-2.0, -3.4, 0.60, 0.18], [-4.0, -5.2, 0.58, 0.16]];
+  var DOORS_TOP = [    /* x0, x1, |y0|, |y1| on the spine, intake tops and wing upper skins (both sides) */
+    [2.0, 0.9, 0.0, 0.28], [0.5, -0.6, 0.0, 0.28], [-1.0, -2.0, 0.0, 0.28], [-3.4, -4.5, 0.0, 0.28],
+    [-5.0, -6.2, 0.0, 0.30], [2.6, 1.5, 1.00, 1.42], [0.2, -0.5, 1.75, 2.05], [-0.9, -1.6, 2.65, 3.10],
+    [-2.6, -3.2, 1.30, 1.65], [-2.9, -3.5, 3.30, 3.70],
+    [-1.8, -2.4, 2.00, 2.40], [-3.6, -4.1, 1.00, 1.50], [-1.7, -2.3, 3.55, 3.90], [-3.3, -3.9, 4.55, 4.95]];
+  var DOORS_BELLY = [[4.0, 3.0, 0.15, 0.50], [1.0, -0.4, 0.40, 0.70], [-4.8, -6.0, 0.15, 0.55],
+    [-0.4, -1.6, 1.10, 1.50], [-6.3, -7.3, 0.10, 0.45]];
+  var WALKS = [[0.30, -2.30, 1.72, 2.30], [2.9, 0.4, 1.02, 1.40]];   /* x0, x1, |y0|, |y1| */
+  function plainWear(g, sideZ, pY, seam, W) {
+    var b, i, k, sg, D;
+    function al(v) { return Math.min(0.9, v * W).toFixed(3); }
+    function door(X0, Y0, X1, Y1) {
+      seam(X0, Y0, X1, Y0); seam(X1, Y0, X1, Y1); seam(X1, Y1, X0, Y1); seam(X0, Y1, X0, Y0);
+      g.fillStyle = "rgba(16,16,14," + al(0.42) + ")";
+      var dx = X1 > X0 ? 6 : -6, dy = Y1 > Y0 ? 6 : -6, q;
+      for (q = X0 + dx / 2; (X1 - q) * dx > 0; q += dx) { g.fillRect(q, Y0 + dy / 3, 2, 2); g.fillRect(q, Y1 - dy / 3, 2, 2); }
+      for (q = Y0 + dy / 2; (Y1 - q) * dy > 0; q += dy) { g.fillRect(X0 + dx / 3, q, 2, 2); g.fillRect(X1 - dx / 3, q, 2, 2); }
+    }
+    for (b = 1; b <= 2; b++) for (i = 0; i < DOORS_SIDE.length; i++) {
+      D = DOORS_SIDE[i];
+      door(pxX(D[0]), sideZ(D[2], b), pxX(D[1]), sideZ(D[3], b));
+      /* fluid streaks from the door's lower edge, run aft by the airflow */
+      if (D[3] < 0.5) for (k = 0; k < 3; k++) {
+        var sy = sideZ(D[3], b) + 2 + k * 4, sx = pxX(D[0] - (D[0] - D[1]) * (0.25 + k * 0.3));
+        var fl = g.createLinearGradient(sx, 0, sx - 50 - k * 14, 0);
+        fl.addColorStop(0, "rgba(28,24,18," + al(0.42) + ")"); fl.addColorStop(1, "rgba(28,24,18,0)");
+        g.fillStyle = fl; g.fillRect(sx - 50 - k * 14, sy, 50 + k * 14, 2);
+      }
+    }
+    for (sg = -1; sg <= 1; sg += 2) {
+      for (i = 0; i < DOORS_TOP.length; i++) {
+        D = DOORS_TOP[i];
+        door(pxX(D[0]), pY(sg * D[2], 0), pxX(D[1]), pY(sg * D[3], 0));
+      }
+      for (i = 0; i < DOORS_BELLY.length; i++) {
+        D = DOORS_BELLY[i];
+        door(pxX(D[0]), pY(sg * D[2], 3), pxX(D[1]), pY(sg * D[3], 3));
+      }
+      /* walkways: matt dark anti-slip with a border line */
+      for (i = 0; i < WALKS.length; i++) {
+        D = WALKS[i];
+        var wx = pxX(D[1]), wy = Math.min(pY(sg * D[2], 0), pY(sg * D[3], 0));
+        var ww = pxX(D[0]) - wx, wh = Math.abs(pY(sg * D[3], 0) - pY(sg * D[2], 0));
+        g.fillStyle = "rgba(22,23,24,0.34)"; g.fillRect(wx, wy, ww, wh);
+        g.strokeStyle = "rgba(10,10,10,0.55)"; g.lineWidth = 2; g.strokeRect(wx + 2, wy + 2, ww - 4, wh - 4); g.lineWidth = 1;
+      }
+      /* the splitter plates' bleed louvres exhaust over the intake tops:
+         a dark stain from x 1.6 m aft, inboard edge of the duct */
+      var bl = g.createLinearGradient(pxX(1.7), 0, pxX(-1.2), 0);
+      bl.addColorStop(0, "rgba(18,16,14,0.50)"); bl.addColorStop(1, "rgba(18,16,14,0)");
+      g.fillStyle = bl;
+      g.fillRect(pxX(-1.2), Math.min(pY(sg * 0.86, 0), pY(sg * 1.0, 0)), pxX(1.7) - pxX(-1.2), Math.abs(pY(sg * 1.0, 0) - pY(sg * 0.86, 0)));
+      for (k = 0; k < 6; k++) { g.fillStyle = "rgba(10,10,10,0.6)"; g.fillRect(pxX(1.6 - k * 0.22), Math.min(pY(sg * 0.88, 0), pY(sg * 0.98, 0)), 3, Math.abs(pY(sg * 0.98, 0) - pY(sg * 0.88, 0))); }
+    }
+    /* the side band: the splitter's shadow-stain on the duct side just
+       behind the mouth */
+    for (b = 1; b <= 2; b++) {
+      var ss = g.createLinearGradient(pxX(3.3), 0, pxX(1.2), 0);
+      ss.addColorStop(0, "rgba(18,16,14,0.40)"); ss.addColorStop(1, "rgba(18,16,14,0)");
+      g.fillStyle = ss; g.fillRect(pxX(1.2), sideZ(0.40, b), pxX(3.3) - pxX(1.2), sideZ(-0.75, b) - sideZ(0.40, b));
+    }
+  }
   function paint(S) {
     var cv = document.createElement("canvas");
     cv.width = TW; cv.height = TH;
-    var g = cv.getContext("2d"), s = S.seed, i, j, b, x, y;
+    var g = cv.getContext("2d"), s = S.seed, i, j, b, x, y, WEAR = S.wear || 1;
     function R() { s = (s * 16807) % 2147483647; return s / 2147483647; }
     var bandY = [0, TOPH, TOPH + SIDEH, TOPH + 2 * SIDEH];
     var bandH = [TOPH, SIDEH, SIDEH, TOPH];
-    g.fillStyle = S.base; g.fillRect(0, 0, TW, TH);
-    if (S.belly) { g.fillStyle = S.belly; g.fillRect(0, bandY[3], TW, TOPH); }
+    g.fillStyle = au(S.base); g.fillRect(0, 0, TW, TH);
+    if (S.belly) { g.fillStyle = au(S.belly); g.fillRect(0, bandY[3], TW, TOPH); }
     /* Norm 81: per band, wavy stripes - a dark band, then the narrow light
        wave - every 1.0 m, the waves about 3.5 m long (P3/P5 show three or four
        light waves down the fuselage side) */
@@ -190,9 +293,10 @@ var HeroF4 = (function () {
     function sideZ(z, band) { return bandY[band] + clamp((ZTOP - z) / ZSPAN * SIDEH, 0, SIDEH); }
     function pY(y, band) { return bandY[band] + clamp((YMAX - y) * PXM, 2, TOPH - 2); }
     function seam(x0, y0, x1, y1) {
-      g.strokeStyle = "rgba(0,0,0,0.28)"; g.lineWidth = 1;
+      g.strokeStyle = "rgba(0,0,0," + Math.min(0.9, 0.50 * WEAR).toFixed(3) + ")"; g.lineWidth = 2;
       g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
-      g.strokeStyle = "rgba(255,255,255,0.09)";
+      g.lineWidth = 1;
+      g.strokeStyle = "rgba(255,255,255," + Math.min(0.5, 0.16 * WEAR).toFixed(3) + ")";
       g.beginPath(); g.moveTo(x0 + 1, y0 + 1); g.lineTo(x1 + 1, y1 + 1); g.stroke();
     }
     function rivets(x0, y0, x1, y1, n) {
@@ -233,6 +337,102 @@ var HeroF4 = (function () {
       if (b === 0) { g.fillStyle = "rgba(0,0,0,0.35)"; g.fillRect(pxX(-2.0), pY(sg * 2.4, b) - 3, 6, 6); }
     }
     seam(pxX(0.5), pY(0, 0), pxX(-7.8), pY(0, 0));
+    /* panel tone: the photographs of the F-4C, F and G in service show the
+       skin panels between the frames weathered to slightly different
+       values (resprayed and faded panels, not a pattern) */
+    function tone() {
+      var v = R();
+      return v < 0.5 ? "rgba(0,0,0," + (0.03 + v * 0.12).toFixed(3) + ")"
+                     : "rgba(255,255,255," + (0.02 + (v - 0.5) * 0.12).toFixed(3) + ")";
+    }
+    var ZS = [0.44, 0.0, -0.39], YS = [0.78, 0.28, -0.28, -0.78];
+    for (b = 0; b <= 3; b++) for (i = 0; i < FRS.length - 1; i++) {
+      var xa = pxX(FRS[i]) + 1, xw = pxX(FRS[i + 1]) - pxX(FRS[i]) + 2;
+      if (b === 1 || b === 2) for (j = 0; j < ZS.length - 1; j++) {
+        g.fillStyle = tone(); g.fillRect(xa, sideZ(ZS[j], b) + 1, xw, sideZ(ZS[j + 1], b) - sideZ(ZS[j], b) - 2);
+      }
+      else for (j = 0; j < YS.length - 1; j++) {
+        g.fillStyle = tone(); g.fillRect(xa, pY(YS[j], b) + 1, xw, pY(YS[j + 1], b) - pY(YS[j], b) - 2);
+      }
+    }
+    for (b = 1; b <= 2; b++) seam(pxX(7.2), sideZ(0.0, b), pxX(-7.9), sideZ(0.0, b));
+    for (b = 0; b <= 3; b += 3) for (sg = -1; sg <= 1; sg += 2) {
+      seam(pxX(7.0), pY(sg * 0.28, b), pxX(-7.6), pY(sg * 0.28, b));
+      /* the wing skins: the mid spar and the ribs of the inner panel, the
+         outer panel's skin joint, with a slightly different tone per skin */
+      seam(pxX(-1.2), pY(sg * 0.9, b), pxX(-2.6), pY(sg * 4.6, b));
+      for (i = 0; i < 5; i++) {
+        var ry = sg * (1.3 + i * 0.6);
+        seam(pxX(1.0 - (Math.abs(ry) - 0.9)), pY(ry, b), pxX(-4.6), pY(ry, b));
+      }
+      g.fillStyle = tone();
+      g.beginPath(); g.moveTo(pxX(0.2), pY(sg * 1.5, b)); g.lineTo(pxX(-1.6), pY(sg * 3.6, b));
+      g.lineTo(pxX(-4.5), pY(sg * 3.6, b)); g.lineTo(pxX(-4.5), pY(sg * 1.5, b)); g.closePath(); g.fill();
+    }
+    /* the control surfaces' gaps: the flap and the aileron on the inner
+       panel's trailing edge, the spoiler ahead of the aileron on the upper
+       skin, the rudder on the fin */
+    function outline(xa, ya, xb, yb, band) {
+      var X0 = pxX(xa), X1 = pxX(xb), Y0 = pY(ya, band), Y1 = pY(yb, band);
+      seam(X0, Y0, X1, Y0); seam(X1, Y0, X1, Y1); seam(X1, Y1, X0, Y1); seam(X0, Y1, X0, Y0);
+    }
+    for (sg = -1; sg <= 1; sg += 2) for (b = 0; b <= 3; b += 3) {
+      outline(-4.55, sg * 0.95, -5.35, sg * 2.30, b);                        /* flap */
+      outline(-4.45, sg * 2.40, -5.15, sg * 3.95, b);                        /* aileron */
+      if (b === 0) outline(-3.85, sg * 2.50, -4.30, sg * 3.80, b);           /* spoiler */
+      outline(-8.15, sg * 0.95, -9.0, sg * 2.7, b);                          /* stabilator's trailing panel */
+    }
+    for (b = 1; b <= 2; b++) {
+      seam(pxX(-7.55), sideZ(0.95, b), pxX(-8.0), sideZ(2.75, b));          /* rudder */
+      seam(pxX(-7.55), sideZ(0.95, b), pxX(-8.1), sideZ(0.95, b));
+    }
+    /* J79 soot: the photographs of every F-4 show the aft fuselage sides,
+       the tail cone and the stabilator roots streaked dark by the exhaust
+       and the engine-bay vents; and with the gun (F-4E/F) the gun gas
+       smear back from the muzzle */
+    for (b = 1; b <= 2; b++) {
+      for (i = 0; i < 16; i++) {
+        var sz = sideZ(0.35 - R() * 0.85, b), sx = pxX(-5.2 - R() * 1.2);
+        var sgr = g.createLinearGradient(sx, 0, pxX(-9.4), 0);
+        sgr.addColorStop(0, "rgba(20,18,16,0)"); sgr.addColorStop(0.3, "rgba(20,18,16," + (0.10 + R() * 0.16).toFixed(3) + ")");
+        sgr.addColorStop(1, "rgba(20,18,16,0.30)");
+        g.fillStyle = sgr; g.fillRect(sx, sz, pxX(-9.4) - sx, 1 + R() * 3);
+      }
+      if (S.gunSoot) {
+        var gg2 = g.createLinearGradient(pxX(8.7), 0, pxX(6.6), 0);
+        gg2.addColorStop(0, "rgba(18,16,14,0.55)"); gg2.addColorStop(1, "rgba(18,16,14,0)");
+        g.fillStyle = gg2; g.fillRect(pxX(8.7), sideZ(-0.40, b), pxX(6.6) - pxX(8.7), sideZ(-0.66, b) - sideZ(-0.40, b));
+      }
+    }
+    for (b = 0; b <= 3; b += 3) for (i = 0; i < 14; i++) {
+      var ty = pY((R() - 0.5) * 2.2, b), tx = pxX(-5.6 - R() * 1.0);
+      var tg = g.createLinearGradient(tx, 0, pxX(-9.2), 0);
+      tg.addColorStop(0, "rgba(20,18,16,0)"); tg.addColorStop(1, "rgba(20,18,16," + (0.12 + R() * 0.18).toFixed(3) + ")");
+      g.fillStyle = tg; g.fillRect(tx, ty, pxX(-9.2) - tx, 1 + R() * 3);
+    }
+    /* the F-4F's leading-edge manoeuvring slats (P7, P8): the slat's own
+       skin ahead of its seam at 12 per cent chord, in segments, in a
+       slightly different weathered tone from the wing box */
+    if (S.slats) for (sg = -1; sg <= 1; sg += 2) {
+      var SLS = [1.75, 2.45, 3.15, 3.95, 4.7, 5.5];
+      function lex(y) { return y <= 3.1 ? 1.7 - (y - 0.7) : -0.7 - (y - 3.1) * (3.2 / 2.75); }
+      function tex2(y) { return y <= 3.1 ? -5.4 + (y - 0.7) * (0.3 / 2.4) : -5.1 - (y - 3.1) * (0.25 / 2.75); }
+      for (b = 0; b <= 3; b += 3) for (i = 0; i < SLS.length - 1; i++) {
+        var ya = SLS[i], yb = SLS[i + 1];
+        var xa = lex(ya) + (tex2(ya) - lex(ya)) * 0.12, xb = lex(yb) + (tex2(yb) - lex(yb)) * 0.12;
+        g.fillStyle = i % 2 ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.08)";
+        g.beginPath(); g.moveTo(pxX(lex(ya)), pY(sg * ya, b)); g.lineTo(pxX(lex(yb)), pY(sg * yb, b));
+        g.lineTo(pxX(xb), pY(sg * yb, b)); g.lineTo(pxX(xa), pY(sg * ya, b)); g.closePath(); g.fill();
+        seam(pxX(xa), pY(sg * ya, b), pxX(xb), pY(sg * yb, b));
+        seam(pxX(lex(ya)), pY(sg * ya, b), pxX(xa), pY(sg * ya, b));
+      }
+    }
+    /* the matt anti-glare panel ahead of the windscreen of the USAF rows */
+    if (S.glare) {
+      g.fillStyle = "#26282a";
+      g.fillRect(pxX(S.glare[0]), pY(0.30, 0), pxX(S.glare[1]) - pxX(S.glare[0]), pY(-0.30, 0) - pY(0.30, 0));
+      for (b = 1; b <= 2; b++) g.fillRect(pxX(S.glare[0]), sideZ(0.62, b), pxX(S.glare[1]) - pxX(S.glare[0]), sideZ(0.48, b) - sideZ(0.62, b));
+    }
     g.fillStyle = "rgba(0,0,0,0.35)"; g.fillRect(pxX(-0.6), pY(0, 0) - 3, 6, 6);
     seam(pxX(7.0), pY(0, 3), pxX(-7.8), pY(0, 3));
     g.strokeStyle = "rgba(0,0,0,0.30)";
@@ -247,6 +447,7 @@ var HeroF4 = (function () {
       g.fillStyle = "rgba(24,22,20," + (0.03 + R() * 0.08).toFixed(3) + ")";
       g.fillRect(R() * TW, R() * TH, 10 + R() * 60, 2 + R() * 9);
     }
+    plainWear(g, sideZ, pY, seam, WEAR);
     return cv;
   }
   var _tex = {};
@@ -445,7 +646,11 @@ var HeroF4 = (function () {
   /* body of revolution along x: prof [xFrac, rFrac] nose first */
   function rev(prof, len, r, x0, y, z, n) {
     var rows = [], i;
-    for (i = 0; i < prof.length; i++) rows.push([x0 - prof[i][0] * len, y, z, r * prof[i][1], r * prof[i][1], 1]);
+    /* a zero-radius tip ring makes zero-area triangles: start the nose on an 8 mm ring */
+    for (i = 0; i < prof.length; i++) {
+      var rf = Math.max(prof[i][1], 0.008 / r);
+      rows.push([x0 - prof[i][0] * len, y, z, r * rf, r * rf, 1]);
+    }
     return loft(rows, n, true, true);
   }
   /* aerofoil ring: leading edge le, trailing edge te (3D), thickness t along unit vector nr */
@@ -462,7 +667,7 @@ var HeroF4 = (function () {
     var T = makeMats(C, F.scheme);
     var K = { skin: [], dark: [], metal: [], glass: [], team: [], pale: [], fin: [], radome: [] };
     var G = { metal: [], tyre: [], dark: [] };
-    var g = new V.Group(), s, i;
+    var g = new V.Group(), s, i, j;
     g.name = F.node;
 
     /* nose stations ahead of the cockpit are compressed for the short F-4B/C/D nose */
@@ -507,8 +712,8 @@ var HeroF4 = (function () {
 
     /* radar-warning blade antennas along the spine and wing roots (small fairings) */
     for (s = -1; s <= 1; s += 2) {
-      K.dark.push(box(0.5, 0.05, 0.14, 1.6, s * 0.55, 0.96));
-      K.dark.push(box(0.35, 0.05, 0.12, -3.0, s * 0.45, 0.88));
+      K.dark.push(box(0.5, 0.05, 0.14, 1.6, s * 0.55, 0.71));
+      K.dark.push(box(0.35, 0.05, 0.12, -3.0, s * 0.45, 0.72));
       if (F.chin) for (i = 0; i < 6; i++) K.dark.push(box(0.12, 0.04, 0.10, 6.2 - i * 0.28 - (F.long ? 0 : 0.9), s * 0.50, 0.12));
     }
     /* canopy: glass, with dark frames and the four seats' heads showing */
@@ -600,7 +805,6 @@ var HeroF4 = (function () {
     K.team.push(box(2.0, 0.16, 0.06, -7.2, 0, 2.935));
     K.dark.push(box(0.04, 0.34, 1.3, -8.15, 0, 1.6, 0, 0, 0));                  /* rudder hinge */
     K.dark.push(box(0.5, 0.05, 0.05, -8.3, 0.0, 2.35));
-    K.metal.push(box(0.5, 0.04, 0.5, -2.2, 0, 1.0));                            /* airbrake dorsal plate, folded */
 
     /* J79 nozzles: the exhaust ends stand proud of the tail cone */
     for (s = -1; s <= 1; s += 2) {
@@ -608,7 +812,6 @@ var HeroF4 = (function () {
       K.dark.push(cyl(0.40, 0.40, 0.04, 32, "x", -8.6, s * 0.58, -0.20));
       K.metal.push(cyl(0.54, 0.54, 0.16, 32, "x", -7.7, s * 0.58, -0.20, true));
       K.dark.push(box(0.4, 0.1, 0.08, -9.35, s * 0.58, -0.2 + 0.46));
-      K.dark.push(box(0.3, 0.45, 0.04, -9.3, s * 0.58, 0.05));
       /* the nozzle petals */
       for (i = 0; i < 24; i++) {
         var pa = i / 24 * 2 * PI;
@@ -626,7 +829,9 @@ var HeroF4 = (function () {
       K.pale.push(box(0.55, 0.78, 0.02, x - 1.5, y, z)); K.pale.push(box(0.55, 0.02, 0.78, x - 1.5, y, z));
       K.pale.push(box(0.55, 0.62, 0.02, x - 3.2, y, z)); K.pale.push(box(0.55, 0.02, 0.62, x - 3.2, y, z));
     }
+    var SWD = [], TKS = [];
     function sidewinder(x, y, z) {
+      SWD.push([x, y, z]);
       K.pale.push(rev([[0, 0.0], [0.03, 0.55], [0.08, 0.9], [0.3, 1], [1, 1]], 2.85, 0.064, x, y, z, 14));
       K.dark.push(cyl(0.062, 0.062, 0.12, 10, "x", x - 2.78, y, z));
       K.pale.push(box(0.3, 0.40, 0.014, x - 0.5, y, z)); K.pale.push(box(0.3, 0.014, 0.40, x - 0.5, y, z));
@@ -644,6 +849,7 @@ var HeroF4 = (function () {
       K.pale.push(box(0.30, 0.50, 0.014, x - 3.45, y, z)); K.pale.push(box(0.30, 0.014, 0.50, x - 3.45, y, z));
     }
     function tank(len, r, x, y, z) {
+      TKS.push([len, r, x, y, z]);
       K.pale.push(rev([[0, 0.0], [0.04, 0.5], [0.12, 0.85], [0.25, 1], [0.75, 1], [0.92, 0.7], [1, 0.25]], len, r, x, y, z, 24));
       K.pale.push(box(0.6, 0.012 + r * 2.0, 0.012, x - len + 0.8, y, z)); K.pale.push(box(0.6, 0.012, 0.012 + r * 2.0, x - len + 0.8, y, z));
     }
@@ -655,26 +861,26 @@ var HeroF4 = (function () {
     K.dark.push(box(1.2, 0.10, 0.34, 1.4, 0, -0.95));
     var spLine = F.sparrows;
     for (i = 0; i < spLine.length; i++) {
-      sparrow(spLine[i][0], spLine[i][1], -0.84);
+      sparrow(spLine[i][0], spLine[i][1], -0.60);
     }
     var amLine = F.amraams || [];
-    for (i = 0; i < amLine.length; i++) amraam(amLine[i][0], amLine[i][1], -0.86);
+    for (i = 0; i < amLine.length; i++) amraam(amLine[i][0], amLine[i][1], -0.62);
     /* wing stations: z of the wing's underside at the pylon */
     var zi = WZ - 0.12, zo = WZ - 0.10;
     for (s = -1; s <= 1; s += 2) {
       pylon(-1.4, s * 2.6, zi, zi - 0.28);
       pylon(-2.6, s * 3.4, zo, zo - 0.22);
-      if (F.inboard === "harm") harm(0.4, s * 2.6, zi - 0.44);
+      if (F.inboard === "harm") harm(0.4, s * 2.6, zi - 0.40);
       /* the F-4's Sidewinders ride LAU-7 rails on the inboard pylon's shoulders,
          one each side; the 370 US gal tanks hang on the outboard pylon */
       if (F.inboard === "aim9") {
         K.dark.push(box(1.0, 0.52, 0.05, -1.4, s * 2.6, zi - 0.27));
         K.dark.push(box(2.4, 0.07, 0.07, -1.3, s * 2.6 - 0.26, zi - 0.26));
         K.dark.push(box(2.4, 0.07, 0.07, -1.3, s * 2.6 + 0.26, zi - 0.26));
-        sidewinder(0.0, s * 2.6 - 0.26, zi - 0.36);
-        sidewinder(0.0, s * 2.6 + 0.26, zi - 0.36);
+        sidewinder(0.0, s * 2.6 - 0.26, zi - 0.35);
+        sidewinder(0.0, s * 2.6 + 0.26, zi - 0.35);
       }
-      if (F.outboard === "tank") tank(4.1, 0.30, -0.55, s * 3.4, zo - 0.52);
+      if (F.outboard === "tank") tank(4.1, 0.30, -0.55, s * 3.4, zo - 0.50);
     }
 
 
@@ -690,8 +896,8 @@ var HeroF4 = (function () {
       K.dark.push(bar([4.70, s * 0.42, 0.86], [0.70, s * 0.30, 0.82], 0.016, 4));
       K.metal.push(box(0.03, 0.10, 0.05, 4.52, s * 0.30, 1.16));
       for (i = 0; i < 4; i++) K.dark.push(box(0.10, 0.05, 0.30, 3.0 - i * 0.30, s * 0.86, -0.18));
-      K.dark.push(box(0.50, 0.10, 0.06, -4.0, s * 0.50, -0.86));            /* aux air doors */
-      K.dark.push(box(0.35, 0.06, 0.10, -5.6, s * 0.62, -0.62));            /* engine-bay scoops */
+      K.dark.push(box(0.50, 0.10, 0.06, -4.0, s * 0.50, -0.62));            /* aux air doors */
+      K.dark.push(box(0.35, 0.06, 0.10, -5.6, s * 0.62, -0.37));            /* engine-bay scoops */
     }
     K.skin.push(sol([[[-0.4, 0.012, 0.86], [-0.70, 0.012, 0.86], [-0.86, 0.012, 1.12], [-0.72, 0.012, 1.12]],
                      [[-0.4, -0.012, 0.86], [-0.70, -0.012, 0.86], [-0.86, -0.012, 1.12], [-0.72, -0.012, 1.12]]], true, true));   /* UHF */
@@ -701,10 +907,34 @@ var HeroF4 = (function () {
                      [[-5.0, -0.012, -0.66], [-5.25, -0.012, -0.66], [-5.36, -0.012, -0.86], [-5.22, -0.012, -0.86]]], true, true)); /* TACAN */
     K.skin.push(loft([[-1.2, 0, 0.84, 0.02, 0.02, 1], [-1.35, 0, 0.88, 0.10, 0.07, 1], [-1.8, 0, 0.88, 0.10, 0.07, 1]], 10, true, true));  /* ram-air scoop */
     K.dark.push(box(0.02, 0.14, 0.09, -1.34, 0, 0.88));
-    LAMP.push(cyl(0.06, 0.06, 0.06, 10, "z", -2.9, 0, 0.90));
+    LAMP.push(cyl(0.06, 0.06, 0.06, 10, "z", -2.9, 0, 0.875));
     LAMP.push(cyl(0.06, 0.06, 0.06, 10, "z", -0.6, 0, -0.89));
     K.glass.push(cyl(0.035, 0.035, 0.08, 8, "x", -8.38, 0, 2.70));
 
+    /* formation-light strips of the F-4E family (F-4E, F, G: photographs P3,
+       P7, P8 of the F-4F show them on the nose, the intake, the aft fuselage
+       and the fin): pale electroluminescent panels, in the stores' pale grey
+       (no draw call to spare on the F-4F ICE) */
+    if (F.long) for (s = -1; s <= 1; s += 2) {
+      K.pale.push(box(0.55, 0.03, 0.10, 5.6, s * 0.69, 0.0));
+      K.pale.push(box(0.55, 0.03, 0.10, 0.5, s * 1.645, 0.0));
+      K.pale.push(box(0.55, 0.03, 0.10, -5.8, s * 1.225, -0.05));
+      K.pale.push(box(0.55, 0.02, 0.10, -6.9, s * 0.07, 2.0));
+    }
+    /* the dorsal air-refuelling receptacle door behind the rear cockpit of
+       the USAF F-4C/E/G and the F-4F (the Navy F-4B took fuel by probe) */
+    if (!F.fold) {
+      K.dark.push(box(0.46, 0.34, 0.03, -0.35, 0, 0.875));
+      K.metal.push(box(0.05, 0.36, 0.035, -0.10, 0, 0.875));
+    }
+    /* the IR seeker domes of the AIM-9 and the joint bands of the fuel tanks */
+    for (i = 0; i < SWD.length; i++) K.dark.push(cyl(0.035, 0.045, 0.05, 10, "x", SWD[i][0] - 0.06, SWD[i][1], SWD[i][2]));
+    for (i = 0; i < TKS.length; i++) for (j = 0; j < 2; j++)
+      K.dark.push(cyl(TKS[i][1] + 0.004, TKS[i][1] + 0.004, 0.03, 24, "x", TKS[i][2] - TKS[i][0] * (j === 0 ? 0.30 : 0.62), TKS[i][3], TKS[i][4]));
+    /* the slotted stabilator of the F-4E family (F-4E from 1972, F, G): the
+       fixed slat's slot a quarter-metre behind the leading edge */
+    if (F.long) for (s = -1; s <= 1; s += 2)
+      K.dark.push(bar([-6.95, s * 0.86, -0.465], [-8.33, s * 2.80, -0.5 - 2.0 * Math.tan(23 * PI / 180) + 0.012], 0.018, 4));
     mesh(g, K.dark, T.dark, "dark");
     skinMeshes(g, K.skin, T, "skin", !!F.scheme.belly);
     mesh(g, LAMP, new V.MeshStandardMaterial({ color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 }), "lamp_red");
@@ -739,7 +969,7 @@ var HeroF4 = (function () {
     gr.name = "gear";
     g.add(gr);
     var nxg = 4.3, nr = 0.30, nzc = GROUND + nr;
-    G.metal.push(bar([nxg + 0.15, 0, -0.75], [nxg, 0, nzc + 0.1], 0.07, 8));
+    G.metal.push(bar([nxg + 0.15, 0, -0.62], [nxg, 0, nzc + 0.1], 0.07, 8));
     G.metal.push(bar([nxg - 0.9, 0, -0.80], [nxg, 0, nzc + 0.3], 0.03, 6));
     for (s = -1; s <= 1; s += 2) {
       G.tyre.push(cyl(nr, nr, 0.14, 32, "y", nxg, s * 0.15, nzc));
