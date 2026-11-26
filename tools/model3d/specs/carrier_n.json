@@ -1,0 +1,201 @@
+{
+  "key": "carrier_n",
+  "team": "nato",
+  "name": "Gerald R. Ford-class aircraft carrier, drawn as USS Gerald R. Ford (CVN-78)",
+  "category": "ship",
+  "published": {
+    "len": 337.0,
+    "beam": 78.0,
+    "draught": 12.0,
+    "source": "en.wikipedia 'Gerald R. Ford-class aircraft carrier': 337 m overall, 78 m flight deck, 41 m waterline, 12 m draught"
+  },
+  "len": 337,
+  "nodes": [
+    "turret"
+  ],
+  "references": [],
+  "reference_notes": [
+    "US Navy 'Overhead view of USS Gerald R. Ford (CVN 78) transiting the Atlantic Ocean, March 19, 2023' (Commons): deck outline, island, lifts, catapults, pendants - the builder's header gives the grid. Not copied into specs/ref: Commons answered 429 to every request in batch 5.",
+    "'Broadside view of USS Gerald R. Ford (CVN-78) underway on 8 April 2017' (port side): deck height, island and mast heights, bow flare, stern overhang.",
+    "'221009-N-TL968-1248' (9 Oct 2022, bow quarter) and the 8 April 2017 bow view: island faces, the square DBR arrays, the mast."
+  ],
+  "must_show": [
+    "small island set well aft on the starboard edge: main block x -93..-75, y -35.45..-22.75, with an annex aft to x -99; roof at z 42.8",
+    "dual band radar: three hexagon faces 120 degrees apart (one forward, one on each after quarter), a 4.3 m SPY-4 array low at z 30.2 and a 2.8 m SPY-3 array high at z 39.2 on each",
+    "one tapered mast off the roof at x -84.6 with yards at z 49.0 and 56.2, the big radome at its head (z 58.9) and the pole to z 63.8; two SATCOM radomes on the roof at x -80.2 and -87.4",
+    "three deck-edge lifts: starboard x 2..28 and x -75..-49 (y -35..-19.4, both forward of the island), port quarter x -163.5..-141.5 (y 20.6..35.4)",
+    "four EMALS tracks: two up the bow from x 38 to 161, two in the waist from x -50.5 and -68.5 to x 77 and 63.4, with the raised bow blast deflectors at x 37.3 and flush waist deflectors at x -53 and -71",
+    "three AAG pendants across the 8.5 degree landing area at landing-axis stations -107.5, -94.5, -81.5, the Fresnel lens on the port edge at x -90",
+    "angled deck corner at (59.5, 41.6); starboard bow cut from (75, -34.8) to (91.5, -18.6) with the RAM sponson low outboard of it at x 101.5",
+    "catwalks with safety nets, stanchioned hand rail and life-raft racks round every straight deck edge at z 17.3..18.6; folding whips on the catwalks at x -46, -12, 40, 56 (starboard) and -128, -104, -80 (port); the tall pole at x 60",
+    "hull flaring hard from the hangar deck (z 9.2) out to the deck edge, raked stem over a bulb, square transom at x -160 under an 8.5 m overhang; plain paint, no hull number"
+  ],
+  "landmarks": [
+    {
+      "name": "starboard after Phalanx (turret node)",
+      "expect_m": [
+        -142.0,
+        -38.4,
+        15.2
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "node": "turret"
+      }
+    },
+    {
+      "name": "island main block, forward face",
+      "expect_m": [
+        -75.0,
+        null,
+        null
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "material": "#7b8289",
+        "in_m": [
+          -80,
+          -35.0,
+          19.5,
+          -74.0,
+          -23.5,
+          26.5
+        ],
+        "point": [
+          "max",
+          null,
+          null
+        ]
+      }
+    },
+    {
+      "name": "island annex, after face",
+      "expect_m": [
+        -99.0,
+        null,
+        null
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "material": "#7b8289",
+        "in_m": [
+          -100,
+          -34.5,
+          19.5,
+          -94,
+          -25,
+          25.5
+        ],
+        "point": [
+          "min",
+          null,
+          null
+        ]
+      }
+    },
+    {
+      "name": "masthead pole top",
+      "expect_m": [
+        null,
+        null,
+        63.8
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "material": "#5d666d",
+        "in_m": [
+          -86,
+          -31,
+          60,
+          -83,
+          -27,
+          66
+        ],
+        "point": [
+          null,
+          null,
+          "max"
+        ]
+      }
+    },
+    {
+      "name": "flight deck forward end",
+      "expect_m": [
+        168.5,
+        null,
+        null
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "in_m": [
+          160,
+          -16,
+          18.0,
+          170,
+          16,
+          19.0
+        ],
+        "point": [
+          "max",
+          null,
+          null
+        ]
+      }
+    },
+    {
+      "name": "flight deck after end",
+      "expect_m": [
+        -168.5,
+        null,
+        null
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "in_m": [
+          -170,
+          -12,
+          18.0,
+          -160,
+          16,
+          19.0
+        ],
+        "point": [
+          "min",
+          null,
+          null
+        ]
+      }
+    },
+    {
+      "name": "keel",
+      "expect_m": [
+        null,
+        null,
+        -12.0
+      ],
+      "tol_m": 0.1,
+      "model_at": {
+        "material": "#562a27",
+        "in_m": [
+          -60,
+          -15,
+          -13,
+          60,
+          15,
+          -10
+        ],
+        "point": [
+          null,
+          null,
+          "min"
+        ]
+      }
+    }
+  ],
+  "not_confirmed": [
+    "stations of the Mk 29, RAM and Phalanx mounts and the four M2 tubs are inferred from broadsides that cannot resolve them",
+    "the cat lead-in lines and the scorch behind the bow deflectors (batch 5): drawn as US carriers paint them, their exact run not measured",
+    "the island balcony lockers, roof whips and catwalk hose-reel lockers (batch 5): photographs show clutter there, positions approximate",
+    "no outline reference: Commons rate-limited every fetch in batch 5"
+  ]
+}
