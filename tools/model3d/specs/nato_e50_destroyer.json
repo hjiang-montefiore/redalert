@@ -1,0 +1,87 @@
+{
+ "key": "nato_e50_destroyer",
+ "team": "nato",
+ "name": "USS Forrest Sherman (DD-931), Forrest Sherman-class destroyer, as built 1955-58",
+ "category": "ship",
+ "published": {
+  "len": 127.4,
+  "beam": 13.7,
+  "draught": 6.1,
+  "source": "en.wikipedia 'Forrest Sherman-class destroyer' / 'USS Forrest Sherman (DD-931)': 418 ft (127.4 m) overall, 407 ft (124 m) waterline, 45 ft (13.7 m) beam, 20 ft (6.1 m) draught to the bottom of the sonar dome; js warship_specs 127.4 x 13.8 m"
+ },
+ "len": 127.4,
+ "nodes": ["turret"],
+ "engine_contract": {
+  "row": "nato_e50_destroyer (js/eras.js), built by HeroForrestShermanDD.build in js/hero/us_forrest_sherman_dd.js",
+  "current_nodes": "one 'turret' group: mount 51 on the forecastle, origin on its ring centre, barrel along +X; every static part merged into one mesh per material (hull, deck, sup, dark, metal, team, glass)",
+  "len_rule": "UNIT_MODELS[key].len = 127.4 = the measured X extent (render3d scales by it)"
+ },
+ "references": [
+  {
+   "name": "[d2] HAER WA-210 sheet 2, USS Turner Joy (DD-951), inboard profile and upper deck plans",
+   "source": "Wikimedia Commons 'Inboard Profile and Upper Deck Plans - USS Turner Joy, Bremerton Marina, Bremerton, Kitsap County, WA HAER WA-210 (sheet 2 of 4).png' (HAER, public domain), read by the 2026 builder; not cached here (Commons returned 429 to this batch's fetches)",
+   "view": "quarter",
+   "exact": false,
+   "note": "Scale: the 407 ft 5 in waterline bar. The sheer, keel, stem, deck-edge plan, deckhouse outline, stacks and gun stations. Turner Joy is an SCB 85A ship with later deckhouse enlargements, so only the hull lines and the stations are taken from it. Kept as 'quarter' (no outline gated) until a builder caches it and sets crop, scale and origin."
+  },
+  {
+   "name": "[d4] HAER WA-210 sheet 4, midship and typical sections",
+   "source": "Wikimedia Commons 'Midship and Typical Sections - USS Turner Joy ... HAER WA-210 (sheet 4 of 4).tif' (HAER, public domain)",
+   "view": "quarter",
+   "exact": false,
+   "note": "Frames 4, 34, 65, 82, 102, 113, 138, 153, 199.5: the station table the hull is lofted from."
+  },
+  {
+   "name": "[p10] USS Barry (DD-933), 27 July 1956, from above abeam",
+   "source": "US Navy photograph on Wikimedia Commons, public domain",
+   "view": "quarter",
+   "exact": false,
+   "note": "The stations of every gun, stack and mast along the hull, measured at 8.2 px/m by the 2026 builder; the landmarks below take their x from it."
+  },
+  {
+   "name": "[p8] USS Decatur (DD-936), 30 November 1956, port quarter",
+   "source": "US Navy photograph on Wikimedia Commons, public domain",
+   "view": "quarter",
+   "exact": false,
+   "note": "The after director, the aft 3-inch, mounts 52 and 53 trained aft, the whaleboat davits."
+  },
+  {
+   "name": "[p9] USS Du Pont (DD-941), 17 May 1957, starboard bow",
+   "source": "US Navy photograph on Wikimedia Commons, public domain",
+   "view": "quarter",
+   "exact": false,
+   "note": "The foremast with the SPS-6 and SPS-10, the after tripod, the bridge front."
+  }
+ ],
+ "must_show": [
+  "a transom stern, rounded in plan",
+  "mount 51, a single 5-inch/54 Mk 42 in a boxy gunhouse with two round sight hoods, on the forecastle at x 39.6 (node turret)",
+  "mount 52 superfiring on the 01 deck at x -32.6 and mount 53 on the main deck at x -46.0, both trained aft, barrels inside the fantail",
+  "two twin 3-inch/50 Mk 33: one in the rounded tub at the fore end of the 01 deck at x 29.0, one on the 01 deck at x -22.6 pointing aft",
+  "two tall oval stacks raked aft with black caps: the forward one x 10.3 .. 8.6 to z 16.5, the after one x -7.6 .. -8.8 to z 14.5",
+  "the tripod foremast at x 13.4 straddling the forward stack, a broad yard, the SPS-6 bedspring on its forward platform at z 23.6 .. 25.7 and the SPS-10 at the masthead z 26.75; the shorter after tripod at x -4.8 to z 21.8 with yards and a small radome can",
+  "the long main-deck deckhouse from x -38.8 (tapered after end) to x 32.9, walkways outboard of it",
+  "the bridge block on the 01 deck, front at x 26.1 .. 25.0, two levels with rounded fronts, round ports in the pilot house, the open bridge and the forward director at x 18.6",
+  "the after director on its own house x -17.6 .. -12.4 abaft the after stack",
+  "two Hedgehogs on the 01 deck at x 26.1, y +-3.35, either side of the forward 3-inch, four rows of six spigots",
+  "four single 21-inch torpedo tubes amidships on the 01 deck at x -0.6 and 2.4, y +-3.4, trained outboard",
+  "a 26-ft motor whaleboat in davits each side at x -13.9, y +-5.15",
+  "lifelines along every exposed deck edge, bitts and fairleads, hatches, ventilators, a ready-service locker by mount 52, oblong life floats on the deckhouse sides, the anchors in hawses at x 56.6"
+ ],
+ "landmarks": [
+  {"name": "mount 51 ring centre", "ref": 2, "expect_m": [39.6, 0.0, null], "tol_m": 0.6, "model_at": {"node": "turret", "index": 0}, "note": "[p10] station of mount 51; tolerance on the photograph's 8.2 px/m"},
+  {"name": "foremast pole", "ref": 2, "expect_m": [13.4, null, null], "tol_m": 0.6, "model_at": {"in_m": [12.9, -0.3, 27.0, 13.9, 0.3, 29.4], "point": ["mid", null, null]}, "note": "[p10, p9] foremast station"},
+  {"name": "after mast", "ref": 2, "expect_m": [-4.8, null, null], "tol_m": 0.6, "model_at": {"in_m": [-5.4, -0.4, 19.8, -4.2, 0.4, 21.6], "point": ["mid", null, null]}, "note": "[p10, p8] after tripod station"},
+  {"name": "forward stack top", "ref": 0, "expect_m": [null, null, 16.5], "tol_m": 0.3, "model_at": {"in_m": [6.0, -2.5, 12.0, 12.0, 2.5, 16.52], "whole": true, "point": [null, null, "max"]}, "note": "[d2, p1] forward stack casing rim (the black lid dome over it left out: triangles wholly inside the box)"},
+  {"name": "after stack top", "ref": 0, "expect_m": [null, null, 14.5], "tol_m": 0.3, "model_at": {"in_m": [-11.5, -2.5, 10.0, -5.6, 2.5, 14.52], "whole": true, "point": [null, null, "max"]}, "note": "[d2, p1] after stack casing rim, lid left out"},
+  {"name": "mount 52 station", "ref": 2, "expect_m": [-32.6, null, null], "tol_m": 0.6, "model_at": {"in_m": [-35.5, -2.3, 6.3, -29.8, 2.3, 9.5], "point": ["mid", null, null]}, "note": "[p10] mount 52 gunhouse (its barrel aft left out of the box)"},
+  {"name": "after director house", "ref": 3, "expect_m": [-15.0, null, null], "tol_m": 0.6, "model_at": {"in_m": [-17.7, -2.4, 6.5, -12.3, 2.4, 8.0], "point": ["mid", null, null]}, "note": "[p8, d2] director control room x -17.6 .. -12.4"}
+ ],
+ "not_confirmed": [
+  "the 1955 deckhouse outline: d2 is Turner Joy as preserved, with later enlargements; the outline is read off p2/p4/p10 against it",
+  "how the four 21-inch tubes lay on the 01 deck: no photograph used shows them; d2's later Mk 32 site is used",
+  "the batch-4 deck fittings (fairleads, forecastle and fantail hatches, mushroom ventilators, the ready-service locker by mount 52, life floats on the house sides): placed by proportion, not one by one off a photograph",
+  "hull scuttles are not drawn: no reference used shows where they ran",
+  "the propeller boss and shaft brackets are schematic (under water)"
+ ]
+}
