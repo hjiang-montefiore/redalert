@@ -1,0 +1,78 @@
+{
+ "key": "lt_n",
+ "team": "nato",
+ "name": "M1128 Stryker Mobile Gun System, present-day fit without the slat cage",
+ "category": "veh",
+ "published": {
+  "width": 2.72,
+  "height": 2.64,
+  "source": "en.wikipedia 'M1128 mobile gun system' and 'Stryker' infobox: hull length 6.95 m (not gated: the model's X extent includes the gun), 2.72 m wide, height over 2.64 m. The gated length is the model's own X extent, 7.26 m: tow pintle (x -3.60) to the muzzle brake (x +3.665, 0.19 m past the nose as drawing A)."
+ },
+ "len": 7.26,
+ "nodes": ["turret", "roadwheel"],
+ "engine_contract": {
+  "row": "js/hero/us_stryker.js registers UNIT_MODELS.lt_n = { len 7.26, build HeroStryker.mgsNow }; the same file builds nato_e00_lighttank (slat), atgmv_n (M1134) and spaag_n (M-SHORAD) on the same hull",
+  "current_nodes": "one 'turret' group (origin on the ring at the roof, x -1.075 y 0 z 2.10, gun along +X) and four 'roadwheel' groups (one per axle, both tyres, origin on the axle)"
+ },
+ "references": [
+  {
+   "name": "[A] M1128 recognition side drawing, port side",
+   "image": "ref/lt_n/m1128_side_drawing.png",
+   "source": "Wikimedia Commons 'M1128 STRYKER MGS.png', 1280 px thumbnail (1280 x 585, transparent background)",
+   "view": "side",
+   "flip": true,
+   "px_per_m": 174.7,
+   "anchor_px": [36, 584],
+   "anchor_m": [3.475, 0.0],
+   "mask": "alpha",
+   "window_m": [-3.5, 1.0, 3.5, 3.3],
+   "ignore_m": [[-3.6, 2.9, -2.4, 3.7], [1.8, 1.8, 3.6, 2.6]],
+   "align_m": 0.06,
+   "exact": false,
+   "note": "Port side, nose left, flipped. Scaled on the published 6.95 m hull: nose edge px 36 to the rear plate px 1250 = 1214 px, 174.7 px/m; ground (tyre bottoms) at py 584. Second check: the tyres come out 1.11..1.13 m (the 12.00 R20 is about 1.12 m), the hubs at 1.53 / 2.77 / 4.15 / 5.37 m behind the nose, the gun axis at 2.67 m, the muzzle 0.21 m past the nose, the autoloader housing top 2.96..2.98 m. The drawing's roof line reads 2.0..2.05 m, the model's 2.10 (the 2.64 m published height over the ICV's weapon station and photo C put it between). A stylised recognition drawing, not a works drawing: exact false. The rear whips and the brush guards are ignored."
+  },
+  {
+   "name": "[C] M1128, front left three-quarters, green, no slat",
+   "image": "ref/lt_n/m1128_photo_front_left.jpg",
+   "source": "Wikimedia Commons 'M1128 Stryker MGS.jpg', 1280 px thumbnail",
+   "view": "quarter",
+   "exact": false,
+   "note": "For the reviewer: the two pale tow shackles hanging from lugs at the top of the raked lower nose plate, their tops level with the tyre tops; the headlamp clusters in tubular brush guards on the glacis corners; the perforated stowage rack on the rear flank; the ceramic tile kit bolt rows; the commander's M2 and the smoke dischargers on the cradle cheeks; plain CARC green (sunlit top about 120,128,99). Numbers and the white data patch are not part of the spec."
+  }
+ ],
+ "must_show": [
+  "eight big tyres on four axles at x +1.905, +0.665, -0.735, -1.955 (1.57 / 2.81 / 4.21 / 5.43 m behind the nose), the widest gap between the second and third [A, C]",
+  "the faceted nose: the raked lower plate from the nose edge (x 3.475, z 1.27) back to the belly (x 2.52, z 0.50), the long glacis rising to the roof at x 1.125 (z 2.10), chamfered front corners [A, C]",
+  "the two tow shackles on clevis lugs at the top of the lower nose plate, y +-0.62, x 3.28, hanging to z about 0.88 [C]",
+  "headlamp clusters in tubular brush guards on the glacis corners, x 3.15, y +-0.82 [A, C]",
+  "the louvred engine deck on the front right of the glacis, x 1.4..2.7, y -0.2..-1.0, and the driver's hatch with three periscopes front left, x 1.5, y +0.55 [A, C]",
+  "the bolt-on tile kit in two rows on the upper flanks, the port side access hatch at x -0.13..0.50, and the stowage rack on the upper rear flanks x -3.28..-0.75: a deep box, face 0.25 m off the shoulder (y +-1.52), z 1.58..2.06, nine 0.15 m holes in the upper band and fourteen 0.12 m holes in the lower [A, C]",
+  "the low profile turret on the ring at x -1.075: low plinth, the external 105 mm cradle, the long autoloader housing over the rear deck (top z 3.0, rear x -2.95), the commander's M2 front left (top about z 3.2), the gun axis z 2.62, the fume extractor near the cradle and the muzzle brake at x 3.665 [A, C]",
+  "the M6 smoke dischargers, four tubes a side on the cradle cheeks at x about 0.0, z 2.7..2.8 [A, C]",
+  "rear ramp, door, tail lamps, rear whips (x -3.225); rear lift hooks on the upper rear flank corners (x -3.43..-3.21, y +-1.20, z 2.05..2.24) [C]",
+  "plain paint: one coat of CARC green with light road dust on the lower flanks, no camouflage, numbers or markings; team colour in two small strips on the roof edges ahead of the turret (x -0.28..0.53)"
+ ],
+ "landmarks": [
+  { "name": "front axle", "ref": 0, "expect_m": [1.941, 0.56], "tol_m": 0.08, "model_at": { "node": "roadwheel", "index": 0 },
+    "note": "[A] the first tyre's chord at py 575 is px 262..346, centre 304: 1.534 m behind the nose" },
+  { "name": "second axle", "ref": 0, "expect_m": [0.708, 0.56], "tol_m": 0.08, "model_at": { "node": "roadwheel", "index": 1 },
+    "note": "[A] chord px 478..561, centre 519.5: 2.768 m behind the nose" },
+  { "name": "third axle", "ref": 0, "expect_m": [-0.678, 0.56], "tol_m": 0.08, "model_at": { "node": "roadwheel", "index": 2 },
+    "note": "[A] chord px 720..803, centre 761.5: 4.153 m behind the nose" },
+  { "name": "rear axle", "ref": 0, "expect_m": [-1.897, 0.56], "tol_m": 0.08, "model_at": { "node": "roadwheel", "index": 3 },
+    "note": "[A] chord px 933..1016, centre 974.5: 5.372 m behind the nose" },
+  { "name": "muzzle brake tip", "ref": 0, "expect_m": [3.68, 2.67], "tol_m": 0.08, "model_at": { "in_m": [3.3, -0.3, 2.4, 3.9, 0.3, 2.9], "point": ["max", "mid"] },
+    "note": "[A] the gun's left end at px 0 (0.206 m past the nose), its axis at py 105..129, 2.67 m" },
+  { "name": "autoloader housing top", "ref": 0, "expect_m": [-2.2, 2.96], "tol_m": 0.08, "model_at": { "in_m": [-2.4, -0.8, 2.7, -2.05, 0.8, 3.1], "point": [null, "max"] },
+    "note": "[A] the housing's roof at px 1000..1100 reads py 67: 2.96 m (the sight block on it is further forward, the rear mast further back)" },
+  { "name": "hull nose", "ref": 0, "expect_m": [3.475, null], "tol_m": 0.08, "model_at": { "in_m": [3.0, -0.5, 1.2, 3.6, 0.5, 1.5], "point": ["max", null] },
+    "note": "[A] the nose edge at px 36 is the scale's anchor; the brush guards (to px 24) are kept out by y" }
+ ],
+ "not_confirmed": [
+  "the MGS turret's plan width and the autoloader housing's width (no clear top view; A is a side view)",
+  "which side of the turret the commander's M2 is on (A is a side view: drawn left)",
+  "the roof height: the drawing reads 2.0..2.05 m, the model has 2.10 m",
+  "the exact form of the tow shackle lugs (C shows the shackles hanging below the nose plate number; the lug is drawn as a block with two cheeks)",
+  "the stowage rack's front end (drawn from 4.22 m behind the nose, from A and C) and its exact depth (C is a three-quarter view)"
+ ]
+}
