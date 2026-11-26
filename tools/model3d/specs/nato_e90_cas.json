@@ -1,0 +1,417 @@
+{
+ "key": "nato_e90_cas",
+ "team": "nato",
+ "name": "McDonnell Douglas F-15E Strike Eagle",
+ "category": "air",
+ "published": {
+  "len": 19.43,
+  "span": 13.05,
+  "height": 5.63,
+  "source": "en.wikipedia 'McDonnell Douglas F-15E Strike Eagle' specification (same airframe dimensions as the F-15C)"
+ },
+ "len": 19.43,
+ "nodes": [
+  "gear",
+  "aar_recept"
+ ],
+ "references": [
+  {
+   "name": "[P1] F-15 3-view, plan",
+   "image": "ref/nato_e80_fighter/f15_3v.png",
+   "source": "Wikimedia Commons 'McDonnell Douglas F-15 Eagle 3-view.svg', 2000 px render",
+   "view": "top",
+   "crop": [
+    0,
+    0,
+    800,
+    1145
+   ],
+   "rotate": 90,
+   "px_per_m": 57.08,
+   "anchor_px": [
+    392.5,
+    14
+   ],
+   "anchor_m": [
+    9.72,
+    0
+   ],
+   "mask": "dark",
+   "mask_opts": {
+    "threshold": 128,
+    "fill": true
+   },
+   "exact": true,
+   "note": "Nose up in the sheet, so rotate 90 clockwise. Scaled on the published length (nose py 14, stabilator TE py 1127). The drawing's span comes out 13.35 m, 2.3 per cent over the published 13.05, so expect the model about 0.15 m thinner at each wing tip. The F-15E shares the planform; its conformal tanks lie inside the plan outline."
+  },
+  {
+   "name": "[P1] F-15 3-view, head-on",
+   "image": "ref/nato_e80_fighter/f15_3v.png",
+   "view": "front",
+   "crop": [
+    1000,
+    230,
+    1800,
+    530
+   ],
+   "px_per_m": 56.5,
+   "anchor_px": [
+    1393.5,
+    257
+   ],
+   "anchor_m": [
+    0,
+    3.54
+   ],
+   "mask": "dark",
+   "window_m": [
+    -7.5,
+    -0.95,
+    7.5,
+    4.0
+   ],
+   "exact": false,
+   "note": "Advisory: scaled on the published span over the drawing's 737 px and hung from the fin tips, the drawing is gear-up and stylised. The window leaves out the undercarriage. Same airframe head-on; the E's CFTs, LANTIRN pods and bombs are not on the drawing."
+  },
+  {
+   "name": "[P2] F-15C profile print (65th AGRS) - single-seat C, for the shared fin / tail",
+   "image": "ref/nato_e80_fighter/f15c_side.jpg",
+   "source": "Wikimedia Commons 'F-15C Eagle 57th Wg 65th Aggressor Squadron AW 080010 - Nellis AFB NV - 2007.jpg', 800 px",
+   "view": "side",
+   "crop": [
+    40,
+    55,
+    760,
+    216
+   ],
+   "flip": true,
+   "px_per_m": 35.87,
+   "anchor_px": [
+    50,
+    177.5
+   ],
+   "anchor_m": [
+    9.72,
+    -0.36
+   ],
+   "mask": "bg",
+   "mask_opts": {
+    "tolerance": 30,
+    "edge_px": 6,
+    "fill": true,
+    "open_px": 1
+   },
+   "window_m": [
+    -10.5,
+    -1.05,
+    10.5,
+    4.2
+   ],
+   "align_m": 0.3,
+   "exact": false,
+   "note": "Advisory: a painted profile, gear up, with its own stores and a soft shadow; the nose height is not dimensioned, so the model may slide 0.3 m. Its markings and camouflage are NOT to be drawn. An F-15C: its single-seat canopy and missing CFTs do not apply to the E; kept for the fin and tail, which the E shares."
+  },
+  {
+   "name": "[P3] F-15E head-on photo, 492nd FS (speed brake up)",
+   "image": "ref/nato_e90_cas/f15e_front.jpg",
+   "source": "Wikimedia Commons 'F-15E with the speed brake up.jpg' (USAF photo, public domain), 1280 px thumb",
+   "view": "quarter",
+   "exact": false,
+   "note": "Not outlined (perspective, from close ahead). Shows: the two-seat canopy, the conformal tanks low on the trunk sides, the LANTIRN pods on pylons under the intakes (navigation pod port, targeting pod starboard), the paint - one dark gunship grey with fresh / faded panel tone patches, darker panel lines and exhaust / wear staining - which the paint sheet follows. Its unit badges, tail code and numbers are NOT drawn."
+  },
+  {
+   "name": "[P1s] F-15 3-view, side elevation (two-seater with CFTs)",
+   "image": "ref/nato_e80_fighter/f15_3v.png",
+   "source": "Wikimedia Commons 'McDonnell Douglas F-15 Eagle 3-view.svg', 2000 px render (the same sheet as [P1])",
+   "view": "side",
+   "crop": [
+    895,
+    832,
+    1995,
+    1107
+   ],
+   "flip": true,
+   "px_per_m": 56.3,
+   "anchor_px": [
+    899,
+    1044.5
+   ],
+   "anchor_m": [
+    9.72,
+    -0.36
+   ],
+   "mask": "dark",
+   "mask_opts": {
+    "threshold": 128,
+    "fill": true,
+    "close_px": 2
+   },
+   "window_m": [
+    -10.5,
+    -0.95,
+    10.5,
+    4.0
+   ],
+   "align_m": 0.3,
+   "exact": false,
+   "note": "Advisory: the sheet's side elevation, nose left (flip). Scaled on the published length over the drawn 1094 px (nose px 899, tail px 1993) = 56.3 px/m; the nose height is not dimensioned, so it is hung from the model's nose tip (z -0.36) and may slide 0.3 m. A TWO-SEATER with conformal tanks (the E's canopy and CFTs); its stores and the stylised fin (tip chord) are not to be matched. Canopy top read off it: 1.00 s 3.7, 1.23 s 4.4, 1.39 s 5.0, 1.46 s 5.6-6.2, 1.39 s 6.8, 1.27 s 7.4; keel -0.81..-0.83 at s 3.5-5.0."
+  }
+ ],
+ "must_show": [
+  "twin fins standing wide apart on the outboard engine decks at y +-1.56, root LE x -5.58 (s 15.30), tip at z 3.47-3.54, the ECM fairing ahead of the tip at x -7.2; booms running aft past the nozzles to x -9.33 (s 19.05)",
+  "large trapezoidal wing, root chord 7.6 m at the centreline (LE extended s 7.18, TE s 14.76), 45 deg LE from y 0.9 to the raked tip at y 6.05-6.50, x -4.2..-4.8",
+  "rectangular cheek intakes at y +-1.21, open mouthed, raked forward (top lip x 4.17 / s 5.55, bottom lip s 5.95), the splitter standing off the fuselage side at y +-0.76",
+  "two-seat bubble canopy set far forward: windscreen from x 6.67 (s 3.05), the canopy running back to s 7.85 (x 1.87), two seats at s 5.62 and 7.05, arches at s 6.35 and 7.30 ([P3] shows the two-seat bubble)",
+  "two round nozzles side by side between the booms at y +-1.21, z -0.15, from s 17.80 (x -8.08)",
+  "all-moving stabilators with the leading-edge snag at y +-2.6 (s 16.6), tips at y +-4.26 x -8.8, pivot fairing on the boom at y +-1.44",
+  "conformal fuel tanks along the trunk sides under the wing root at y +-1.86, s 7.40-14.55 (x 2.32..-4.83), with three Mk 82s in tangential rows below each at y +-2.03, z -0.76 ([P3]: the CFTs low on the trunks)",
+  "LANTIRN pods under the intakes at y +-1.16, z -1.12 from s 6.35: the navigation pod to port (1.99 m), the targeting pod to starboard (2.50 m) ([P3])",
+  "plain service paint: one dark gunship grey all over with fresh / faded panel tones and panel lines (as [P3]), the aft engine bay bare metal (s 16.3-18.0), team colour only in small strips: a band on each fin at z 2.6-3.1, the wingtips y 6.05-6.48, a spine strip at x -1.7"
+ ],
+ "not_confirmed": [
+  "gear leg lengths and the ground line (height as drawn 5.62 m against 5.63 published)",
+  "the receptacle station (aar_recept)",
+  "fin area",
+  "CFT and bomb stations: from the first build, not measured ([P3] is head-on and in perspective)",
+  "LANTIRN pod lengths and stations: from the first build; [P3] confirms the pods and their sides only",
+  "the exact FS 36118 shade: the grey is the tone [P3] shows in overcast light, authored with HeroKit.authorFor",
+  "[P1] plan wing leading edge at y 4-5 lies ~0.16 m aft of the model against the line's outer edge; [P1]'s 2.3 per cent over-span moves a 45-deg LE ~0.10 m aft there, leaving ~0.06 m inside the drawing's error (review 2026-11-26): not changed"
+ ],
+ "landmarks": [
+  {
+   "name": "fin tip top",
+   "ref": 2,
+   "expect_m": [
+    -8.4,
+    3.53
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "in_m": [
+     -9.2,
+     -2.0,
+     2.6,
+     -7.5,
+     2.0,
+     3.8
+    ],
+    "edge": "upper"
+   },
+   "note": "[P2] side, column px 700: first non-backdrop row 38 -> z 3.53 (incl. the tip cap). Tolerance 0.08 m: a painted profile, soft 1-2 px edge at 35.9 px/m plus the 0.3 m vertical slack of its undimensioned nose height (fin top and nose tip both sit on it)"
+  },
+  {
+   "name": "fin tip trailing end",
+   "ref": 2,
+   "expect_m": [
+    -8.76,
+    null
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "in_m": [
+     -9.3,
+     -2.0,
+     3.42,
+     -7.0,
+     2.0,
+     3.7
+    ],
+    "point": [
+     "min",
+     null
+    ]
+   },
+   "note": "[P2] side, row 39 (z 3.50): last non-backdrop pixel px 713 -> x -8.76; the selection is the tip cap above the fin-tip lamp"
+  },
+  {
+   "name": "fin leading edge at z 1.5",
+   "ref": 2,
+   "expect_m": [
+    -6.31,
+    1.5
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "in_m": [
+     -9.5,
+     1.2,
+     0.5,
+     -5.5,
+     1.95,
+     2.75
+    ],
+    "cross": 1.5,
+    "from_h": -5.4,
+    "to_h": -8.5
+   },
+   "note": "[P2] side, row 111 (z 1.5): first fin pixel px 625 -> x -6.31"
+  },
+  {
+   "name": "fin leading edge at z 2.0",
+   "ref": 2,
+   "expect_m": [
+    -6.67,
+    2.0
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "in_m": [
+     -9.5,
+     1.2,
+     0.5,
+     -5.5,
+     1.95,
+     2.75
+    ],
+    "cross": 2.0,
+    "from_h": -5.6,
+    "to_h": -8.5
+   },
+   "note": "[P2] side, row 93 (z 2.0): first fin pixel px 638 -> x -6.67"
+  },
+  {
+   "name": "tail boom aft end",
+   "ref": 0,
+   "expect_m": [
+    -9.32,
+    null
+   ],
+   "tol_m": 0.05,
+   "model_at": {
+    "in_m": [
+     -9.6,
+     1.5,
+     -0.6,
+     -8.6,
+     1.82,
+     0.3
+    ],
+    "point": [
+     "min",
+     null
+    ]
+   },
+   "note": "[P1] plan, column px 290 (y 1.80): the outer edge of the boom outline's aft end, row 1101 -> x -9.32 (the silhouette edge, as the mask takes it)"
+  },
+  {
+   "name": "wing trailing edge at y 4.8",
+   "ref": 0,
+   "expect_m": [
+    -5.73,
+    null
+   ],
+   "tol_m": 0.05,
+   "model_at": {
+    "in_m": [
+     -6.5,
+     4.0,
+     -0.5,
+     -3.0,
+     4.6,
+     1.0
+    ],
+    "point": [
+     "min",
+     null
+    ]
+   },
+   "note": "[P1] plan, column px 118 (y 4.80): outer edge of the TE line row 896 -> x -5.73. The selection is the wing loft strip y 3.8..4.8, whose aft-most vertex is the TE at the y 4.8 section"
+  },
+  {
+   "name": "nozzle exit",
+   "ref": 0,
+   "expect_m": [
+    -8.43,
+    null
+   ],
+   "tol_m": 0.05,
+   "model_at": {
+    "in_m": [
+     -9.2,
+     1.0,
+     -0.75,
+     -7.5,
+     1.2,
+     0.45
+    ],
+    "point": [
+     "min",
+     null
+    ]
+   },
+   "note": "[P1] plan, column px 330/350 (y 1.10/0.75): the black nozzle area ends at row 1050 -> x -8.43 (s 18.15). Booms run on to x -9.32"
+  },
+  {
+   "name": "wing trailing edge at y 2.0",
+   "ref": 0,
+   "expect_m": [
+    -5.55,
+    null
+   ],
+   "tol_m": 0.05,
+   "model_at": {
+    "in_m": [
+     -6.2,
+     2.02,
+     0.28,
+     -3.5,
+     2.3,
+     0.5
+    ],
+    "point": [
+     "min",
+     null
+    ]
+   },
+   "note": "[P1] plan, the straight flap TE inboard of the kink at y ~3.9: x -5.55 at y 2.0 (re-measured by the review; column px 278, outer edge of the TE line)"
+  },
+  {
+   "name": "wing trailing edge at y 2.8",
+   "ref": 0,
+   "expect_m": [
+    -5.54,
+    null
+   ],
+   "tol_m": 0.05,
+   "model_at": {
+    "in_m": [
+     -6.2,
+     2.45,
+     0.25,
+     -3.5,
+     3.2,
+     0.5
+    ],
+    "point": [
+     "min",
+     null
+    ]
+   },
+   "note": "[P1] plan, column px 233 (y 2.80): outer edge of the TE line row 885 -> x -5.54. The selection is the wing loft strip y 1.8..2.8 (and 2.8..3.9) whose aft vertices sit on the straight TE"
+  },
+  {
+   "name": "canopy top (two-seat)",
+   "ref": 4,
+   "expect_m": [
+    3.7,
+    1.46
+   ],
+   "tol_m": 0.1,
+   "model_at": {
+    "in_m": [
+     3.0,
+     -0.7,
+     0.8,
+     4.4,
+     0.7,
+     1.7
+    ],
+    "edge": "upper"
+   },
+   "note": "[P1s] side elevation, column px 1238 (s 6.02): top of the canopy line -> z 1.46. Tolerance 0.10 m: exact false, hung from the nose tip"
+  }
+ ],
+ "history": [
+  "2026-11-26 shape pass after review: nozzle exit s 18.68 -> 18.18, flap TE straight at s 15.28 to the kink at y 3.9, canopy and spine fairing raised 0.13-0.21 m to [P2] / [P1s], receptacle door seated on the trunk; [P1] landmark tolerances back to 0.05; [P1s] side elevation added"
+ ]
+}
