@@ -38,6 +38,23 @@ var Infantry3D = (function () {
     woodland: { c: 0x3c4433, gear: 0x282c22, blot: ["#1e241a", "#5d5439", "#171713"], style: "blob" },
     digital:  { c: 0x49503d, gear: 0x2f3529, blot: ["#333929", "#666b53", "#20241b"], style: "pixel" },
     desert:   { c: 0x958868, gear: 0x69614a, blot: ["#7b6f52", "#b3a884"],            style: "blob" },
+    /* US Army OCP (Scorpion W2), worn since 2019: a khaki ground under soft
+       green and brown fields, small dark-brown branches and pale flecks.
+       The colours follow a six-colour quantisation of the Commons swatch
+       File:OCP_Swatch.jpg (mean #97938a as photographed, lit flat), darkened
+       to author under the game's sun. The IOTV / plate carrier, its pouches
+       and the assault pack are issued in the same print (Commons
+       File:MultiCam_IOTV.jpg), so the carrier and pack take the cloth map,
+       a shade darker so the bulk of the carrier still reads; the boots and
+       knee pads are plain coyote brown. */
+    ocp:      { c: 0x6c6a52, gear: 0x564b39, blot: ["#565b3f", "#6a513d", "#33271f", "#8f8b76", "#7a7259"],
+                style: "ocp", vest: 0xc4c4c4, pack: true, boot: 0x6a5a43 },
+    /* M81 woodland BDU of the 1980s-90s US Army: the same print as
+       `woodland`. The PASGT vest is made in the woodland print too (Commons
+       File:PASGT_vest_and_helmet,_1991.jpg); the ALICE webbing and pack
+       over it stay plain olive drab. */
+    bdu:      { c: 0x3c4433, gear: 0x282c22, blot: ["#1e241a", "#5d5439", "#171713"], style: "blob",
+                vest: 0xb0b0b0, tex: "woodland" },
   };
   function camoOf(n) { return CAMO[n] || CAMO.olive; }
 
@@ -66,7 +83,24 @@ var Infantry3D = (function () {
       var x = cv.getContext("2d");
       var R = rngFor(name.length * 8191 + 37);
       x.fillStyle = hex(P.c); x.fillRect(0, 0, N, N);
-      if (P.style === "pixel") {
+      if (P.style === "ocp") {
+        /* soft, wide fields first, then the small hard branches and flecks
+           on top, as the print is layered */
+        for (var f = 0; f < 26; f++) {
+          x.fillStyle = P.blot[f % 2 === 0 ? 0 : (f % 3 === 0 ? 4 : 1)];
+          x.globalAlpha = 0.55;
+          x.beginPath();
+          x.ellipse(R() * N, R() * N, 9 + R() * 14, 4 + R() * 6, (R() - 0.5) * 0.5, 0, 6.29);
+          x.fill();
+        }
+        for (var f2 = 0; f2 < 44; f2++) {
+          x.fillStyle = P.blot[f2 % 4 === 0 ? 3 : 2];
+          x.globalAlpha = 0.85;
+          x.beginPath();
+          x.ellipse(R() * N, R() * N, 1 + R() * 3.2, 0.8 + R() * 1.8, R() * 3.14, 0, 6.29);
+          x.fill();
+        }
+      } else if (P.style === "pixel") {
         /* pixellated print: small hard-edged blocks, no soft shapes */
         for (var i = 0; i < 340; i++) {
           x.fillStyle = P.blot[(R() * P.blot.length) | 0];
@@ -136,6 +170,32 @@ var Infantry3D = (function () {
     manpads:       { kind: "tube", len: 1.50, dia: 0.074, breech: "cap",     grips: 1, gripstock: true, bcu: true },
     atgm:          { kind: "tube", len: 1.18, dia: 0.078, breech: "cap",     grips: 1, sightbox: true },
     mortar:        { kind: "mortar", len: 1.22, dia: 0.041 },
+    /* US weapons. The generic rows above give a battle rifle and a machine
+       gun wooden furniture and an assault rifle the curved magazine, which is
+       what says AK; the US guns have none of that.
+       m16   M16A2, 1.006 m (published). Off Commons File:M16A2_noBG.jpg, side
+             on, 924 px butt to muzzle: all-black polymer, a straight 30-round
+             magazine, the carry handle 54 mm proud of the receiver and the
+             tall A-frame front sight post 0.395 L ahead of the receiver.
+       m240  M240B, 1.245 m (published); black polymer stock, long bipod
+             (Commons File:PEO_M240B_Profile.jpg).
+       m110  M110 SASS with its suppressor, 1.181 m (published, 1.029 m bare);
+             black, big scope, bipod, the suppressor a fat can on the muzzle
+             (Commons File:US_Army_10th_Mountain_Division_Snipers.jpg).
+       javelin  FGM-148 launch tube, 1.20 m long (published), body 0.145 m
+             across over the 127 mm missile; the end caps are about 1.8 x the
+             body across on Commons File:Javelin_with_checkout_equipment.jpg
+             (measured at the near end, where the two are at one range), and
+             the command launch unit hangs low on the left side, about 0.34 m
+             back from the front cap. `half` overrides the reach the carry
+             angle is worked out from (build): 1.1 lays the tube nearly
+             square across the chest, so the caps and the CLU keep the
+             figure's fore-and-aft extent at 0.90 m (the generic atgm row
+             0.89 m) and render3d's length rescale does not shrink him. */
+    m16:           { kind: "gun",  len: 1.006, cal: 0.011, mag: "stick", wood: 0, sight: "carry" },
+    m240:          { kind: "gun",  len: 1.245, cal: 0.013, mag: "box",   wood: 0, sight: "iron", bipod: true, belt: true },
+    m110:          { kind: "gun",  len: 1.181, cal: 0.011, mag: "stick", wood: 0, sight: "scope", bipod: true, supp: true },
+    javelin:       { kind: "tube", len: 1.20, dia: 0.145, breech: "none", grips: 1, javelin: true, half: 1.1 },
   };
   function weaponOf(n) { return WEAPON[n] || WEAPON.assault; }
 
@@ -211,11 +271,21 @@ var Infantry3D = (function () {
     } else if (W.sight === "optic") {
       var op = box(THREE, 0.088, 0.036, 0.052, K.gun);
       op.position.set(0.05 * L, 0, 0.062); g.add(op);
+    } else if (W.sight === "carry") {
+      /* M16A2: the carry handle along the receiver and the tall front post */
+      var ch = box(THREE, 0.150, 0.014, 0.050, K.gun);
+      ch.position.set(0.04 * L, 0, 0.036 + 0.025); g.add(ch);
+      var fp = box(THREE, 0.022, 0.014, 0.060, K.gun);
+      fp.position.set(0.395 * L, 0, 0.004 + 0.030); g.add(fp);
     } else {
       var fs = box(THREE, 0.016, 0.014, 0.040, K.gun);
       fs.position.set(0.50 * L, 0, 0.030); g.add(fs);
       var rs = box(THREE, 0.020, 0.030, 0.026, K.gun);
       rs.position.set(0.13 * L, 0, 0.048); g.add(rs);
+    }
+    if (W.supp) {
+      var su = cylX(THREE, W.cal * 1.75, W.cal * 1.75, 0.150, 8, K.gun);
+      su.position.set(muzzle - 0.075, 0, 0.004); g.add(su);
     }
     if (W.bolt) {
       var bh = box(THREE, 0.020, 0.070, 0.020, K.gun);
@@ -246,9 +316,21 @@ var Infantry3D = (function () {
     } else if (W.breech === "cap") {
       var cp = cylZ(THREE, R * 1.06, R * 1.06, 0.050, 10, K.gear);
       cp.rotation.y = Math.PI / 2; cp.position.set(-L / 2 - 0.024, 0, 0); g.add(cp);
-    } else {
+    } else if (W.breech !== "none") {
       var rim = cylX(THREE, R * 1.12, R * 1.12, 0.035, 10, K.gun);
       rim.position.set(-L / 2 + 0.018, 0, 0); g.add(rim);
+    }
+    if (W.javelin) {
+      /* the two fat end caps and the box of the command launch unit on the
+         left: the Javelin's whole silhouette */
+      for (var e = -1; e <= 1; e += 2) {
+        var ec = cylX(THREE, R * 1.8, R * 1.8, 0.120, 12, K.gun);
+        ec.position.set(e * (L / 2 - 0.060), 0, 0); g.add(ec);
+      }
+      var clu = box(THREE, 0.300, 0.170, 0.240, K.gun);
+      clu.position.set(L / 2 - 0.340, R + 0.040, -0.085); g.add(clu);
+      var ep = box(THREE, 0.060, 0.090, 0.070, K.gun);
+      ep.position.set(L / 2 - 0.520, R + 0.060, -0.060); g.add(ep);
     }
     if (W.warhead) {
       /* the bulbous shaped-charge head hanging off the front of an RPG */
@@ -372,18 +454,28 @@ var Infantry3D = (function () {
     var W = weaponOf(P.weapon);
     var coat = hasGear(P, "greatcoat");
 
-    var tex = clothTex(THREE, P.camo || "olive");
+    var tex = clothTex(THREE, CP.tex || P.camo || "olive");
     var K = {
       cloth: new THREE.MeshStandardMaterial({
         color: tex ? 0xffffff : CP.c, map: tex || null, roughness: 0.94, metalness: 0.02 }),
       gear:  mat(THREE, CP.gear, 0.93, 0.03),
-      strap: mat(THREE, CP.gear, 0.95, 0.02),
       skin:  mat(THREE, 0xa9835f, 0.92, 0.0),
       gun:   mat(THREE, 0x25282b, 0.55, 0.42),
       wood:  mat(THREE, 0x6a4a2c, 0.80, 0.05),
       glass: new THREE.MeshStandardMaterial({ color: 0x1a2a30, roughness: 0.25, metalness: 0.55 }),
       team:  mat(THREE, (C && C.team) || 0x3f7fd0, 0.70, 0.10),
     };
+    /* straps were their own material at roughness 0.95 against the gear's
+       0.93, same colour: one material, so they merge with the gear */
+    K.strap = K.gear;
+    /* the carrier (and, where the issue says so, the pack and its pouches)
+       in the uniform's own print, and the boots in their own colour. All
+       fall back to the gear material, so the other schemes build exactly as
+       before. */
+    K.vest = (CP.vest && tex) ? new THREE.MeshStandardMaterial({
+      color: CP.vest, map: tex, roughness: 0.93, metalness: 0.03 }) : K.gear;
+    K.pack = CP.pack ? K.vest : K.gear;
+    K.boot = CP.boot ? mat(THREE, CP.boot, 0.90, 0.03) : K.gear;
 
     var hipZ = 0.955, shZ = 1.435;
     var hw = 0.163 + V.dw, hd = 0.098 + V.dd;   /* torso half width / depth */
@@ -400,10 +492,10 @@ var Infantry3D = (function () {
       var ca = limb(THREE, 0.430, 0.058, 0.046, K.cloth);
       ca.position.set(0, 0, -0.455); ca.rotation.y = shYr;
       th.add(ca);
-      var bt = box(THREE, 0.275, 0.108, 0.098, K.gear);
+      var bt = box(THREE, 0.275, 0.108, 0.098, K.boot);
       bt.position.set(0.055, 0, -0.408); ca.add(bt);
       if (kneepad) {
-        var kp = box(THREE, 0.098, 0.112, 0.100, K.gear);
+        var kp = box(THREE, 0.098, 0.112, 0.100, K.boot);
         kp.position.set(0.038, 0, -0.045); ca.add(kp);
       }
       /* Named and tagged with the pose it was built in, so render3d can swing
@@ -440,19 +532,19 @@ var Infantry3D = (function () {
     if (V.carrier) {
       /* front and back plates plus the cummerbund: a slab across the chest
          only, so the shoulders and the waist still taper around it */
-      var car = box(THREE, (hd + 0.018) * 2, (hw - 0.006) * 2, 0.290, K.gear);
+      var car = box(THREE, (hd + 0.018) * 2, (hw - 0.006) * 2, 0.290, K.vest);
       car.position.set(-0.004, 0, 1.278); g.add(car);
       if (V.collar) {
-        var col = box(THREE, (hd + 0.002) * 2, (hw + 0.026) * 2, 0.055, K.gear);
+        var col = box(THREE, (hd + 0.002) * 2, (hw + 0.026) * 2, 0.055, K.vest);
         col.position.set(-0.004, 0, 1.440); g.add(col);
       }
       if (V.cummer) {
-        var cum = box(THREE, (hd + 0.020) * 2, (hw - 0.020) * 2, 0.095, K.gear);
+        var cum = box(THREE, (hd + 0.020) * 2, (hw - 0.020) * 2, 0.095, K.vest);
         cum.position.set(-0.004, 0, 1.098); g.add(cum);
       }
       for (var i = 0; i < V.pouch; i++) {
         var col2 = (i % 2) ? 1 : -1, row = (i < 2) ? 0 : 1;
-        var pu = box(THREE, 0.056, 0.082, 0.096, K.gear);
+        var pu = box(THREE, 0.056, 0.082, 0.096, K.pack);
         pu.position.set(hd + 0.040, col2 * (hw * 0.42), 1.312 - row * 0.112);
         g.add(pu);
       }
@@ -474,7 +566,7 @@ var Infantry3D = (function () {
     }
     if (V.shoulder > 0.001) {
       for (var s3 = -1; s3 <= 1; s3 += 2) {
-        var sp = box(THREE, 0.125, 0.088, 0.068, K.gear);
+        var sp = box(THREE, 0.125, 0.088, 0.068, K.vest);
         sp.position.set(-0.004, s3 * (hw + 0.014), 1.408); g.add(sp);
       }
     }
@@ -482,7 +574,7 @@ var Infantry3D = (function () {
     /* ------------------------------------------------------------ gear */
     if (hasGear(P, "backpack")) {
       var deep = V.carrier ? 0.140 : 0.158;
-      var pk = box(THREE, deep, 0.255, V.carrier ? 0.320 : 0.285, K.gear);
+      var pk = box(THREE, deep, 0.255, V.carrier ? 0.320 : 0.285, K.pack);
       pk.position.set(-(hd + deep * 0.5 + 0.010), 0, V.carrier ? 1.185 : 1.215);
       g.add(pk);
       /* rolled shelter half lashed across the top of the pack: breaks the
@@ -598,7 +690,7 @@ var Infantry3D = (function () {
        the chest and a short carbine sits at a shallow angle -- which is both
        what soldiers actually do and what stops render3d's length-based
        rescale from shrinking the heavy-weapons teams. */
-    var half = (W.len || 1.0) * 0.58;
+    var half = W.half || (W.len || 1.0) * 0.58;
     var yaw = Math.acos(Math.max(0.16, Math.min(0.86, 0.300 / half)));
 
     if (hold === "gun") {
@@ -631,7 +723,103 @@ var Infantry3D = (function () {
     if (Math.abs(bb.min.z) > 1e-4)
       for (var q = 0; q < g.children.length; q++) g.children[q].position.z -= bb.min.z;
 
+    packFigure(THREE, g);
     return g;
+  }
+
+  /* ------------------------------------------------------------ packing */
+
+  /* Every part above is its own Mesh, which made a figure cost 43-54 draw
+     calls for ~1.2k triangles, and render3d neither merges nor instances, so
+     a squad cost hundreds. The only parts the engine moves are the two legs
+     (render3d's walk cycle swings the thigh named leg.L / leg.R about its hip
+     and folds userData.shin about the knee), so those keep their own meshes
+     and transforms; everything else is baked into one mesh per material,
+     with its world transform, normals and UVs, so the picture is the same.
+     The figure then costs: 2 x (thigh, shin, boot) + one per material used
+     by the rest (cloth, gear, skin, gun, team, and wood / glass where the
+     row has them) = 11-13.
+
+     hero_kit.js merges as it draws (its pens write triangles straight into
+     per-material buffers) and loads after this file, so there is nothing
+     there to call on finished meshes: this is the small hand-written merge. */
+  function mergeParts(THREE, parts) {
+    var nv = 0, ni = 0, p, i;
+    for (p = 0; p < parts.length; p++) {
+      var q0 = parts[p].geo, n0 = q0.attributes.position.count;
+      nv += n0; ni += q0.index ? q0.index.count : n0;
+    }
+    var pos = new Float32Array(nv * 3), nor = new Float32Array(nv * 3), uv = new Float32Array(nv * 2);
+    var idx = nv > 65535 ? new Uint32Array(ni) : new Uint16Array(ni);
+    var v = new THREE.Vector3(), nm = new THREE.Matrix3(), o = 0, k = 0;
+    for (p = 0; p < parts.length; p++) {
+      var q = parts[p].geo, m = parts[p].m, P = q.attributes.position,
+          N = q.attributes.normal, U = q.attributes.uv, n = P.count, I = q.index;
+      nm.getNormalMatrix(m);
+      var flip = m.determinant() < 0;
+      for (i = 0; i < n; i++) {
+        v.fromBufferAttribute(P, i).applyMatrix4(m);
+        pos[(o + i) * 3] = v.x; pos[(o + i) * 3 + 1] = v.y; pos[(o + i) * 3 + 2] = v.z;
+        if (N) {
+          v.fromBufferAttribute(N, i).applyMatrix3(nm).normalize();
+          nor[(o + i) * 3] = v.x; nor[(o + i) * 3 + 1] = v.y; nor[(o + i) * 3 + 2] = v.z;
+        }
+        /* a part with no UVs samples texel (0, 0) everywhere, as it did alone */
+        if (U) { uv[(o + i) * 2] = U.getX(i); uv[(o + i) * 2 + 1] = U.getY(i); }
+      }
+      var cnt = I ? I.count : n;
+      for (i = 0; i + 2 < cnt; i += 3) {
+        var a = I ? I.getX(i) : i, b = I ? I.getX(i + 1) : i + 1, c = I ? I.getX(i + 2) : i + 2;
+        idx[k++] = o + a;
+        idx[k++] = o + (flip ? c : b);
+        idx[k++] = o + (flip ? b : c);
+      }
+      o += n;
+    }
+    var g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    g.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
+    g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+    g.setIndex(new THREE.BufferAttribute(k < ni ? idx.slice(0, k) : idx, 1));
+    g.computeBoundingBox(); g.computeBoundingSphere();
+    return g;
+  }
+
+  /* bake every mesh under `root` (excluding `skip`) into one mesh per
+     material, in root's own space, and hang the results on `host` */
+  function bakeInto(THREE, root, list, host) {
+    root.updateMatrixWorld(true);
+    var inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
+    var order = [], by = {};
+    for (var c = 0; c < list.length; c++) {
+      list[c].traverse(function (o) {
+        if (!o.isMesh) return;
+        var id = o.material.uuid;
+        if (!by[id]) { by[id] = { mat: o.material, parts: [] }; order.push(id); }
+        by[id].parts.push({ geo: o.geometry, m: new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld) });
+      });
+    }
+    for (var r = 0; r < list.length; r++) if (list[r].parent) list[r].parent.remove(list[r]);
+    for (var j = 0; j < order.length; j++) {
+      var B = by[order[j]];
+      host.add(new THREE.Mesh(mergeParts(THREE, B.parts), B.mat));
+      for (var d = 0; d < B.parts.length; d++) B.parts[d].geo.dispose();
+    }
+  }
+
+  function packFigure(THREE, g) {
+    var rest = [], legs = [];
+    for (var i = 0; i < g.children.length; i++) {
+      var ch = g.children[i];
+      if (ch.name === "leg.L" || ch.name === "leg.R") legs.push(ch); else rest.push(ch);
+    }
+    /* each leg: the thigh and the shin stay as they are (they swing), and
+       whatever hangs on the shin (boot, knee pad) becomes one mesh on it */
+    for (var l = 0; l < legs.length; l++) {
+      var sh = legs[l].userData.shin;
+      if (sh && sh.children.length > 1) bakeInto(THREE, sh, sh.children.slice(), sh);
+    }
+    bakeInto(THREE, g, rest, g);
   }
 
   /* A hand-finished mesh already in UNIT_MODELS wins unless it is marked

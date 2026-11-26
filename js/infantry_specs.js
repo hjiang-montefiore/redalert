@@ -9,9 +9,12 @@
      webbing  belt | vest | plate      (bulk through the chest, in that order)
      weapon   smg assault modernassault battlerifle boltrifle sniper mg
               bazooka recoilless rpg manpads atgm mortar
+              US only: m16 (M16A2) m240 (M240B) m110 (M110 SASS) javelin
      gear     entrench backpack canteen bandolier radio greatcoat goggles
               nvg kneepads
      camo     olive | green | grey | woodland | digital | desert
+              US only: ocp (OCP / Scorpion W2, today) | bdu (M81 woodland
+              BDU with the PASGT vest in the print, 1980s-90s)
                                                                             */
 var INFKIT = {
 
@@ -89,11 +92,11 @@ var INFKIT = {
   /* Type 88 Squad: Deep-skirted steel helmet and khaki-olive tunic, with AK-74-pattern Type 88 folded wire stock and flat khaki chest pouches worn over the chest. */
   kpa_e80_rifle: {era:"e80", fac:"kpa", role:"rifle", designation:"Type 88 Squad", helmet:"steel", webbing:"vest", weapon:"assault", camo:"olive", gear:["canteen", "bandolier", "entrench"]},
   /* Stinger: Fat tapered launch tube on the shoulder with the pistol-grip gripstock and the square lattice IFF antenna unfolded ahead of the gunner's face. */
-  nato_e80_aa: {era:"e80", fac:"nato", role:"aa", designation:"Stinger", helmet:"kevlar", webbing:"vest", weapon:"manpads", camo:"woodland", gear:["backpack", "goggles"]},
+  nato_e80_aa: {era:"e80", fac:"nato", role:"aa", designation:"Stinger", helmet:"kevlar", webbing:"vest", weapon:"manpads", camo:"bdu", gear:["backpack", "goggles"]},
   /* AT4: Single man, no crew and no tripod: a smooth olive disposable tube on the shoulder with the flip-up plastic sights and red firing lever on top. */
-  nato_e80_at: {era:"e80", fac:"nato", role:"at", designation:"AT4", helmet:"kevlar", webbing:"vest", weapon:"recoilless", camo:"woodland", gear:["backpack", "canteen"]},
+  nato_e80_at: {era:"e80", fac:"nato", role:"at", designation:"AT4", helmet:"kevlar", webbing:"vest", weapon:"recoilless", camo:"bdu", gear:["backpack", "canteen"]},
   /* Rifle Squad: The definitive 1980s silhouette: PASGT Fritz helmet under a woodland cloth cover with the elastic camo band, flak vest over M81 woodland BDUs, M16A2 at the ready. */
-  nato_e80_rifle: {era:"e80", fac:"nato", role:"rifle", designation:"Rifle Squad", helmet:"kevlar", webbing:"vest", weapon:"assault", camo:"woodland", gear:["backpack", "canteen", "entrench", "bandolier"]},
+  nato_e80_rifle: {era:"e80", fac:"nato", role:"rifle", designation:"Rifle Squad", helmet:"kevlar", webbing:"vest", weapon:"m16", camo:"bdu", gear:["backpack", "canteen", "entrench", "bandolier"]},
   /* Igla Team: Standing gunner with a slender tube angled steeply skyward, conical needle nose-spike on the front and a boxy battery-coolant unit clipped under the grip. */
   pact_e80_aa: {era:"e80", fac:"pact", role:"aa", designation:"Igla Team", helmet:"steel", webbing:"vest", weapon:"manpads", camo:"green", gear:["backpack", "canteen"]},
   /* Konkurs Team: Squat tripod with a cylindrical missile container clamped on top and the drum-shaped thermal/optical sight bolted to its side, loader kneeling with a second tube. */
@@ -121,11 +124,11 @@ var INFKIT = {
   /* KPA Rifleman: a type 88 with a plain curved 30-round magazine (the standard ak-74-pattern box) */
   kpa_e90_rifle: {era:"e90", fac:"kpa", role:"rifle", designation:"KPA Rifleman", helmet:"steel", webbing:"belt", weapon:"assault", camo:"olive", gear:["backpack", "canteen", "entrench", "bandolier"]},
   /* NATO Stinger Team: Standing gunner with the Stinger's pistol gripstock under the tube and a boxy IFF interrogator hanging at the hip. */
-  nato_e90_aa: {era:"e90", fac:"nato", role:"aa", designation:"NATO Stinger Team", helmet:"kevlar", webbing:"vest", weapon:"manpads", camo:"woodland", gear:["radio", "nvg", "canteen", "goggles"]},
-  /* NATO Javelin Team: gunner prone behind a tripod-mounted tow-2a/dragon launcher, optical tracker on the left of the tube and the wire spool running out ahead. */
-  nato_e90_at: {era:"e90", fac:"nato", role:"at", designation:"NATO Javelin Team", helmet:"kevlar", webbing:"vest", weapon:"atgm", camo:"woodland", gear:["backpack", "radio", "nvg", "canteen"]},
+  nato_e90_aa: {era:"e90", fac:"nato", role:"aa", designation:"NATO Stinger Team", helmet:"kevlar", webbing:"vest", weapon:"manpads", camo:"bdu", gear:["radio", "nvg", "canteen", "goggles"]},
+  /* NATO Javelin Team: FGM-148 (in service 1996) carried on the shoulder, fat end caps on the launch tube and the command launch unit on its left side; PASGT and woodland BDU. */
+  nato_e90_at: {era:"e90", fac:"nato", role:"at", designation:"NATO Javelin Team", helmet:"kevlar", webbing:"vest", weapon:"javelin", camo:"bdu", gear:["backpack", "radio", "nvg", "canteen"]},
   /* NATO Rifleman: Fritz-shell kevlar with a woodland cover and cat-eye band, PASGT flak vest, and night-vision goggles flipped up on the helmet mount. */
-  nato_e90_rifle: {era:"e90", fac:"nato", role:"rifle", designation:"NATO Rifleman", helmet:"kevlar", webbing:"vest", weapon:"assault", camo:"woodland", gear:["backpack", "canteen", "entrench", "nvg"]},
+  nato_e90_rifle: {era:"e90", fac:"nato", role:"rifle", designation:"NATO Rifleman", helmet:"kevlar", webbing:"vest", weapon:"m16", camo:"bdu", gear:["backpack", "canteen", "entrench", "nvg"]},
   /* Igla Team: Igla tube with the distinctive pointed conical nose cap on the muzzle and a drum-shaped battery unit clipped under the gripstock. */
   pact_e90_aa: {era:"e90", fac:"pact", role:"aa", designation:"Igla Team", helmet:"kevlar", webbing:"vest", weapon:"manpads", camo:"green", gear:["radio", "canteen", "goggles"]},
   /* Kornet Team: Very low tripod with a large slab-sided thermal sight bolted to the left of the tube, gunner lying almost flat behind it. */
@@ -155,7 +158,7 @@ var INFKIT = {
   /* Stinger Block I Team: gunner with a headset over the helmet and a whip antenna off his back, tube angled high. */
   nato_e00_aa: {era:"e00", fac:"nato", role:"aa", designation:"NATO Stinger Team", helmet:"modern", webbing:"plate", weapon:"manpads", camo:"desert", gear:["radio", "goggles", "canteen"]},
   /* Javelin: Javelin gunner kneeling, CLU block on a wide green tube carried over a tan plate carrier, NVG mount flipped up. */
-  nato_e00_at: {era:"e00", fac:"nato", role:"at", designation:"Javelin", helmet:"modern", webbing:"plate", weapon:"atgm", camo:"desert", gear:["backpack", "nvg", "kneepads"]},
+  nato_e00_at: {era:"e00", fac:"nato", role:"at", designation:"Javelin", helmet:"modern", webbing:"plate", weapon:"javelin", camo:"desert", gear:["backpack", "nvg", "kneepads"]},
   /* Rifle Squad: single-tube an/pvs-14 monocular on the helmet mount, railed m4 carbine, tan carrier bristling with pouches. */
   nato_e00_rifle: {era:"e00", fac:"nato", role:"rifle", designation:"Rifle Squad", helmet:"modern", webbing:"plate", weapon:"modernassault", camo:"desert", gear:["backpack", "nvg", "kneepads", "radio"]},
   /* Igla-S Team: Slim Igla-S tube with a bulbous nose cap and blocky gripstock, spare round strapped across the back. */
@@ -193,17 +196,17 @@ var INFKIT = {
   /* KPA designated marksman, 2020s: SVD clone with a wooden thumbhole stock and long PSO scope, no ghillie or spotter. */
   sniper_k: {era:"e20", fac:"kpa", role:"sniper", designation:"KPA designated marksman, 2020s", helmet:"steel", webbing:"vest", weapon:"sniper", camo:"olive", gear:["backpack", "canteen"]},
   /* NATO Stinger team, 2020s: Standing with the Stinger shouldered, gripstock gripped underhand and the IFF antenna folded out. */
-  aa_n: {era:"e20", fac:"nato", role:"aa", designation:"NATO Stinger team, 2020s", helmet:"modern", webbing:"plate", weapon:"manpads", camo:"woodland", gear:["backpack", "radio", "nvg"]},
+  aa_n: {era:"e20", fac:"nato", role:"aa", designation:"NATO Stinger team, 2020s", helmet:"modern", webbing:"plate", weapon:"manpads", camo:"ocp", gear:["backpack", "radio", "nvg"]},
   /* NATO Javelin team, 2020s: Gunner kneeling with the fat blocky command unit on his shoulder, tube canted up at twenty degrees. */
-  at_n: {era:"e20", fac:"nato", role:"at", designation:"NATO Javelin team, 2020s", helmet:"modern", webbing:"plate", weapon:"atgm", camo:"woodland", gear:["backpack", "radio", "nvg", "kneepads"]},
+  at_n: {era:"e20", fac:"nato", role:"at", designation:"NATO Javelin team, 2020s", helmet:"modern", webbing:"plate", weapon:"javelin", camo:"ocp", gear:["backpack", "radio", "nvg", "kneepads"]},
   /* NATO medium MG team, 2020s: Gunner hunched behind a tripod-mounted 7.62 while the assistant feeds a linked belt off his shoulder. */
-  mg_n: {era:"e20", fac:"nato", role:"mg", designation:"NATO medium MG team, 2020s", helmet:"modern", webbing:"plate", weapon:"mg", camo:"woodland", gear:["backpack", "bandolier", "kneepads", "nvg"]},
+  mg_n: {era:"e20", fac:"nato", role:"mg", designation:"NATO medium MG team, 2020s", helmet:"modern", webbing:"plate", weapon:"m240", camo:"ocp", gear:["backpack", "bandolier", "kneepads", "nvg"]},
   /* NATO 81mm mortar team, 2020s: 81mm tube and bipod split across three men, loader holding a finned round over the muzzle. */
-  mortar_n: {era:"e20", fac:"nato", role:"mortar", designation:"NATO 81mm mortar team, 2020s", helmet:"modern", webbing:"plate", weapon:"mortar", camo:"woodland", gear:["backpack", "radio", "kneepads", "bandolier"]},
+  mortar_n: {era:"e20", fac:"nato", role:"mortar", designation:"NATO 81mm mortar team, 2020s", helmet:"modern", webbing:"plate", weapon:"mortar", camo:"ocp", gear:["backpack", "radio", "kneepads", "bandolier"]},
   /* NATO rifleman, 2020s: Quad-tube NVG flipped up on the helmet rail above a slick squared plate carrier. */
-  rifle_n: {era:"e20", fac:"nato", role:"rifle", designation:"NATO rifleman, 2020s", helmet:"modern", webbing:"plate", weapon:"modernassault", camo:"woodland", gear:["backpack", "radio", "nvg", "kneepads"]},
-  /* NATO sniper pair, 2020s: Ghillie drape over boonie hat and rifle, spotter's scope on a short tripod beside him. */
-  sniper_n: {era:"e20", fac:"nato", role:"sniper", designation:"NATO sniper pair, 2020s", helmet:"cap", webbing:"plate", weapon:"sniper", camo:"woodland", gear:["backpack", "radio", "nvg"]},
+  rifle_n: {era:"e20", fac:"nato", role:"rifle", designation:"NATO rifleman, 2020s", helmet:"modern", webbing:"plate", weapon:"modernassault", camo:"ocp", gear:["backpack", "radio", "nvg", "kneepads"]},
+  /* NATO sniper pair, 2020s: OCP, plate carrier and helmet (as the 10th Mountain Division sniper teams on Commons wear them), black M110 with its scope, bipod and suppressor. */
+  sniper_n: {era:"e20", fac:"nato", role:"sniper", designation:"NATO sniper pair, 2020s", helmet:"modern", webbing:"plate", weapon:"m110", camo:"ocp", gear:["backpack", "radio", "nvg"]},
   /* Pact Igla team, 2020s: Igla tube shouldered with the pointed nose cone cap still on and the thin ranging antenna up. */
   aa_p: {era:"e20", fac:"pact", role:"aa", designation:"Pact Igla team, 2020s", helmet:"modern", webbing:"plate", weapon:"manpads", camo:"digital", gear:["backpack", "radio", "canteen"]},
   /* Pact Kornet team, 2020s: Kornet low on its tripod, gunner prone behind the boxy thermal sight with a spare tube laid alongside. */
