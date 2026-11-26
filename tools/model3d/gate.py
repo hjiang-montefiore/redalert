@@ -416,7 +416,7 @@ def main(argv):
         cat = None
     if cat is None:
         cat = "ship" if re.search(r"cruiser|destroyer|frigate|corvette|carrier|boat|(?<!gun)ship|sub|ssbn|ssn|lcu|lst|lhd|lph|lpd|landing|patrol|minesweep", key) else \
-              "air" if re.search(r"fighter|bomber|cas|helo|gunship|airlift|tanker|ewair|awacs|air|stealth|drone|uav", key) else "veh"
+              "air" if re.search(r"fighter|bomber|cas|helo|gunship|transport|airlift|tanker|ewair|awacs|air|stealth|drone|uav", key) else "veh"
         add("INFO", "category", cat, "", "guessed from the key: put \"category\" in the spec")
 
     # ---- 2. rules on the dump
