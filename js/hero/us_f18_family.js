@@ -148,6 +148,32 @@
    All four rows: the low-visibility insignia (national markings) are no
    longer painted (AGENT_POLICY 6). The Super Hornet / Growler geometry is
    unchanged. Names, builders, len and the "gear" group are kept.
+
+   ---- 2026-11-26 batch-5 pass (all four rows) ----
+     - the nose gear: the launch bar hung aft of the wheels clear of
+       everything (the gate's one floating part on all four rows); it is now
+       pinned to the front of the leg and reaches forward between the wheels,
+       as on the Hornet. A fork crosshead and an axle tie the wheels to the
+       leg, and a link ties each main gear door to its leg;
+     - the Super Hornet and both Growlers now carry the fitting pass the C
+       got (frame seams, hinge lines, the fold seam, pitots, AoA vanes,
+       louvres, blade aerials, beacons; the gun muzzle on the E only), less
+       the LEX fences and the dorsal speed brake the E/F/G do not have;
+     - the Super Hornet's wing loft gains a section at y 1.94 m so the
+       straight LEX shoulder of the silhouette is kept (the loft cut the
+       corner to 1.87 m; spec cfighter_n landmark);
+     - paint (E, G1, G2): the greys read near-white at the game camera
+       (seen #cdd4d7); re-authored with HeroKit.authorFor so they show as a
+       sunlit FS 36320 / 36375 pair (#a7afb4 / #c6cbce); review round 2:
+       the C wears the same pair (#666c70 / #82898c, radome #575d61), the
+       stores are authored like the belly (#82898c, they read near-white),
+       the seam ribbons are darker (0x30363a) so the panel and hinge lines
+       still show on the darker skin, and the C's sheet adds the touch-up
+       panels, the LEX / spine walkway outlines and the formation-light
+       strips the fleet photographs show (places NOT measured);
+     - the starboard wing's hinge seams are built on that side (wingSeam
+       sd): mirrored with scale(1, -1, 1) their winding flipped and they
+       rendered black on one wing only.
    ========================================================================= */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
@@ -280,7 +306,7 @@ var HeroF18 = (function () {
     teS0: 13.77, teK: 0.133, y0: 0.45,
     thTab: [[0.45, 0.20], [1.50, 0.20], [2.00, 0.34], [3.50, 0.26], [6.20, 0.09]],
     zTab: [[0.45, 2.56], [0.80, 2.46], [1.30, 2.30], [1.70, 2.10], [2.00, 2.02], [2.30, 2.00], [6.20, 2.00]],
-    wingYs: [0.45, 0.58, 0.97, 1.42, 1.80, 2.00, 2.26, 3.20, 4.40, 5.40, 6.20],
+    wingYs: [0.45, 0.58, 0.97, 1.42, 1.80, 1.94, 2.00, 2.26, 3.20, 4.40, 5.40, 6.20],   /* 1.94: the LEX shoulder (2026-11-26; the loft cut it to 1.87) */
     flashY: [5.05, 5.75],
     stab: { y0: 1.00, tip: 3.62, le0: 15.24, le1: 2.13, leK: 1.176, te: 18.31, h: 1.86, th0: 0.26, th1: 0.07 },
     fin: { y0: 0.90, h0: 2.82, H: 2.06, le0: 13.10, le1: 15.00, te0: 16.30, te1: 16.10, cant: 20, th0: 0.19, th1: 0.055, hMin: 2.20 },
@@ -293,16 +319,16 @@ var HeroF18 = (function () {
   /* what each row carries: [type, station, sides]. Sides: "b" both, "p" port,
      "s" starboard, "c" centre */
   var VARS = {
-    C:  { af: LEG, seats: 1, gun: true, seed: 1991, tex: "C", top: "#77828a", belly: "#a2abb0", tone: "#5f6a72",
+    C:  { af: LEG, seats: 1, gun: true, seed: 1991, tex: "C", top: "#666c70", belly: "#82898c", tone: "#575d61",
           loads: [["aim9", "tip", "b"], ["mk83", "out", "b"], ["tank330", "inb", "b"],
                   ["flir", "cheek", "p"], ["aim120", "cheek", "s"]] },
-    E:  { af: SUP, seats: 1, gun: true, seed: 2001, tex: "E", top: "#8b959b", belly: "#a9b2b7", tone: "#68737a",
+    E:  { af: SUP, seats: 1, gun: true, seed: 2001, tex: "E", top: "#666c70", belly: "#82898c", tone: "#575d61",
           loads: [["aim9", "tip", "b"], ["aim120", "out", "b"], ["jdam", "mid", "b"], ["tank480", "inb", "b"],
                   ["flir", "cheek", "p"], ["aim120", "cheek", "s"]] },
-    G1: { af: SUP, seats: 2, gun: false, seed: 2009, tex: "G", top: "#88939a", belly: "#a7b0b5", tone: "#66717a",
+    G1: { af: SUP, seats: 2, gun: false, seed: 2009, tex: "G", top: "#646b6f", belly: "#81888b", tone: "#575d61",
           loads: [["alq218", "tip", "b"], ["harm", "out", "b"], ["alq99", "mid", "b"], ["tank480", "inb", "b"],
                   ["alq99", "ctr", "c"], ["aim120", "cheek", "b"]] },
-    G2: { af: SUP, seats: 2, gun: false, seed: 2009, tex: "G", top: "#88939a", belly: "#a7b0b5", tone: "#66717a",
+    G2: { af: SUP, seats: 2, gun: false, seed: 2009, tex: "G", top: "#646b6f", belly: "#81888b", tone: "#575d61",
           loads: [["alq218", "tip", "b"], ["harm", "out", "b"], ["ngj", "mid", "b"], ["tank480", "inb", "b"],
                   ["alq99", "ctr", "c"], ["aim120", "cheek", "b"]] }
   };
@@ -625,6 +651,38 @@ var HeroF18 = (function () {
       g.fillStyle = R() < 0.88 ? "rgba(214,218,220,0.34)" : "rgba(170,48,38,0.42)";
       g.fillRect(R() * TW, R() * TH, 4 + R() * 12, 2);
     }
+    /* 9b. (2026-11-26, the C) what the Finnish HN-442 top view and US Navy
+          and Marine C photographs show at a glance once the C wears the
+          same FS 36320 / 36375 greys as the E/F/G: the patchwork of
+          touch-up panels in a slightly different grey that every Hornet in
+          fleet service carries, the walkway outlines on the LEX tops and
+          along the spine, and the pale green formation-light strips on the
+          forward fuselage sides, the aft fuselage sides and the outer faces
+          of the fins. Places read off the photographs, NOT measured. */
+    if (VR.tex === "C") {
+      for (i = 0; i < 45; i++) {
+        var px = 2.4 + R() * 12.5, py = (R() - 0.5) * 2.4, pw = (0.35 + R() * 0.9) * PXM, ph = (0.25 + R() * 0.6) * PXM;
+        g.fillStyle = R() < 0.55 ? "rgba(70,78,84,0.15)" : "rgba(168,176,182,0.13)";
+        g.fillRect(cs(px), rTop(py), pw, ph);
+      }
+      for (k = -1; k <= 1; k += 2) {
+        for (i = 0; i < 14; i++) {
+          var wy = k * (2.0 + R() * 3.2), wx = wingLE(Math.abs(wy)) + 0.3 + R() * 1.6;
+          g.fillStyle = R() < 0.55 ? "rgba(70,78,84,0.15)" : "rgba(168,176,182,0.13)";
+          g.fillRect(cs(wx), rTop(wy), (0.3 + R() * 0.7) * PXM, (0.25 + R() * 0.5) * PXM);
+        }
+        /* walkway outlines on the LEX top and beside the spine */
+        g.strokeStyle = "rgba(18,20,22,0.62)"; g.lineWidth = 1.6;
+        g.strokeRect(cs(8.2), rTop(k > 0 ? 1.25 : -0.75), 1.6 * PXM, 0.50 * PXM);
+        g.strokeRect(cs(10.6), rTop(k > 0 ? 0.62 : -0.30), 2.2 * PXM, 0.32 * PXM);
+      }
+      g.fillStyle = "rgba(196,222,150,0.80)";
+      for (k = 0; k < 2; k++) {
+        g.fillRect(cs(3.30), rSide(Z(2.18), k), 0.70 * PXM, 0.09 * PXM);       /* forward fuselage */
+        g.fillRect(cs(14.10), rSide(Z(2.30), k), 0.80 * PXM, 0.09 * PXM);      /* aft fuselage */
+        g.fillRect(cs(13.70), rSide(Z(4.25), k), 0.09 * PXM, 0.95 * PXM);      /* fin outer face */
+      }
+    }
     /* 10. belly grime and streaks running aft */
     g.fillStyle = "rgba(34,32,30,0.12)";
     for (i = 0; i < 60; i++) g.fillRect(R() * TW * 0.9, B_BOT + R() * TOPH, 20 + R() * 70, 2 + R() * 4);
@@ -689,11 +747,12 @@ var HeroF18 = (function () {
     m.hot = new V.MeshStandardMaterial({ color: 0x45484a, roughness: 0.55, metalness: 0.50, side: V.DoubleSide });
     m.ink = new V.MeshStandardMaterial({ color: 0x060708, roughness: 0.95, metalness: 0.03, side: V.DoubleSide });
     m.tyre = new V.MeshStandardMaterial({ color: 0x131414, roughness: 0.95, metalness: 0.02 });
-    m.store = new V.MeshStandardMaterial({ color: 0xaeb4b7, roughness: 0.62, metalness: 0.12 });
+    m.store = new V.MeshStandardMaterial({ color: 0x82898c, roughness: 0.62, metalness: 0.12 });
     m.ord = new V.MeshStandardMaterial({ color: 0x59604c, roughness: 0.74, metalness: 0.14 });
     m.glass = new V.MeshStandardMaterial({ color: 0x4a5a58, roughness: 0.12, metalness: 0.55,
                                            transparent: true, opacity: 0.80, side: V.DoubleSide });
-    m.seam = new V.MeshStandardMaterial({ color: 0x4c555b, roughness: 0.85, metalness: 0.05, side: V.DoubleSide });
+    m.seam = new V.MeshStandardMaterial({ color: 0x30363a,   /* darker: on the FS 36320 skin 0x4c555b barely showed */
+                                          roughness: 0.85, metalness: 0.05, side: V.DoubleSide });
     m.lamp = new V.MeshStandardMaterial({ color: 0xd8261c, roughness: 0.3, metalness: 0.0, emissive: 0x801410, emissiveIntensity: 0.6 });
     return m;
   }
@@ -1023,7 +1082,14 @@ var HeroF18 = (function () {
     G.metal.push(rod([X(n + 0.10), 0.16, Z(0.50)], [X(n + 0.14), 0.16, Z(nr)], 0.035, 6));
     G.metal.push(rod([X(n + 0.10), -0.16, Z(0.50)], [X(n + 0.14), -0.16, Z(nr)], 0.035, 6));
     G.metal.push(rod([X(n - 0.40), 0, Z(hn)], [X(n + 0.05), 0, Z(0.62)], 0.03, 6));
-    G.metal.push(rod([X(n + 0.30), 0, Z(0.55)], [X(n + 0.90), 0, Z(0.38)], 0.025, 6));
+    /* the launch bar: pinned to the front of the leg above the axle and
+       reaching forward between the wheels (it hung aft of the wheels, clear
+       of everything, until 2026-11-26) */
+    G.metal.push(rod([X(n + 0.08), 0, Z(0.56)], [X(n - 0.50), 0, Z(0.42)], 0.03, 6));
+    G.metal.push(rod([X(n - 0.50), -0.05, Z(0.42)], [X(n - 0.50), 0.05, Z(0.42)], 0.035, 6));
+    /* the fork crosshead on the leg's foot, the axle through the fork and both hubs */
+    G.metal.push(rod([X(n + 0.10), -0.19, Z(0.50)], [X(n + 0.10), 0.19, Z(0.50)], 0.045, 8));
+    G.metal.push(rod([X(n + 0.14), -0.30, Z(nr)], [X(n + 0.14), 0.30, Z(nr)], 0.04, 8));
     for (k = -1; k <= 1; k += 2) {
       G.tyre.push(wheelG(nr, 0.20, X(n + 0.14), k * 0.22, Z(nr), 18));
       G.metal.push(wheelG(0.13, 0.21, X(n + 0.14), k * 0.22, Z(nr), 10));
@@ -1040,6 +1106,9 @@ var HeroF18 = (function () {
       G.tyre.push(wheelG(mr, 0.28, X(m + 0.05), s * (gr.track + 0.02), Z(mr), 20));
       G.metal.push(wheelG(0.22, 0.29, X(m + 0.05), s * (gr.track + 0.02), Z(mr), 12));
       G.skin.push(boxG(1.55, 0.035, 0.70, X(m + 0.05), s * (gr.track + 0.24), Z(0.98)));
+      /* the door's link to the leg (it hung clear of the leg until 2026-11-26) */
+      var tl = (hm - 1.20) / (hm - mr - 0.08), xl = (m - 0.10) + tl * 0.15, yl = 1.12 + tl * (gr.track - 0.12 - 1.12);
+      G.metal.push(rod([X(xl), s * yl, Z(1.20)], [X(m + 0.05), s * (gr.track + 0.235), Z(1.20)], 0.03, 6));
       G.ink.push(boxG(2.10, 0.62, 0.04, X(m + 0.05), s * 0.95, Z(1.37)));
     }
   }
@@ -1099,49 +1168,65 @@ var HeroF18 = (function () {
     }
     return ribbon(pts, function (p) { return [0, p[1], p[2] - Z(r[2])]; }, 0.03, 0.008);
   }
-  function wingSeam(y0, y1, u, up) {
-    var pts = [], i;
+  /* sd: the side (+1 port, -1 starboard), built in place - a seam mirrored
+     with scale(1, -1, 1) had its winding flipped and rendered black */
+  function wingSeam(y0, y1, u, up, sd) {
+    var pts = [], i, k = sd || 1;
     for (i = 0; i <= 6; i++) {
       var y = y0 + (y1 - y0) * i / 6, le = wingLE(y), te = wingTE(y), c = te - le, th = lin(AF.thTab, y);
-      pts.push([X(le + u * c), y, Z(lin(AF.zTab, y)) + up * (yt(u, th / c) * c + 0.004)]);
+      pts.push([X(le + u * c), k * y, Z(lin(AF.zTab, y)) + up * (yt(u, th / c) * c + 0.004)]);
     }
     return ribbon(pts, [0, 0, up], 0.035, 0.004);
   }
+  /* (2026-11-26) the Super Hornet and the Growler get the same fittings,
+     at the legacy stations scaled the way their body tables are (length
+     1.073, height 1.047, width 1.10), less what the E/F/G does not have:
+     no LEX fences (the Super Hornet's LEX carries spoilers, painted as the
+     vent slots) and no dorsal speed brake (the spoilers do its work);
+     the Growler has no gun. The wing-fold seam is put between the mid and
+     the outboard pylons (NOT measured: no drawing here gives the E/F/G
+     hinge station). Stations NOT measured. */
   function addDetails(K) {
-    var sd, i;
-    [1.75, 2.55, 3.45].forEach(function (st) { K.seam.push(hoopAt(st, -0.9, Math.PI + 0.9)); });
-    [9.6, 10.8, 12.0, 13.4, 14.6].forEach(function (st) { K.seam.push(hoopAt(st, 0.25, Math.PI - 0.25)); });
+    var sd, i, sup = AF === SUP, ks = sup ? 1.073 : 1, kh = sup ? 1.047 : 1, kw = sup ? 1.10 : 1;
+    [1.75, 2.55, 3.45].forEach(function (st) { K.seam.push(hoopAt(st * ks, -0.9, Math.PI + 0.9)); });
+    [9.6, 10.8, 12.0, 13.4, 14.6].forEach(function (st) { K.seam.push(hoopAt(st * ks, 0.25, Math.PI - 0.25)); });
     for (sd = -1; sd <= 1; sd += 2) {
-      /* LEX fence on the LEX top just ahead of the wing root */
-      var yf = sd * 1.12, zf = Z(lin(AF.zTab, 1.12) + lin(AF.thTab, 1.12) * 0.5);
-      K.skin.push(blade([X(7.95), yf, zf], 1, 0.30, 1.10, 0.55, 0.03, 0.35));
+      /* LEX fence on the LEX top just ahead of the wing root (legacy only) */
+      if (!sup) {
+        var yf = sd * 1.12, zf = Z(lin(AF.zTab, 1.12) + lin(AF.thTab, 1.12) * 0.5);
+        K.skin.push(blade([X(7.95), yf, zf], 1, 0.30, 1.10, 0.55, 0.03, 0.35));
+      }
       /* leading-edge flap, trailing-edge flap / aileron hinge lines, top and bottom */
       [1, -1].forEach(function (up) {
-        var ln = wingSeam(1.75, AF.semi - 0.05, 0.13, up);
-        var tf = wingSeam(1.75, AF.semi * 0.62, 0.74, up), ai = wingSeam(AF.semi * 0.62, AF.semi - 0.15, 0.78, up);
-        [ln, tf, ai].forEach(function (g) { if (sd < 0) g.scale(1, -1, 1); K.seam.push(g); });
+        var y0 = sup ? 2.10 : 1.75;
+        K.seam.push(wingSeam(y0, AF.semi - 0.05, 0.13, up, sd));
+        K.seam.push(wingSeam(y0, AF.semi * 0.62, 0.74, up, sd));
+        K.seam.push(wingSeam(AF.semi * 0.62, AF.semi - 0.15, 0.78, up, sd));
       });
       /* the nose pitots and AoA vanes ahead of the windscreen */
-      K.metal.push(rod([X(2.30), sd * 0.43, Z(2.18)], [X(1.85), sd * 0.43, Z(2.18)], 0.018, 6));
-      K.metal.push(boxG(0.14, 0.02, 0.08, X(2.90), sd * 0.50, Z(2.05)));
+      K.metal.push(rod([X(2.30 * ks), sd * 0.43 * kw, Z(2.18 * kh)], [X(1.85 * ks), sd * 0.43 * kw, Z(2.18 * kh)], 0.018, 6));
+      K.metal.push(boxG(0.14, 0.02, 0.08, X(2.90 * ks), sd * 0.50 * kw, Z(2.05 * kh)));
       /* engine-bay louvres on the aft fuselage sides */
-      for (i = 0; i < 4; i++) K.ink.push(boxG(0.30, 0.02, 0.05, X(13.2 + i * 0.18), sd * 1.33, Z(2.0 - i * 0.03)));
+      for (i = 0; i < 4; i++) K.ink.push(boxG(0.30, 0.02, 0.05, X((13.2 + i * 0.18) * ks), sd * 1.33 * kw, Z((2.0 - i * 0.03) * kh)));
       /* the wing-fold line, a seam across the chord */
-      var yw = AF.semi * 0.58, le = wingLE(yw), te = wingTE(yw), fp = [];
+      var yw = sup ? 4.05 : AF.semi * 0.58, le = wingLE(yw), te = wingTE(yw), fp = [];
       for (i = 0; i <= 6; i++) { var u = i / 6; fp.push([X(le + u * (te - le)), sd * yw, Z(lin(AF.zTab, yw)) + yt(u, lin(AF.thTab, yw) / (te - le)) * (te - le) + 0.004]); }
       K.seam.push(ribbon(fp, [0, 0, 1], 0.035, 0.004));
       /* beacons under the LEX roots */
-      K.lamp.push(new V.SphereGeometry(0.06, 8, 6).translate(X(6.4), sd * 0.55, Z(1.32)));
+      var sb = 6.4 * ks, yb = 0.55 * kw;
+      K.lamp.push(new V.SphereGeometry(0.06, 8, 6).translate(X(sb), sd * yb, sup ? Z(bellyY(sb, yb)) : Z(1.32)));
     }
-    /* the dorsal speed brake between the fins */
-    var sbz = Z(2.68) + 0.01;
-    K.seam.push(ribbon([[X(11.4), 0.42, sbz], [X(12.9), 0.48, sbz], [X(12.9), -0.48, sbz], [X(11.4), -0.42, sbz], [X(11.4), 0.42, sbz]], [0, 0, 1], 0.035, 0.004));
+    /* the dorsal speed brake between the fins (legacy only) */
+    if (!sup) {
+      var sbz = Z(2.68) + 0.01;
+      K.seam.push(ribbon([[X(11.4), 0.42, sbz], [X(12.9), 0.48, sbz], [X(12.9), -0.48, sbz], [X(11.4), -0.42, sbz], [X(11.4), 0.42, sbz]], [0, 0, 1], 0.035, 0.004));
+    }
     /* the gun muzzle on the radome top, blade aerials, the spine beacon */
-    K.ink.push(rod([X(1.20), 0, Z(2.20)], [X(1.45), 0, Z(2.26)], 0.04, 8));
-    K.ink.push(blade([X(9.4), 0, Z(3.0)], 1, 0.25, 0.32, 0.14, 0.025, 0.08));
-    K.ink.push(blade([X(5.0), 0, Z(1.43)], -1, 0.22, 0.30, 0.12, 0.025, 0.06));
-    K.ink.push(blade([X(11.0), 0, Z(1.08)], -1, 0.20, 0.26, 0.12, 0.025, 0.06));
-    K.lamp.push(new V.SphereGeometry(0.07, 8, 6).translate(X(10.2), 0, Z(2.95)));
+    if (VR.gun) K.ink.push(rod([X(1.20 * ks), 0, Z(2.20 * kh)], [X(1.45 * ks), 0, Z(2.26 * kh)], 0.04, 8));
+    K.ink.push(blade([X(9.4 * ks), 0, Z(3.0 * kh)], 1, 0.25, 0.32, 0.14, 0.025, 0.08));
+    K.ink.push(blade([X(5.0 * ks), 0, Z(1.43 * kh)], -1, 0.22, 0.30, 0.12, 0.025, 0.06));
+    K.ink.push(blade([X(11.0 * ks), 0, Z(1.08 * kh)], -1, 0.20, 0.26, 0.12, 0.025, 0.06));
+    K.lamp.push(new V.SphereGeometry(0.07, 8, 6).translate(X(10.2 * ks), 0, Z(2.95 * kh)));
   }
 
   /* ============================================================== build == */
@@ -1183,7 +1268,7 @@ var HeroF18 = (function () {
     addTails(K);
     addNozzles(K);
     addFlash(K);
-    if (AF.trunk) addDetails(K);
+    addDetails(K);
     if (!(opts && opts.bare)) { addLoads(K); addGear(G); }
 
     var mats = makeMats(C);
