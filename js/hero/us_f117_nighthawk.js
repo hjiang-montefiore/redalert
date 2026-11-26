@@ -294,8 +294,11 @@ var HeroF117 = (function () {
     var mainPts = [T[0], T[1], OUT[2], OUT[3], OUT[4], OUT[5], OUT[6]];
     var ring = mainPts.slice();
     for (k = mainPts.length - 1; k >= 1; k--) ring.push([mainPts[k][0], -mainPts[k][1]]);
+    /* (batch 5) the flat top face is not drawn: the fuselage hump covers it
+       inboard of the foot line and the wing's two facets (addRedo) outboard
+       of it, so it was hidden area only. The ring stays as the reference
+       for the bevel and the tip below. */
     top = ring.map(function (q) { return P(q[0], q[1], hlo(q[0]) + THK); });
-    poly(K.skin, top, [0, 0, 1]);
 
     /* the platypus: a thinner plate whose trailing edge is the W */
     var plat = [OUT[6], OUT[7], OUT[8], OUT[9], [OUT[8][0], -OUT[8][1]], [OUT[7][0], -OUT[7][1]],
@@ -449,7 +452,7 @@ var HeroF117 = (function () {
   }
   function addGrids(K) {
     var side, j, i, spans = [[7.35, 9.05], [9.15, 10.85]], y0 = 1.05, y1 = 2.30;
-    var NV = 22, NH = 7, W = 0.010, FR = 0.045, O0 = 0.020, O1 = 0.048;
+    var NV = 30, NH = 9, W = 0.008, FR = 0.045, O0 = 0.020, O1 = 0.048;
     /* a bar over the rectangle (s0..s1, ya..yb) of the facet */
     function bar(sd, s0, s1, ya, yb) {
       lift(K.hot, [gridPt(sd, s0, ya, O0), gridPt(sd, s1, ya, O0), gridPt(sd, s1, yb, O0), gridPt(sd, s0, yb, O0),
@@ -564,12 +567,38 @@ var HeroF117 = (function () {
      flat tip 1.7 m long at the full 3.78 m, and its trailing edge climbs
      from the platypus to the tip's aft corner. The team colour caps the top. */
   function along(a, b, t) { return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)]; }
+  /* (batch 5) a faceted blade, not a flat plate: each face is two flat
+     facets meeting at a ridge 45 per cent back, the edges sharp, as on the
+     wing (the Andrews rear view shows the light breaking along the
+     ruddervator's chord). hr / ht: the half-depth at the root and the tip
+     ridge (NOT CONFIRMED: about 4.5 per cent of the chord). */
+  function blade(B, rle, rte, tte, tle, hr, ht) {
+    var n = cross(sub(rte, rle), sub(tle, rle)), L = Math.sqrt(dot(n, n)) || 1, e = 0.006;
+    n = [n[0] / L, n[1] / L, n[2] / L];
+    function off(p, d) { return [p[0] + n[0] * d, p[1] + n[1] * d, p[2] + n[2] * d]; }
+    var rr = along(rle, rte, 0.45), tr = along(tle, tte, 0.45);
+    var sg, faces = [];
+    for (sg = -1; sg <= 1; sg += 2) {
+      var A = off(rle, sg * e), Bq = off(rr, sg * hr), Cq = off(rte, sg * e);
+      var D = off(tle, sg * e), Eq = off(tr, sg * ht), F = off(tte, sg * e);
+      var nn = [n[0] * sg, n[1] * sg, n[2] * sg];
+      quad(B, A, Bq, Eq, D, nn);
+      quad(B, Bq, Cq, F, Eq, nn);
+      faces.push([A, Bq, Cq, D, Eq, F]);
+    }
+    var u = faces[0], o = faces[1], dr = sub(rle, tle);
+    /* the root and tip ends, and the thin leading and trailing edges */
+    quad(B, u[0], u[1], o[1], o[0], dr); quad(B, u[1], u[2], o[2], o[1], dr);
+    quad(B, u[3], u[4], o[4], o[3], [-dr[0], -dr[1], -dr[2]]); quad(B, u[4], u[5], o[5], o[4], [-dr[0], -dr[1], -dr[2]]);
+    quad(B, u[0], u[3], o[3], o[0], sub(rle, rte));
+    quad(B, u[2], u[5], o[5], o[2], sub(rte, rle));
+  }
   function addTails(K) {
     var side;
     for (side = -1; side <= 1; side += 2) {
       var RLE = P(14.90, side * 0.30, 2.34), RTE = P(17.70, side * 0.38, 1.66);
       var TTE = P(20.08, side * 1.28, 3.765), TLE = P(18.40, side * 1.20, 3.765);
-      slab(K.skin, [RLE, RTE, TTE, TLE], 0.07);
+      blade(K.skin, RLE, RTE, TTE, TLE, 0.065, 0.038);
       /* the team cap: the top 0.34 m of the blade, 3 cm proud of it (and the
          team material is polygon-offset, so the two never fight for the depth) */
       var tl = along(TLE, RLE, 0.19), tt = along(TTE, RTE, 0.15);
@@ -652,6 +681,17 @@ var HeroF117 = (function () {
       zigFacet(K.ink, side, 11.30, 0.15, 11.30, 0.80, 3, 0.12, 0.03);
       zigFacet(K.ink, side, 12.80, 0.15, 12.80, 0.80, 3, 0.12, 0.03);
       zigFacet(K.ink, side, 11.30, 0.80, 12.80, 0.80, 1, 0.0, 0.03);
+      /* (batch 5) the elevons: two on each wing's trailing edge, inboard and
+         outboard, their hinge line and ends drawn as seams on the aft facet
+         (the hinge line 0.85 m ahead of the trailing edge and the split at
+         y 4.25 are NOT CONFIRMED: read off overhead photographs as a line,
+         not measured) */
+      var hs = function (y) { return teSAt(y) - 0.85; };
+      zigPlane(K.ink, hs(2.75), side * 2.75, hs(4.20), side * 4.20, 1, 0.0, 0.03, top, 1);
+      zigPlane(K.ink, hs(4.30), side * 4.30, hs(5.75), side * 5.75, 1, 0.0, 0.03, top, 1);
+      [2.75, 4.20, 4.30, 5.75].forEach(function (y) {
+        zigPlane(K.ink, hs(y), side * y, teSAt(y) - 0.03, side * y, 1, 0.0, 0.03, top, 1);
+      });
       /* the wing-tip position lights, port red, in the chopped tip */
       box(side > 0 ? K.lampR : K.lampG, XN - 16.55, XN - 16.25, side * 6.58 - 0.02, side * 6.58 + 0.02,
           hlo(16.4) + 0.06 + ZG, hlo(16.4) + 0.16 + ZG);
@@ -720,6 +760,9 @@ var HeroF117 = (function () {
     }
     /* hub caps, the oleo's gland collar, a taxi lamp lens (detail pass) */
     wheel(G.tyre, 0.08, 0.20, XN - NS, 0, nr + ZG, 10);
+    /* (batch 5) the nose hub's bolts, as the mains have */
+    for (k = 0; k < 5; k++)
+      wheel(G.metal, 0.012, 0.21, XN - NS + Math.cos(k * 1.2566) * 0.10, 0, nr + ZG + Math.sin(k * 1.2566) * 0.10, 5);
     rod(G.metal, P(NS - 0.08, 0, 0.98), P(NS - 0.08, 0, 1.04), 0.085, 10);
     box(G.metal, XN - NS + 0.12, XN - NS + 0.20, -0.06, 0.06, 1.10 + ZG, 1.20 + ZG);
     /* mains: oleo, side brace, axle, wheel, and a serrated door each */
@@ -933,12 +976,38 @@ var HeroF117 = (function () {
     return 17.30 - (y - 5.90) / 0.70 * 0.45;
   }
   function leSAt(y) { return (y + BEV) / TAN_LE; }
-  var RIDGE = 0.38, RH = 0.065, TENT0 = 0.006;
+  /* (batch 5) the ridge stands RK of the local chord above the plate: a
+     faceted section 4 per cent deep at the ridge on top of the 0.22 m plate
+     (about 7 per cent at the root, the plate's own depth outboard), so the
+     forward facet rises 6 degrees and the aft one falls 3.7. The 6.5 cm the
+     redo drew was under a degree of slope at the root: the light did not
+     break along the ridge the photographs show. The depth is NOT CONFIRMED
+     (no published section); it is the shallowest that reads as two facets. */
+  var RIDGE = 0.38, RK = 0.04;
+  function chordAt(y) { return Math.min(teSAt(y), 16.85) - Math.min(leSAt(y), 16.85); }
+  /* at the root the ridge is held down so that the crease where it meets
+     the fuselage side stays under the aft intake grid (whose lower edge is
+     y 2.30 on the facet): 3 cm below that edge at y 2.55, easing to the full
+     RK of the chord by y 3.30 */
+  var ROOT_Y = 2.55, EASE_Y = 3.30, _rootCap = null;
+  function rootCap() {
+    if (_rootCap === null) {
+      var a = leSAt(ROOT_Y), r = a + RIDGE * (teSAt(ROOT_Y) - a);
+      _rootCap = Math.max(0, facetH(r, 2.30) - 0.03 - (hlo(r) + THK));
+    }
+    return _rootCap;
+  }
+  function ridgeH(y) {
+    var full = RK * chordAt(y);
+    if (y >= EASE_Y) return full;
+    var r0 = Math.min(RK * chordAt(ROOT_Y), rootCap()), r1 = RK * chordAt(EASE_Y);
+    return Math.min(full, lerp(r0, r1, Math.max(0, (y - ROOT_Y) / (EASE_Y - ROOT_Y))));
+  }
   function tentH(s, y) {
     if (y < 2.55 || y > 6.60) return 0;
     var a = leSAt(y), b = teSAt(y), r = a + RIDGE * (b - a);
     if (s <= a || s >= b) return 0;
-    return TENT0 + (RH - TENT0) * (s <= r ? (s - a) / (r - a) : (b - s) / (b - r));
+    return ridgeH(y) * (s <= r ? (s - a) / (r - a) : (b - s) / (b - r));
   }
   function tape(B, a, b, n, w) {
     var t = sub(b, a), sd = cross(t, n), L = Math.sqrt(dot(sd, sd)) || 1, nl = Math.sqrt(dot(n, n)) || 1;
@@ -955,16 +1024,25 @@ var HeroF117 = (function () {
       for (i = 0; i <= NY; i++) {
         var y = ys[i], a = leSAt(y), b = teSAt(y), r = a + RIDGE * (b - a);
         if (i === NY) { a = Math.min(a, 16.85); r = Math.min(r, 16.85); b = 16.85; }
-        Lp.push(P(a, side * y, hlo(a) + THK + TENT0));
-        Rp.push(P(r, side * y, hlo(r) + THK + RH));
-        Tp.push(P(b, side * y, hlo(b) + THK + TENT0));
+        var yr = y, hR = hlo(r) + THK + ridgeH(y);
+        if (i === 0) {
+          /* the root: the ridge runs inboard until it meets the fuselage's
+             side facet, so wing and body meet in a crease, not a step */
+          var st = stationAt(r);
+          yr = st.yr + (hR - st.hr) / ((st.hf - st.hr) || 1) * (st.yf - st.yr);
+        }
+        Lp.push(P(a, side * y, hlo(a) + THK));
+        Rp.push(P(r, side * yr, hR));
+        Tp.push(P(b, side * y, hlo(b) + THK));
       }
       for (i = 0; i < NY; i++) {
         quad(K.skin, Lp[i], Lp[i + 1], Rp[i + 1], Rp[i], [0.25, side * 0.08, 1]);
         quad(K.skin, Rp[i], Rp[i + 1], Tp[i + 1], Tp[i], [-0.12, -side * 0.05, 1]);
         if (i < NY - 1) tape(K.tape, Rp[i], Rp[i + 1], [0, 0, 1], 0.05);
       }
-      tri(K.skin, Lp[0], Rp[0], Tp[0], [0, -side, 0]);
+      /* the root crease's tape, where the facets meet the fuselage side */
+      tape(K.tape, Lp[0], Rp[0], [0, side * 0.5, 1], 0.06);
+      tape(K.tape, Rp[0], Tp[0], [0, side * 0.5, 1], 0.06);
       /* tape: the bevel's inner line, the fuselage foot and roof edges */
       tape(K.tape, P(BEV / TAN_LE, 0, hlo(BEV / TAN_LE) + THK), P((6.54 + BEV) / TAN_LE, side * 6.54, hlo((6.54 + BEV) / TAN_LE) + THK),
            [0, side * 0.3, 1], 0.05);
@@ -972,7 +1050,9 @@ var HeroF117 = (function () {
         var r0 = HUMP[i], r1 = HUMP[i + 1];
         var f0 = P(r0[0], side * r0[1], footH(r0[0])), f1 = P(r1[0], side * r1[1], footH(r1[0]));
         var e0 = P(r0[0], side * r0[3], r0[4]), e1 = P(r1[0], side * r1[3], r1[4]);
-        if (r0[0] >= 6.16) tape(K.tape, f0, f1, [0, side * 0.5, 1], 0.06);
+        /* the foot under the wing is covered by the facets' root (the crease
+           tape above takes its place); aft of the notch it shows */
+        if ((r0[0] >= 6.16 && r0[0] < 6.90) || r0[0] >= 13.80) tape(K.tape, f0, f1, [0, side * 0.5, 1], 0.06);
         if (r0[0] >= 5.95) tape(K.tape, e0, e1, [0, side * 0.4, 1], 0.05);
       }
       /* the exhaust slot's upper lip, overhanging */

@@ -863,7 +863,7 @@ var HeroF35 = (function () {
      is the painted one's (the fan's 1.27 m under it); the tooth count is
      NOT CONFIRMED. Behind it the two auxiliary-inlet doors, and the
      roll-post doors under each wing; on every row the engine-bay access
-     panels, and on the A the receptacle door. All drawn as thin dark seams, 4 mm
+     panels, and on the A the receptacle door. All drawn as thin seams in the hot grey, 4 mm
      proud of the skin, found by casting down (or up) onto it. */
   var LFD = [4.95, 6.45, 0.60];
   function LFD_OUT() {
@@ -876,6 +876,17 @@ var HeroF35 = (function () {
             [[LFD[0], LFD[2]], [LFD[1], LFD[2]]], [[LFD[0], -LFD[2]], [LFD[1], -LFD[2]]]];
   }
   function rectPath(s0, s1, y0, y1) { return [[s0, y0], [s1, y0], [s1, y1], [s0, y1], [s0, y0]]; }
+  /* a cross-wise edge at s0 from y0 to y1, saw-toothed: teeth about 0.25 m
+     wide, d deep (aft when d > 0) */
+  function toothEdge(s0, y0, y1, d) {
+    var n = Math.max(2, Math.round(Math.abs(y1 - y0) / 0.25)), p = [], q;
+    for (q = 0; q <= 2 * n; q++) p.push([s0 + (q % 2 ? d : 0), y0 + (y1 - y0) * q / (2 * n)]);
+    return p;
+  }
+  /* a door outline whose fore and aft edges are toothed, its sides straight */
+  function toothRect(s0, s1, y0, y1, d) {
+    return toothEdge(s0, y0, y1, d).concat([[s1, y1]], toothEdge(s1, y1, y0, -d).slice(1), [[s0, y0]]);
+  }
   function addSeams(K, v) {
     if (!V.Raycaster) return;
     var mesh = new V.Mesh(merge(K.skin), new V.MeshBasicMaterial({ side: V.DoubleSide }));
@@ -914,24 +925,27 @@ var HeroF35 = (function () {
     }
     /* every row: the two big access panels over the engine (the painted
        outlines' places, from the drawings) */
-    seam(rectPath(8.80, 11.30, -0.88, 0.88), 0.025, false);
-    seam([[11.30, -0.70], [13.20, -0.70], [13.20, 0.70], [11.30, 0.70]], 0.025, false);
+    seam(toothRect(8.80, 11.30, -0.88, 0.88, 0.10), 0.025, false);
+    seam([[11.30, -0.70], [13.20, -0.70]].concat(toothEdge(13.20, -0.70, 0.70, -0.10).slice(1), [[11.30, 0.70]]), 0.025, false);
     /* the A: the dorsal refuelling receptacle's door */
-    if (v.id === "A") seam(rectPath(7.55, 8.55, -0.28, 0.28), 0.025, false);
+    if (v.id === "A") seam(toothRect(7.55, 8.55, -0.28, 0.28, 0.08), 0.025, false);
     if (v.lift) {
       LFD_OUT().forEach(function (pth) { seam(pth, 0.035, false); });
       /* the hinge line across the aft edge's teeth roots */
       seam([[LFD[1] - 0.12, -LFD[2]], [LFD[1] - 0.12, LFD[2]]], 0.025, false);
-      seam(rectPath(6.50, 7.30, 0.08, 0.62), 0.03, false);
-      seam(rectPath(6.50, 7.30, -0.62, -0.08), 0.03, false);
-      seam(rectPath(7.40, 8.10, -0.30, 0.30), 0.025, false);
-      for (var sd = -1; sd <= 1; sd += 2) seam(rectPath(10.0, 10.55, sd > 0 ? 1.78 : -2.20, sd > 0 ? 2.20 : -1.78), 0.03, true);
+      seam(toothRect(6.50, 7.30, 0.08, 0.62, 0.08), 0.03, false);
+      seam(toothRect(6.50, 7.30, -0.62, -0.08, 0.08), 0.03, false);
+      seam(toothRect(7.40, 8.10, -0.30, 0.30, 0.08), 0.025, false);
+      for (var sd = -1; sd <= 1; sd += 2) seam(toothRect(10.0, 10.55, sd > 0 ? 1.78 : -2.20, sd > 0 ? 2.20 : -1.78, 0.08), 0.03, true);
     }
     if (!pos.length) return;
     var g = new V.BufferGeometry();
     g.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
     g.computeVertexNormals();
-    K.dark.push(g);
+    /* (review) in the hot grey, not the near-black: about what a 55 per cent
+       dark line over the skin shows, so the seams no longer shout on the
+       spine at the game camera (no extra material or draw call) */
+    K.hot.push(g);
   }
   /* a door plate in the x-z plane centred on (0, 0), its lower edge toothed */
   function toothDoor(hl, ht, hb, n, d) {
