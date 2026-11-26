@@ -579,7 +579,11 @@ var HeroOhioSSBN = (function () {
     /* bridge cockpit outline and the sail's cheek recesses (profile) */
     A.add("dark", new THREE.BoxGeometry(1.4, 1.1, 0.04), SX1 - 1.6, 0, ZT + 0.01);
     for (s = -1; s <= 1; s += 2) {
-      A.add("dark", new THREE.BoxGeometry(0.9, 0.04, 0.8), X(1036), s * (SHW + 0.005), Z(78));
+      /* this one is on the rounded fore end (it starts at SX1 - 2.7): set on
+         the curve's half-width there and turned to its tangent           */
+      var cu = (X(1036) - (SX1 - 2.7)) / 2.7, chw = SHW * Math.sqrt(1 - cu * cu);
+      var cyaw = Math.atan(SHW * cu / (2.7 * Math.sqrt(1 - cu * cu)));
+      A.add("dark", new THREE.BoxGeometry(0.9, 0.04, 0.8), X(1036), s * (chw + 0.005), Z(78), 0, 0, -s * cyaw);
       A.add("dark", new THREE.BoxGeometry(0.55, 0.04, 0.55), X(985), s * (SHW + 0.005), Z(72));
       A.add("dark", new THREE.BoxGeometry(0.55, 0.04, 0.55), X(992), s * (SHW + 0.005), Z(72));
     }

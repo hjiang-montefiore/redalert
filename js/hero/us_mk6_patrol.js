@@ -717,13 +717,31 @@ var HeroMk6Patrol = (function () {
     return P;
   }
   /* an M2 .50 cal on a pintle: origin at the foot of the stand, gun along +X */
+  /* detail pass (batch 5): the M2HB as it stands on its pintle cradle in
+     every Navy photograph of a Mark VI crew-served mount - the cradle's side
+     plates and yoke, the ammunition can hung on the left with its feed
+     chute into the receiver, the brass bag under it, the perforated barrel
+     jacket with the front sight post, the rear sight, and the spade grips. */
   function pintleParts(THREE) {
     return [
-      ["M", cylZ(THREE, 0.035, 0.045, 0.80, 6, 0, 0, 0, true)],
-      ["K", box(THREE, 0.34, 0.11, 0.16, 0.10, 0, 0.88)],
-      ["K", cylX(THREE, 0.020, 0.024, 1.00, 6, 0.27, 0, 0.90)],
-      ["K", cylX(THREE, 0.032, 0.032, 0.14, 6, 1.22, 0, 0.90)],
-      ["K", box(THREE, 0.06, 0.12, 0.20, -0.10, 0, 0.82)]
+      ["M", cylZ(THREE, 0.040, 0.052, 0.74, 8, 0, 0, 0, true)],          /* the stand        */
+      ["M", cylZ(THREE, 0.062, 0.062, 0.08, 8, 0, 0, 0.72)],             /* the pintle head  */
+      ["M", box(THREE, 0.30, 0.022, 0.15, 0.08, 0.066, 0.865)],          /* cradle plates    */
+      ["M", box(THREE, 0.30, 0.022, 0.15, 0.08, -0.066, 0.865)],
+      ["K", box(THREE, 0.34, 0.11, 0.16, 0.10, 0, 0.88)],                /* receiver         */
+      ["K", box(THREE, 0.20, 0.10, 0.03, 0.15, 0, 0.972)],               /* feed cover       */
+      ["K", box(THREE, 0.03, 0.03, 0.04, -0.03, 0, 0.98)],               /* rear sight       */
+      ["K", cylX(THREE, 0.033, 0.033, 0.27, 8, 0.26, 0, 0.90)],          /* barrel jacket    */
+      ["K", box(THREE, 0.018, 0.014, 0.05, 0.50, 0, 0.947)],             /* front sight post */
+      ["K", cylX(THREE, 0.020, 0.024, 1.00, 8, 0.27, 0, 0.90)],          /* the barrel       */
+      ["K", cylX(THREE, 0.032, 0.032, 0.14, 8, 1.22, 0, 0.90)],          /* flash hider      */
+      ["K", box(THREE, 0.06, 0.12, 0.20, -0.10, 0, 0.82)],               /* back plate       */
+      ["K", strut(THREE, -0.12, 0.045, 0.86, -0.23, 0.045, 0.85, 0.016, 6)],   /* spade grips */
+      ["K", strut(THREE, -0.12, -0.045, 0.86, -0.23, -0.045, 0.85, 0.016, 6)],
+      ["M", box(THREE, 0.28, 0.10, 0.18, 0.12, 0.126, 0.835)],           /* ammunition can   */
+      ["M", box(THREE, 0.29, 0.11, 0.02, 0.12, 0.126, 0.93)],            /* its lid          */
+      ["K", box(THREE, 0.10, 0.05, 0.04, 0.13, 0.072, 0.935)],           /* feed chute       */
+      ["K", box(THREE, 0.15, 0.10, 0.10, 0.10, 0, 0.752)]                /* brass bag        */
     ];
   }
 
@@ -876,6 +894,9 @@ var HeroMk6Patrol = (function () {
     B.W.add(cylZ(THREE, 0.30, 0.30, 0.06, 14, 2.00, 0.45, 5.16));
     B.K.add(cylZ(THREE, 0.04, 0.05, 0.16, 6, 2.60, -0.40, 5.16));
     B.K.add(sphere(THREE, 0.17, 10, 6, 2.60, -0.40, 5.40));
+    /* the small dome stands on a short post off the T-top plate          */
+    B.K.add(cylZ(THREE, 0.05, 0.06, 0.16, 8, 2.00, -0.45, 5.15));
+    B.K.add(cylZ(THREE, 0.135, 0.135, 0.025, 12, 2.00, -0.45, 5.29));
     B.W.add(sphere(THREE, 0.13, 8, 5, 2.00, -0.45, 5.30, true));
     /* the two forward searchlight / EO balls at the front roof edge       */
     for (sd = -1; sd <= 1; sd += 2) {
@@ -953,7 +974,8 @@ var HeroMk6Patrol = (function () {
         var st = staAt(xx), yy = sd * (st[1] - 0.06);
         FK.cleat(fK, xx, yy, ZS, Math.atan2(staAt(xx + 0.5)[1] - st[1], 0.5) * sd, 0.9);
       });
-      FK.fairlead(fK, -12.25, sd * 2.70, ZS - 0.02, 0, 0.55);
+      /* the quarter fairleads sit on the bulwark cap, as the cleats do     */
+      FK.fairlead(fK, -12.25, sd * (staAt(-12.25)[1] - 0.06), ZS - 0.02, 0, 0.55);
       FK.fairlead(fK, 11.30, sd * 0.86, ZS - 0.02, sd * 0.45, 0.55);
       /* the gutter along the foot of the bulwark, on the deck            */
       var gut = [];

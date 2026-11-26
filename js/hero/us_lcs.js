@@ -611,7 +611,11 @@ var HeroUsLcs = (function () {
     var tf = THREE.ShapeUtils.triangulateShape(cont, []), cpos = [], cuv = [];
     tf.forEach(function (f) {
       var a = cont[f[0]], b = cont[f[1]], c = cont[f[2]];
-      if ((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x) > 0) { var t0 = b; b = c; c = t0; }
+      var cr = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+      /* three points on one straight run of the outline (a chine corner
+         between two collinear rows) make a sliver of no area: skip it      */
+      if (Math.abs(cr) < 1e-5) return;
+      if (cr > 0) { var t0 = b; b = c; c = t0; }
       [a, b, c].forEach(function (p) {
         var px = x0 - V.RAKE * Math.max(0, p.y);
         cpos.push(px, p.x, p.y);
@@ -1225,13 +1229,14 @@ var HeroUsLcs = (function () {
       });
       B.S.add(box(THREE, 2.8, 2.8, 0.25, x, 0, 25.12));
       B.W.add(sphere(THREE, 1.15, 24, 14, x, 0, 26.4));
-      B.M.add(strut(THREE, x, -3.6, 24.6, x, 3.6, 24.6, 0.08, 6));
+      /* the yard is slung under the platform (its plate is 24.99 .. 25.24) */
+      B.M.add(strut(THREE, x, -3.6, 24.93, x, 3.6, 24.93, 0.08, 6));
       B.M.add(strut(THREE, x, 0, 27.4, x, 0, 30.4, 0.09, 6, 0.05));
       B.M.add(strut(THREE, x, -1.2, 28.9, x, 1.2, 28.9, 0.04, 4));
       B.A.add(strut(THREE, x, 0, 30.3, x, 0, 30.7, 0.05, 4, 0.03));
       [1, -1].forEach(function (s) {
-        whip(x, s * 3.5, 24.6, 2.4, 0);
-        B.A.add(cylZ(THREE, 0.12, 0.12, 0.55, 8, x, s * 2.6, 24.65));
+        whip(x, s * 3.5, 24.93, 2.4, 0);
+        B.A.add(cylZ(THREE, 0.12, 0.12, 0.55, 8, x, s * 2.6, 24.97));
         B.A.add(cylZ(THREE, 0.07, 0.07, 0.4, 6, x, s * 1.1, 28.95));
       });
       /* the 28.8 m raked leg abaft the mast in the silhouette is a whip    */
@@ -1244,7 +1249,7 @@ var HeroUsLcs = (function () {
         B.A.add(sphere(THREE, 0.95, 20, 9, 11.3, s * 3.9, 17.0, true));
         B.S.add(box(THREE, 2.4, 2.4, 1.0, -2.0, s * 7.0, 16.7));
         B.K.add(box(THREE, 2.0, 2.0, 0.06, -2.0, s * 7.0, 17.22));
-        whip(-7.5, s * 4.0, 19.7, 6.3, 0.7);
+        whip(-4.75, s * 3.5, 19.7, 6.3, 0.7);
         whip(-13.0, s * 8.6, 16.2, 5.0, 0.6);
         whip(1.5, s * 8.4, 16.2, 5.6, 0.5);
         whip(-18.2, s * 8.0, 16.2, 4.2, 0.4);
