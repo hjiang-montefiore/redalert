@@ -13,6 +13,16 @@
    19.0 to 16.5 m: P1 measured again (below) - the old figure was read off
    the far side of the deck.
 
+   FIX (2026-11, batch 3): every rail post and ladder stile had been drawn
+   as a vertical strip with no width (Sink drops it), so the wires and rungs
+   hung in the air (43 floating parts): strip() now takes its width along the
+   rail or the ladder.  Scuttles and the side openings are laid on the
+   FACETED shell (meshY), not the smooth loft; the Top Plate's frames stand
+   on the pedestal's flared head (no turntable, crosshead or whip: P1/P7
+   show none); the bridge wings,
+   the after whips and the after pole sit on their roofs.  Spec:
+   tools/model3d/specs/carrier_p.json.
+
    PUBLISHED FIGURES (English and Russian Wikipedia, "Admiral Kuznetsov"):
    length overall 305 m (drawn 305.0), waterline length about 270 m (drawn
    263: stem 121.9, stern -141 at z = 0, P1), waterline beam 35 m (drawn
@@ -404,17 +414,22 @@ var HeroKuznetsov = (function () {
   /* a guard rail along a polyline: posts every step, the top rail at h, a
      lifeline at h/2.  The metal material is double-sided, so a post and a
      wire are each one thin strip (two triangles) */
-  function strip(s, A, B, w, up) {
+  function strip(s, A, B, w, up, side) {
     var d = sb(B, A), u = up ? [0, 0, w / 2] : nz(cr(d, [0, 0, 1]));
+    /* a vertical strip (a post, a ladder's stile) has no cross product with
+       +Z: it takes its width along side (or +X) instead */
+    if (!up && dt(u, u) < 1e-6) u = nz(side ? [side[0], side[1], 0] : [1, 0, 0]);
     if (!up) u = [u[0] * w / 2, u[1] * w / 2, 0];
     s.tri(ad(A, u, -1), ad(B, u, -1), ad(B, u, 1)); s.tri(ad(A, u, -1), ad(B, u, 1), ad(A, u, 1));
   }
   function rail(s, pts, h, step, r) {
     var i, k, carry = 0; r = r || 0.035; h = h || 1.0; step = step || 2.4;
-    function post(p) { strip(s, p, [p[0], p[1], p[2] + h], 2.2 * r, false); }
+    var dir = [1, 0, 0];
+    function post(p) { strip(s, p, [p[0], p[1], p[2] + h], 2.2 * r, false, dir); }
     for (i = 0; i < pts.length - 1; i++) {
       var a = pts[i], b = pts[i + 1], d = sb(b, a), L = Math.sqrt(dt(d, d));
       if (L < 1e-3) continue;
+      dir = d;
       strip(s, [a[0], a[1], a[2] + h], [b[0], b[1], b[2] + h], 1.6 * r, true);
       strip(s, [a[0], a[1], a[2] + h * 0.5], [b[0], b[1], b[2] + h * 0.5], 1.2 * r, true);
       for (k = carry; k < L; k += step) post(ad(a, d, k / L));
@@ -433,8 +448,8 @@ var HeroKuznetsov = (function () {
   function ladder(s, A, B, side, w) {
     w = (w || 0.6) / 2;
     var e = [side[0] * w, side[1] * w, 0], d = sb(B, A), L = Math.sqrt(dt(d, d)), n = Math.max(1, Math.floor(L / 0.6)), i;
-    strip(s, ad(A, e, 1), ad(B, e, 1), 0.07, false);
-    strip(s, ad(A, e, -1), ad(B, e, -1), 0.07, false);
+    strip(s, ad(A, e, 1), ad(B, e, 1), 0.07, false, side);
+    strip(s, ad(A, e, -1), ad(B, e, -1), 0.07, false, side);
     for (i = 1; i <= n; i++) { var p = ad(A, d, i / (n + 0.5)); strip(s, ad(p, e, 1), ad(p, e, -1), 0.05, true); }
   }
   /* a life-raft canister (sW) on its cradle (sM), axis along yaw */
@@ -713,18 +728,35 @@ var HeroKuznetsov = (function () {
     for (i = 1; i <= 6; i++) Z.push(z0 + (zr - z0) * i / 6);
     return Z;
   }
-  function hull(S) {
-    var xs = MAINXS, i, j, NZ = 16;
-    /* rows by station with a fixed count: each ring resampled to NZ heights */
-    function ring(xn) {
-      var Z = ringZ(xn), out = [], k;
-      for (k = 0; k < NZ; k++) {
-        var t = k / (NZ - 1), f = t * (Z.length - 1), a = Math.floor(f), b = Math.min(Z.length - 1, a + 1);
-        var z = lerp(Z[a], Z[b], f - a);
-        out.push([xAt(xn, z), sideY(xn, z), z]);
-      }
-      return out;
+  /* rows by station with a fixed count: each ring resampled to NZ heights */
+  var NZ = 16;
+  function ring(xn) {
+    var Z = ringZ(xn), out = [], k;
+    for (k = 0; k < NZ; k++) {
+      var t = k / (NZ - 1), f = t * (Z.length - 1), a = Math.floor(f), b = Math.min(Z.length - 1, a + 1);
+      var z = lerp(Z[a], Z[b], f - a);
+      out.push([xAt(xn, z), sideY(xn, z), z]);
     }
+    return out;
+  }
+  /* the half-breadth of the FACETED shell (not the smooth loft) at x, z, for
+     fittings laid flat on it: each station's ring is cut at z, then the cut
+     points are run along x */
+  var RINGS = null;
+  function meshY(x, z) {
+    if (!RINGS) RINGS = MAINXS.map(ring);
+    var cut = RINGS.map(function (R) {
+      for (var j = 0; j < R.length - 2; j++) if (z <= R[j + 1][2]) break;
+      var f = Math.max(0, Math.min(1, (z - R[j][2]) / ((R[j + 1][2] - R[j][2]) || 1)));
+      return [lerp(R[j][0], R[j + 1][0], f), lerp(R[j][1], R[j + 1][1], f)];
+    });
+    for (var i = 0; i < cut.length - 1; i++) if (x <= cut[i + 1][0]) break;
+    i = Math.min(i, cut.length - 2);
+    var t = Math.max(0, Math.min(1, (x - cut[i][0]) / ((cut[i + 1][0] - cut[i][0]) || 1)));
+    return lerp(cut[i][1], cut[i + 1][1], t);
+  }
+  function hull(S) {
+    var xs = MAINXS, i, j;
     var R = xs.map(ring);
     var shell = function (a, b, c, sg) {
       var s = Math.max(a[2], b[2], c[2]) <= 0.02 ? S.under : S.hull;
@@ -761,7 +793,7 @@ var HeroKuznetsov = (function () {
     nx = nx || 4; nzz = nzz || 2;
     for (i = 0; i <= nx; i++) {
       var x = lerp(x0, x1, i / nx), row = [];
-      for (j = 0; j <= nzz; j++) { var z = lerp(z0, z1, j / nzz); row.push([x, sg * (shellY(x, z) + off), z]); }
+      for (j = 0; j <= nzz; j++) { var z = lerp(z0, z1, j / nzz); row.push([x, sg * (meshY(x, z) + off), z]); }
       G.push(row);
     }
     for (i = 0; i < nx; i++) for (j = 0; j < nzz; j++) quadO(s, G[i][j], G[i + 1][j], G[i + 1][j + 1], G[i][j + 1], [0, sg, 0]);
@@ -861,8 +893,10 @@ var HeroKuznetsov = (function () {
   }
   function scuttles(S, sg, x0, x1, step, z) {
     for (var x = x0; x <= x1; x += step) {
-      var w = shellY(x, z);
-      if (w > 1) disc(S.glass, [x, sg * (w + 0.05), z], [0, sg, 0], 0.24, 6);
+      var w = meshY(x, z);
+      /* laid on the facet: the disc's normal follows the flare and the taper */
+      var dz = (meshY(x, z + 0.25) - meshY(x, z - 0.25)) / 0.5, dx = (meshY(x + 0.3, z) - meshY(x - 0.3, z)) / 0.6;
+      if (w > 1) disc(S.glass, [x, sg * (w + 0.02), z], [-dx, sg, -dz], 0.24, 6);
     }
   }
 
@@ -945,7 +979,7 @@ var HeroKuznetsov = (function () {
     var fbr = inset(fb1, -0.6);
     prism(S.gal, fbr, ZF, ZF + 0.25);
     railPoly(S.metal, inset(fbr, 0.1), ZF + 0.25, 1.0);
-    [[YI - 0.8, YI + 2.6], [YO - 2.4, YO + 0.9]].forEach(function (w) {
+    [[YI - 1.4, YI + 2.6], [YO - 2.4, YO + 1.5]].forEach(function (w) {
       blk(S.gal, -10.5, -6.0, w[0], w[1], ZF - 1.0, ZF - 0.7);
       rail(S.metal, [[-10.5, w[0] < YO ? w[0] : w[1], ZF - 0.7], [-6.0, w[0] < YO ? w[0] : w[1], ZF - 0.7]], 1.0);
     });
@@ -992,13 +1026,14 @@ var HeroKuznetsov = (function () {
     }
     railPoly(S.metal, oct(DX - 4.1, DX + 4.1, DY - 4.1, DY + 4.1, 1.2, 1.2), ZT + 7.2, 0.9);
     /* the Top Plate (Fregat-MA): pedestal, two back-to-back array frames */
-    cylZ(S.metal, DX, DY, ZT + 7.2, 1.6, 0.8, 8, 0.6);
+    /* the pedestal flares to 1.15 at its head so the frames stand on it (P1/P7: a compact
+       head on a narrow stem; no turntable or whip is shown, so none is drawn) */
+    cylZ(S.metal, DX, DY, ZT + 7.2, 1.6, 0.8, 8, 1.15);
     [-1, 1].forEach(function (e) {
       var c0 = [DX + e * 0.9, DY, ZT + 11.2], a = 0.3 * e;
       obox(S.metal, c0, [Math.sin(a) * e, 0, -Math.cos(a) * e * 0 + 0], [0, 1, 0], [0, 0, 1], 0.4, 5.6, 5.4);
-      for (var q = -2; q <= 2; q++) boxZ(S.dark, DX + e * 1.15, DY + q * 1.1, ZT + 8.8, 0.08, 0.15, 4.8, 0);
+      for (var q = -2; q <= 2; q++) boxZ(S.dark, DX + e * 1.0, DY + q * 1.1, ZT + 8.8, 0.08, 0.15, 4.8, 0);
     });
-    tube(S.metal, [DX, DY, ZT + 14.0], [DX, DY, ZT + 14.6], 0.1, 0.06, 4, false);
     /* the two big white domes at the drum's foot (P7), smaller ones aft */
     [YI - 2.9, YO + 2.9].forEach(function (yy) {
       cylZ(S.sup, -24.6, yy, ZT, 0.8, 1.0, 8);
@@ -1036,14 +1071,14 @@ var HeroKuznetsov = (function () {
       tube(S.white, [q[0] + 0.2, q[1], ZF + 1.9], [q[0] + 0.7, q[1], ZF + 2.0], 1.2, 0.35, 12, true);
     });
     /* the poles aft (P1, P7) and the forward pole on the bridge roof */
-    tube(S.metal, [-55.5, YC + 1.5, ZM], [-55.5, YC + 1.5, 47.5], 0.22, 0.1, 6, false);
-    tube(S.metal, [-55.5, YC - 2.5, ZM], [-55.5, YC + 5.5, ZM + 0.0], 0.08, 0.08, 4, false);
-    tube(S.metal, [-55.5, YC - 4.0, 44.0], [-55.5, YC + 7.0, 44.0], 0.08, 0.08, 4, false);
+    tube(S.metal, [-54.6, YC + 1.5, ZM + 0.25], [-54.6, YC + 1.5, 47.5], 0.22, 0.1, 6, false);
+    tube(S.metal, [-54.6, YC - 2.5, ZM + 1.3], [-54.6, YC + 5.5, ZM + 1.3], 0.08, 0.08, 4, false);
+    tube(S.metal, [-54.6, YC - 4.0, 44.0], [-54.6, YC + 7.0, 44.0], 0.08, 0.08, 4, false);
     tube(S.metal, [-59.5, YC - 1.0, 30.0], [-59.5, YC - 1.0, 44.0], 0.16, 0.08, 6, false);
     tube(S.metal, [-12.0, YC, ZF + 0.25], [-12.0, YC, 41.5], 0.16, 0.08, 6, false);
     tube(S.metal, [-12.0, YC - 3.5, 39.5], [-12.0, YC + 3.5, 39.5], 0.07, 0.07, 4, false);
     /* aerial whips at the roof corners */
-    [[-21.5, YI - 1.0, ZM + 0.25], [-21.5, YO + 1.0, ZM + 0.25], [-60.0, YI - 1.5, 30.0], [-60.0, YO + 1.5, 30.0]].forEach(function (q) {
+    [[-23.5, YI - 1.0, ZM + 0.25], [-23.5, YO + 1.0, ZM + 0.25], [-58.5, YI - 1.6, 30.0], [-58.5, YO + 1.6, 30.0]].forEach(function (q) {
       tube(S.metal, q, [q[0], q[1], q[2] + 6.5], 0.06, 0.025, 3, false);
     });
     /* ladders up the inboard face, deck to the base's gallery and on up */
@@ -1068,9 +1103,9 @@ var HeroKuznetsov = (function () {
     braces(S);
     /* the lift openings and the dark openings P2 shows in her starboard side
        (heights estimated: under the knuckle, below the sponson soffits) */
-    LIFTS.forEach(function (L) { hullPatch(S.dark, -1, L[0] + 1.5, L[1] - 1.5, 3.6, 8.9, 0.3, 6, 2); });
-    [[-133.0, -126.0, 5.4, 8.8], [-21.0, -9.0, 5.4, 8.8]].forEach(function (q) { hullPatch(S.dark, -1, q[0], q[1], q[2], q[3], 0.3, 4, 2); });
-    hullPatch(S.dark, 1, -60.0, -50.0, 5.4, 8.8, 0.3, 4, 2);
+    LIFTS.forEach(function (L) { hullPatch(S.dark, -1, L[0] + 1.5, L[1] - 1.5, 3.6, 8.9, 0.12, 6, 2); });
+    [[-133.0, -126.0, 5.4, 8.8], [-21.0, -9.0, 5.4, 8.8]].forEach(function (q) { hullPatch(S.dark, -1, q[0], q[1], q[2], q[3], 0.12, 8, 2); });
+    hullPatch(S.dark, 1, -60.0, -50.0, 5.4, 8.8, 0.12, 8, 2);
     /* scuttle rows and the anchors in the bow flare (P1: the hawse at 137, 7 m) */
     [1, -1].forEach(function (sg) {
       scuttles(S, sg, -138, -100, 4.5, 6.4); scuttles(S, sg, 62, 118, 4.0, 6.8);
