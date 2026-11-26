@@ -59,15 +59,17 @@
    rotation.x = -PI/2 and scales it by its measured X extent, so nothing may
    stand past the stem or the transom: the barrels are inside both.
 
-   Materials (10): painted hull, non-skid deck, deckhouse plate, flight deck,
-   VLS lids, radome white, black, bare metal, glass and the team material,
+   Materials (12): painted hull, non-skid deck, deckhouse plate, flight deck,
+   VLS lids, radome white, the SPY-1 face atlas (haze grey face, darker
+   frame), the SPS-49's half see-through mesh, black, bare metal, glass and
+   the team material,
    which is exactly C.team because this key stands in for every cruiser that
    has no model of its own and eraPaint only spares a material that matches
    the team colour. No colour is converted here for the same reason: prepModel
    does it, once, for the whole model.
 
    Every static part is merged into one mesh per material: the hull, the
-   deck, eight batches and the forward 5-inch's three, thirteen draws in all.
+   deck, ten batches and the forward 5-inch's three, fifteen draws in all.
    The fantail - the aft eighth, where render3d.js reads the level a deck
    machine stands at - carries no rail posts. ASCII only -- a stray byte in a
    hex literal has broken this project.
@@ -177,19 +179,30 @@ var HeroTiconderogaCG = (function () {
     return t;
   }
 
+  /* the SPY-1 array faces: haze grey a shade over the house (#7b8288),
+     their frame rings a shade under it (#5f666c). One 4 x 1 atlas, read
+     with nearest filtering: u 0.125 = frame, u 0.875 = face. They had been
+     in the white radome material and read as white discs at game zoom    */
+  function spyTex(THREE) {
+    var cv = cvs(4, 1), g = cv.getContext("2d");
+    g.fillStyle = "#5f666c"; g.fillRect(0, 0, 2, 1);
+    g.fillStyle = "#7b8288"; g.fillRect(2, 0, 2, 1);
+    var t = tex(THREE, cv, false);
+    t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false;
+    return t;
+  }
+
   /* ================================================================ textures
      Painted once per page: they depend on nothing but the ship.            */
   var _tx = null;
-  function textures(THREE, num) {
-    if (_tx && _tx.hull[num]) return _tx;
-    if (_tx) { _tx.hull[num] = hullTex(THREE, num); return _tx; }
-    _tx = { hull: {}, sup: supTex(THREE), deck: deckTex(THREE),
-            pad: padTex(THREE), vls: vlsTex(THREE) };
-    _tx.hull[num] = hullTex(THREE, num);
+  function textures(THREE) {
+    if (_tx) return _tx;
+    _tx = { hull: hullTex(THREE), sup: supTex(THREE), deck: deckTex(THREE),
+            pad: padTex(THREE), vls: vlsTex(THREE), spy: spyTex(THREE) };
     return _tx;
   }
 
-  function hullTex(THREE, num) {
+  function hullTex(THREE) {
     var W = 2048, H = 256, cv = cvs(W, H), g = cv.getContext("2d");
     var R = rng(47033), i, j, x, z;
     /* uv.y = 0 samples the BOTTOM row of the canvas, so paint bottom-up */
@@ -256,15 +269,7 @@ var HeroTiconderogaCG = (function () {
       x = i ? 72.0 : -80.5;
       for (j = 0; j <= 10; j++) g.fillRect(U(x) - 6, Y(-0.3 + j * 0.55), j % 2 ? 7 : 12, 2);
     }
-    /* hull number, bow quarter, white with a dark edge. cruiser_n carries
-       none: it also stands in for other navies' cruisers. One texture serves
-       both sides (u runs with x), so seen from port the numeral reads
-       mirrored; a true fix wants a second half for the port side.        */
-    if (num) {
-      g.font = "bold 62px Arial"; g.textAlign = "center";
-      g.lineWidth = 5; g.strokeStyle = "rgba(10,13,16,0.85)";
-      g.strokeText(num, U(66.5), Y(3.4)); g.fillStyle = "#e6e8e8"; g.fillText(num, U(66.5), Y(3.4));
-    }
+    /* no hull number on any row: plain paint (AGENT_POLICY rule 6)      */
     /* the shadow line under the deck edge */
     g.globalAlpha = 0.28; g.fillStyle = "#0d1013";
     for (i = 0; i < W; i += 4) {
@@ -373,10 +378,10 @@ var HeroTiconderogaCG = (function () {
   }
 
   /* ============================================================== materials */
-  function makeMats(THREE, team, num) {
-    var T = textures(THREE, num), M = {};
+  function makeMats(THREE, team) {
+    var T = textures(THREE), M = {};
     function S(o) { return new THREE.MeshStandardMaterial(o); }
-    M.hull  = S({ map: T.hull[num], roughness: 0.87, metalness: 0.07 });
+    M.hull  = S({ map: T.hull, roughness: 0.87, metalness: 0.07 });
     M.sup   = S({ map: T.sup, roughness: 0.88, metalness: 0.06 });
     /* the surfaces that lie on another surface are pulled toward the camera
        a couple of depth steps, or they shimmer at the zoom-out limit        */
@@ -390,6 +395,10 @@ var HeroTiconderogaCG = (function () {
     M.metal = S({ color: 0x80878d, roughness: 0.55, metalness: 0.50 });
     M.team  = S({ color: new THREE.Color(team), roughness: 0.62, metalness: 0.08,
                   polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 });
+    M.spy   = S({ map: T.spy, roughness: 0.86, metalness: 0.06 });
+    /* the SPS-49's open-mesh reflector: dark metal, half see-through */
+    M.mesh  = S({ color: 0x3a4046, roughness: 0.6, metalness: 0.4, transparent: true,
+                  opacity: 0.5, side: THREE.DoubleSide, depthWrite: false });
     M.glass = S({ color: 0x2b3a44, roughness: 0.12, metalness: 0.25,
                   transparent: true, opacity: 0.86 });
     return M;
@@ -530,7 +539,9 @@ var HeroTiconderogaCG = (function () {
         if (flip) idx.push(ci, q, p); else idx.push(ci, p, q);
       }
     }
-    cap(0, false); cap(XS.length - 1, true);
+    /* the transom cap wound to face aft (it faced forward and was culled:
+       from astern one looked into the empty hull)                        */
+    cap(0, true); cap(XS.length - 1, true);
     var g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
     g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
@@ -570,9 +581,9 @@ var HeroTiconderogaCG = (function () {
   function build(THREE, MOD, C, V) {
     V = V || {};
     var team = (C && C.team !== undefined) ? C.team : "#4b8fe0";
-    var M = makeMats(THREE, team, V.num || "");
+    var M = makeMats(THREE, team);
     var G = new THREE.Group();
-    var KEYS = ["sup", "pad", "vls", "rad", "dark", "metal", "team", "glass"];
+    var KEYS = ["sup", "pad", "vls", "rad", "spy", "dark", "metal", "team", "glass", "mesh"];
     var Bt = {}, cur;
     KEYS.forEach(function (k) { Bt[k] = new Batch(); });
     cur = Bt;
@@ -696,6 +707,16 @@ var HeroTiconderogaCG = (function () {
     }
     /* a plate on a frame: a convex outline in (along, up) wall metres,
        counter-clockwise seen from outside, standing d0..d1 off the wall    */
+    /* plate() with one fixed uv: a solid swatch of an atlas */
+    function plateU(k, F, pts, d0, d1, u) {
+      var B = cur[k], n = pts.length, q;
+      function P(p, d) { var w = fp(F, p[0], p[1], d); return [w[0], w[1], w[2], u, 0.5]; }
+      for (q = 1; q < n - 1; q++) B.tri(P(pts[0], d1), P(pts[q], d1), P(pts[q + 1], d1));
+      for (q = 0; q < n; q++) {
+        var a = pts[q], b = pts[(q + 1) % n];
+        B.tri(P(a, d0), P(b, d0), P(b, d1)); B.tri(P(a, d0), P(b, d1), P(a, d1));
+      }
+    }
     function plate(k, F, pts, d0, d1) {
       var B = cur[k], n = pts.length, q;
       function P(p, d) { var w = fp(F, p[0], p[1], d); return [w[0], w[1], w[2], p[0] * 0.25, p[1] * 0.25]; }
@@ -822,6 +843,20 @@ var HeroTiconderogaCG = (function () {
     /* a bilge keel each side, to hold the underwater shape together */
     for (s = -1; s <= 1; s += 2)
       bx("dark", 30.0, 0.16, 0.55, -17.0, s * 7.3, -3.9, s * 0.75, 0, 0);
+    /* two shafts out of the bottom, each on a V strut, a five-blade screw
+       (about 5 m across, the Spruance hull's) and a rudder abaft it, as
+       the Burke hero has; the Ticonderoga had none drawn               */
+    for (s = -1; s <= 1; s += 2) {
+      tube("metal", -38.0, s * 2.9, -5.9, -77.6, s * 3.4, -7.0, 0.34, 0.32, 8);
+      bar("metal", -72.0, s * 3.35, -6.95, -71.0, s * 2.5, -5.2, 0.17);
+      bar("metal", -72.0, s * 3.35, -6.95, -71.6, s * 4.3, -5.0, 0.17);
+      cx("dark", 0.6, 0.38, 1.6, 10, -79.2, s * 3.4, -7.0);
+      for (var bl = 0; bl < 5; bl++) {
+        var ba = bl * 2 * PI / 5;
+        bx("dark", 0.26, 1.0, 2.0, -78.7, s * 3.4 + Math.cos(ba) * 1.2, -7.0 + Math.sin(ba) * 1.2, ba, 0, 0);
+      }
+      bx("dark", 4.0, 0.34, 3.4, -82.6, s * 3.4, -4.0);
+    }
 
     /* two anchors, one in a hawse on each bow, the shank up the pipe and
        the flukes lying against the plating                                */
@@ -920,8 +955,8 @@ var HeroTiconderogaCG = (function () {
     });
     /* the after SPY-1 faces on the tower's two after corners */
     function spyFace(F) {
-      plate("sup", F, octPts(2.12), 0, 0.16);
-      plate("rad", F, octPts(1.92), 0.16, 0.24);
+      plateU("spy", F, octPts(2.12), 0, 0.16, 0.125);
+      plateU("spy", F, octPts(1.92), 0.16, 0.24, 0.875);
     }
     spyFace(face(H2, 3, ZH, ZT, 0.3, 0.5, 18.4));
     spyFace(face(H2, 5, ZH, ZT, 0.3, 0.5, 18.4));
@@ -1009,8 +1044,11 @@ var HeroTiconderogaCG = (function () {
       bar("metal", yx, s * 5.6, YZ, yx, s * 5.6, YZ - 1.3, 0.03);
       bar("metal", yx, s * 2.0, YZ, yx - 0.2, s * 0.9, YZ - 1.4, 0.05);
     }
-    var y2 = mastAt((28.4 - ZF) / (MZ1 - ZF), -1, 1);
-    bar("metal", y2[0] + 1.0, -4.4, 28.4, y2[0] + 1.0, 4.4, 28.4, 0.07);
+    /* the lower yard, seated on the forward legs at the 0.79 ring (it was
+       drawn 1 m forward of the after legs, crossing the tower clear of
+       every leg and ring joint: a floating part)                          */
+    var y2 = mastAt(0.79, 1, 1);
+    bar("metal", y2[0], -4.4, y2[2], y2[0], 4.4, y2[2], 0.07);
     /* the SPS-49: its platform braced off the after legs, the drive and the
        truncated paraboloid with its feed boom                              */
     var PZ = 25.6, la = mastAt((PZ - ZF) / (MZ1 - ZF), -1, 1), lb = mastAt((21.8 - ZF) / (MZ1 - ZF), -1, 1);
@@ -1022,16 +1060,15 @@ var HeroTiconderogaCG = (function () {
     railRoof([[-10.15, -1.15], [-7.65, -1.15], [-7.65, 1.15], [-10.15, 1.15]], PZ + 0.07, [1], 1.4);
     cz("metal", 0.42, 0.52, 0.7, 10, -9.0, 0, PZ + 0.07);
     stamp(-9.0, 0, 26.05, PI * 0.8, function () {
-      var NS = 8, q, Bm = cur.sup, AW = 3.65, AH = 4.3;
+      /* the reflector is open mesh: one skin in the see-through "mesh"
+         material (it had been two opaque plate skins)                    */
+      var NS = 8, q, Bm = cur.mesh, AW = 3.65, AH = 4.3;
       function rx(y) { return -0.6 + 0.85 * (y / AW) * (y / AW); }
       for (q = 0; q < NS; q++) {
         var ya = -AW + 2 * AW * q / NS, yb = -AW + 2 * AW * (q + 1) / NS;
         var a0 = [rx(ya), ya, 0, 0, 0], b0 = [rx(yb), yb, 0, 1, 0];
         var a1 = [rx(ya), ya, AH, 0, 1], b1 = [rx(yb), yb, AH, 1, 1];
         Bm.triOut(a0, b0, b1, [-6, 0, AH * 0.5]); Bm.triOut(a0, b1, a1, [-6, 0, AH * 0.5]);
-        var c0 = [rx(ya) - 0.07, ya, 0, 0, 0], d0 = [rx(yb) - 0.07, yb, 0, 1, 0];
-        var c1 = [rx(ya) - 0.07, ya, AH, 0, 1], d1 = [rx(yb) - 0.07, yb, AH, 1, 1];
-        Bm.triOut(c0, d0, d1, [6, 0, AH * 0.5]); Bm.triOut(c0, d1, c1, [6, 0, AH * 0.5]);
       }
       bar("dark", rx(-AW), -AW, 0, rx(AW), AW, 0, 0.06);
       bar("dark", rx(-AW), -AW, AH, rx(AW), AW, AH, 0.06);
@@ -1279,15 +1316,18 @@ var HeroTiconderogaCG = (function () {
     stamp(-73.0, 0, topZ(-73.0, 0), PI, gun);
 
     /* ------------------------------------------------------ launchers ---- */
+    /* a 61-cell Mk 41 field, eight modules: 9.0 m along x by 6.6 m across,
+       the same footprint as the Burke hero's after field (its 29-cell,
+       four-module forward field is 4.5 x 6.6). It had been 6.4 x 6.4    */
     function vlsField(xc) {
-      var z0 = topZ(xc, 0) - 0.04;
-      cur.vls.add(place(THREE, new THREE.BoxGeometry(6.4, 6.4, 0.2), xc, 0, z0 + 0.1, 0, 0, PI / 2));
+      var z0 = topZ(xc, 0) - 0.04, LX = 9.0, LY = 6.6;
+      cur.vls.add(place(THREE, new THREE.BoxGeometry(LY, LX, 0.2), xc, 0, z0 + 0.1, 0, 0, PI / 2));
       /* the coaming round the field and the joints between its modules */
       for (s = -1; s <= 1; s += 2) {
-        bx("sup", 6.9, 0.25, 0.32, xc, s * 3.32, z0 + 0.16);
-        bx("sup", 0.25, 6.4, 0.32, xc + s * 3.32, 0, z0 + 0.16);
+        bx("sup", LX + 0.5, 0.25, 0.32, xc, s * (LY * 0.5 + 0.12), z0 + 0.16);
+        bx("sup", 0.25, LY, 0.32, xc + s * (LX * 0.5 + 0.12), 0, z0 + 0.16);
       }
-      bx("metal", 6.4, 0.1, 0.24, xc, 0, z0 + 0.13);
+      bx("metal", LX, 0.1, 0.24, xc, 0, z0 + 0.13);
     }
     /* the Mk 26 twin-arm launcher: the stand on its ring, the trunnion yoke,
        two guide arms with the rail under each and the deflector at the back
@@ -1388,18 +1428,18 @@ var HeroTiconderogaCG = (function () {
 UNIT_MODELS["cruiser_n"] = {
   len: 172.9,
   build: function (THREE, M, C) {
-    return HeroTiconderogaCG.build(THREE, M, C, { mk26: false, num: "", flir: true, satcom: true, rhib: true });
+    return HeroTiconderogaCG.build(THREE, M, C, { mk26: false, flir: true, satcom: true, rhib: true });
   }
 };
 UNIT_MODELS["nato_e90_cruiser"] = {
   len: 172.9,
   build: function (THREE, M, C) {
-    return HeroTiconderogaCG.build(THREE, M, C, { mk26: false, num: "52", satcom: true, rhib: true });
+    return HeroTiconderogaCG.build(THREE, M, C, { mk26: false, satcom: true, rhib: true });
   }
 };
 UNIT_MODELS["nato_e80_cruiser"] = {
   len: 172.9,
   build: function (THREE, M, C) {
-    return HeroTiconderogaCG.build(THREE, M, C, { mk26: true, num: "47" });
+    return HeroTiconderogaCG.build(THREE, M, C, { mk26: true });
   }
 };
