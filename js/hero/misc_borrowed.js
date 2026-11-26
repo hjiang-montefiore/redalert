@@ -56,8 +56,8 @@
      "9M14 Malyutka"; ru.wikipedia "HY-2" (the article titled Khaiin-2 in Cyrillic; HY-2: 7.36 m, 0.76 m).  Each block names what it took.
 
    DRAWN (dump.js L x W x H, tris, draw calls) against the published figures:
-     DF-21D TEL      11.65 x 3.58 x 2.73   10.5k  15   round 10.70 m as scaled (published 10.7 x 1.4 m)
-     DF-26 TEL       13.13 x 3.58 x 2.93   12.1k  15   no figure published; round 12.44 m as measured
+     DF-21D TEL      11.68 x 3.58 x 3.05   13.6k  15   round 10.70 m as scaled (published 10.7 x 1.4 m); batch 4: 5.5 deg
+     DF-26 TEL       13.13 x 3.58 x 2.93   15.6k  15   no figure published; round 12.44 m as measured
      PTZ-89           7.97 x 3.40 x 4.15   14.0k  12   5.6 x 2.8 x 3.12 published (hull reused, see block)
      9P133            5.75 x 2.37 x 2.59   10.9k  14   BRDM-2 5.75 x 2.37 x 2.31 (+ the launcher raised)
      M18 Hellcat      6.79 x 2.88 x 2.82    9.6k  15   6.65 over the gun, 2.87, 2.57 over the AA gun
@@ -65,21 +65,24 @@
      SH-3            22.41 x 18.90 x 5.73   5.6k  12   rotor 62 ft (18.9), fuselage 54 ft 9 in; H 16 ft 10 in (see block)
      SH-2F           15.87 x 13.41 x 5.03   5.4k  13   52.6 ft operating (16.03), rotor 44 ft; 15.1 ft over the tail rotor
      PC-461          52.90 x 7.06 x 16.89  10.4k  10   173 ft 8 in x 23 ft 2 in (52.93 x 7.06)
-     PCF Mk I        15.24 x 4.10 x 8.01    4.1k   8   50 ft x 13 ft (3.96; the rubbing strake outside it)
+     PCF Mk I        15.24 x 4.10 x 8.01   10.5k   9   50 ft x 13 ft (3.96; the rubbing strake outside it); batch 4 detail
      Cyclone         54.60 x 7.62 x 19.49  10.1k  10   179 ft x 25 ft (54.56 x 7.62)
      Type 6604       52.43 x 6.55 x 21.18  16.0k  12   ru_kronshtadt.js as it comes
      Shanghai II     38.80 x 5.47 x 11.60   9.8k  10   127.3 ft x 17.7 ft (38.80 x 5.40)
      Hainan          58.80 x 7.23 x 18.10  15.3k  11   58.77 x 7.2
-     HY-2A launcher   8.28 x 2.69 x 4.32    6.8k  11   round 7.36 x 0.76 (launcher: no figure)
+     HY-2A launcher   8.28 x 2.69 x 4.32    9.5k  11   round 7.36 x 0.76 (launcher: no figure)
      YJ-62 TEL       11.86 x 3.72 x 3.40   10.4k  13   WS2400 11.44 x 3.05 x 2.97 (the pack laid level over the tail;
                                                         3.72 over the mirrors)
-     NMESIS           6.64 x 2.84 x 3.85    4.3k   9   JLTV 6.25 x 2.50 x 2.59 nominal (mast and whips, the canisters' overhang)
+     NMESIS           6.61 x 2.84 x 3.85    7.7k  10   JLTV 6.25 x 2.50 x 2.59 nominal (mast and whips, the canisters' overhang)
      Heights are never fitted: each block says why its height differs.
    PAINT: every build wears a weathered canvas (paintTex: faded patches, panel seams, bolt rows, grime streaks
    down the vertical faces, dust), in plain colours: PLA green, US olive drab, Marine green with grey
    canisters, haze grey and deck grey for the ships, light gull grey for the two Navy helicopters, the ROC
    Navy's blue for the 500MD.  No markings, stars, numbers, pennants or roundels (most references carry
    them; none is drawn).  The team colour as small strips.
+   BATCH 4 (the gate's floating-part scan): every part found standing clear of what carries it is seated or given
+   its strut (each place says what it was); the solids skip sub-square-millimetre triangles (dump.js's zero-area
+   rule) and, where onDeck() is used, the bottom faces that sit hidden on a deck or roof.
    NODES: ships - one "turret" (the forward mount) on the turret:true rows, waterline z = 0; ground
    vehicles - "roadwheel" axle groups, "turret" where the row is turret:true; the launchers - "podelev"
    (render3d poseLauncher: userData.el, userData.cells = [mouth x, y, z, rear x]); the HY-2A also
@@ -121,8 +124,13 @@ var HeroMiscBorrowed = (function () {
       }
     }
   };
+  /* NOBOT (set by onDeck): a solid standing on a deck or a roof leaves out its own bottom face - the faces that lie
+     flat at its lowest z, facing down - which nothing can see (batch 4: they were 15 per cent of a hull's area) */
+  var NOBOT = false;
+  function onDeck(fn) { NOBOT = true; try { fn(); } finally { NOBOT = false; } }
   function solid(bin, Vt, F, Nv, smooth) {
-    var vol = 0, i, f, a, b, c, fn, k, q, flip;
+    var vol = 0, i, f, a, b, c, fn, k, q, flip, zlo = Infinity;
+    if (NOBOT) for (i = 0; i < Vt.length; i++) zlo = Math.min(zlo, Vt[i][2]);
     for (i = 0; i < F.length; i++) { f = F[i]; vol += dot(Vt[f[0]], cross(Vt[f[1]], Vt[f[2]])); }
     flip = vol < 0;
     if (smooth) {
@@ -138,7 +146,8 @@ var HeroMiscBorrowed = (function () {
     for (i = 0; i < F.length; i++) {
       f = F[i]; a = f[0]; b = flip ? f[2] : f[1]; c = flip ? f[1] : f[2];
       fn = cross(sub(Vt[b], Vt[a]), sub(Vt[c], Vt[a]));
-      if (dot(fn, fn) < 1e-16) continue;
+      if (dot(fn, fn) < 4e-12) continue;
+      if (NOBOT && fn[2] < 0 && Vt[a][2] < zlo + 1e-6 && Vt[b][2] < zlo + 1e-6 && Vt[c][2] < zlo + 1e-6) continue;        /* under a square millimetre (|fn| = 2 x area): draws nothing (dump.js's zero-area rule) */
       bin.tri(Vt[a], Vt[b], Vt[c], Nv && Nv[a], Nv && Nv[b], Nv && Nv[c]);
     }
   }
@@ -361,7 +370,7 @@ var HeroMiscBorrowed = (function () {
   }
   function quadOut(bin, a, b, c, d, hint) { triOut(bin, a, b, c, hint); triOut(bin, a, c, d, hint); }
   /* a polyline of guard rail: posts every `step` metres, two wires (rule 10) */
-  function rail(bin, pts, h, step) {
+  function rail(bin, pts, h, step, round) {
     var i, k, n, L, ax, p, q;
     step = step || 1.5;
     for (i = 0; i + 1 < pts.length; i++) {
@@ -370,10 +379,11 @@ var HeroMiscBorrowed = (function () {
       n = Math.max(1, Math.round(L / step));
       for (k = (i === 0 ? 0 : 1); k <= n; k++) {
         ax = [p[0] + (q[0] - p[0]) * k / n, p[1] + (q[1] - p[1]) * k / n, p[2] + (q[2] - p[2]) * k / n];
-        box(bin, ax[0] - 0.025, ax[0] + 0.025, ax[1] - 0.025, ax[1] + 0.025, ax[2], ax[2] + h);
+        if (round) cylZ(bin, ax[0], ax[1], ax[2] - 0.01, ax[2] + h, 0.022, 8);          /* round stanchions (a small boat's, seen close) */
+        else box(bin, ax[0] - 0.025, ax[0] + 0.025, ax[1] - 0.025, ax[1] + 0.025, ax[2], ax[2] + h);
       }
-      bar(bin, [p[0], p[1], p[2] + h], [q[0], q[1], q[2] + h], 0.018, 4);
-      bar(bin, [p[0], p[1], p[2] + h * 0.5], [q[0], q[1], q[2] + h * 0.5], 0.014, 4);
+      bar(bin, [p[0], p[1], p[2] + h], [q[0], q[1], q[2] + h], 0.018, round ? 8 : 4);
+      bar(bin, [p[0], p[1], p[2] + h * 0.5], [q[0], q[1], q[2] + h * 0.5], 0.014, round ? 6 : 4);
     }
   }
   function bollard(bin, x, y, z) {
@@ -436,8 +446,10 @@ var HeroMiscBorrowed = (function () {
      lugged tyre, dished painted wheel, the hub on the outer face; one "roadwheel" group per axle */
   function rgb(h, k) { return [parseInt(h.substr(1, 2), 16) / 255 * k, parseInt(h.substr(3, 2), 16) / 255 * k, parseInt(h.substr(5, 2), 16) / 255 * k]; }
   var TYRE = [0.11, 0.115, 0.12];
-  function tyre(W, yc, s, R, H, base) {
-    var N = 16, kr = R / 0.75, kh = H / 0.30;
+  /* N: the lug count round the tread (16; the big tyres of the HY-2A trailer and the JLTV take more, batch 4) */
+  function tyre(W, yc, s, R, H, base, N) {
+    N = N || 16;
+    var kr = R / 0.75, kh = H / 0.30, NR = Math.max(16, N);
     var P = [[-0.30, 0.47, 0, 0], [-0.30, 0.64, 0, 0], [-0.25, 0.73, 1, 0], [-0.10, 0.75, 1, 0], [-0.02, 0.75, 1, 1],
              [0.02, 0.75, 1, 0], [0.10, 0.75, 1, 1], [0.25, 0.73, 1, 1], [0.30, 0.64, 0, 0], [0.30, 0.47, 0, 0]];
     var Vt = [], F = [], i, j, k, r, a, m = P.length, RIM = rgb(base, 1.05), HUB = rgb(base, 1.2);
@@ -456,19 +468,20 @@ var HeroMiscBorrowed = (function () {
     W.col = TYRE;
     solid(W, Vt, F, null, true);
     W.col = RIM;
-    cyl(W, [0, yc + s * 0.29 * kh, 0], [0, yc + s * 0.33 * kh, 0], 0.46 * kr, 0.40 * kr, 16, false);
+    cyl(W, [0, yc + s * 0.29 * kh, 0], [0, yc + s * 0.33 * kh, 0], 0.46 * kr, 0.40 * kr, NR, false);
     W.col = HUB;
-    cylY(W, 0, yc + s * 0.33 * kh, yc + s * 0.40 * kh, 0, 0.17 * kr, 10);
+    cylY(W, 0, yc + s * 0.33 * kh, yc + s * 0.40 * kh, 0, 0.17 * kr, N > 16 ? 14 : 10);
     W.col = [0.12, 0.12, 0.12];
-    for (i = 0; i < 8; i++) { a = i / 8 * TAU; cylY(W, Math.cos(a) * 0.27 * kr, yc + s * 0.33 * kh, yc + s * 0.36 * kh, Math.sin(a) * 0.27 * kr, 0.025 * kr, 5); }
+    var nb = N > 16 ? 10 : 8;
+    for (i = 0; i < nb; i++) { a = i / nb * TAU; cylY(W, Math.cos(a) * 0.27 * kr, yc + s * 0.33 * kh, yc + s * 0.36 * kh, Math.sin(a) * 0.27 * kr, 0.025 * kr, N > 16 ? 6 : 5); }
   }
-  function addAxles(THREE, g, T, AX, R, H, TY, base, dual) {
+  function addAxles(THREE, g, T, AX, R, H, TY, base, dual, N) {
     var i, wg, W;
     for (i = 0; i < AX.length; i++) {
       W = new Bin(T.wheel, false, true);
-      tyre(W, TY, 1, R, H, base);
-      tyre(W, -TY, -1, R, H, base);
-      if (dual && dual[i]) { tyre(W, TY - 2.1 * H, 1, R, H, base); tyre(W, -TY + 2.1 * H, -1, R, H, base); }
+      tyre(W, TY, 1, R, H, base, N);
+      tyre(W, -TY, -1, R, H, base, N);
+      if (dual && dual[i]) { tyre(W, TY - 2.1 * H, 1, R, H, base, N); tyre(W, -TY + 2.1 * H, -1, R, H, base, N); }
       W.col = [0.14, 0.15, 0.16];
       cylY(W, 0, -(TY - 0.25), TY - 0.25, 0, 0.09, 8);
       box(W, -0.18, 0.18, -0.26, 0.26, -0.16, 0.16);
@@ -577,6 +590,7 @@ var HeroMiscBorrowed = (function () {
   /* a lattice of four legs between two square frames (masts) */
   function lattice(bin, x, y, z0, z1, w0, w1, levels) {
     var i, k, h, c = [[1, 1], [1, -1], [-1, -1], [-1, 1]];
+    box(bin, x - w1 - 0.04, x + w1 + 0.04, y - w1 - 0.04, y + w1 + 0.04, z1 - 0.03, z1 + 0.03);   /* the cap plate the topmast stands on */
     for (k = 0; k < 4; k++) bar(bin, [x + c[k][0] * w0, y + c[k][1] * w0, z0], [x + c[k][0] * w1, y + c[k][1] * w1, z1], 0.035, 5);
     for (i = 0; i <= levels; i++) {
       h = z0 + (z1 - z0) * i / levels; var w = w0 + (w1 - w0) * i / levels;
@@ -741,7 +755,10 @@ var HeroMiscBorrowed = (function () {
       prismY(B.paint, [[xf, zb], [xf - dir * 0.08, zt], [xf - dir * 0.16, zt], [xf - dir * 0.08, zb]].map(function (p) { return p; }), y - W / 2, y + W / 2);
       for (k = -1; k <= 1; k += 2) box(B.paint, Math.min(xf, xs), Math.max(xf, xs), y + k * W / 2 - 0.03, y + k * W / 2 + 0.03, zb, zt - 0.15);
       box(B.dark, x - 0.25, x + 0.25, y - 0.22, y + 0.22, zb, zb + o.bz - 0.10);
-      for (k = -1; k <= 1; k += 2) { box(B.dark, x - dir * 0.55 - 0.15, x - dir * 0.55 + 0.15, y + k * 0.35 - 0.12, y + k * 0.35 + 0.12, zb + 0.35, zb + 0.42); cylZ(B.dark, x - dir * 0.55, y + k * 0.35, zb, zb + 0.35, 0.03, 5); }
+      /* the layers' seats on their posts (batch 4: the posts stood 0.55 m behind the pivot, off the edge of the
+         small mounts' rings, and hung 4 cm over the base: now inside the ring, standing on the base) */
+      var so = Math.min(0.55, r * 0.80);
+      for (k = -1; k <= 1; k += 2) { box(B.dark, x - dir * so - 0.15, x - dir * so + 0.15, y + k * 0.35 - 0.12, y + k * 0.35 + 0.12, zb + 0.35, zb + 0.42); cylZ(B.dark, x - dir * so, y + k * 0.35, z + h - 0.01, zb + 0.36, 0.03, 5); }
     } else {
       /* an enclosed gunhouse: sloped front and roof edges, the sighting hoods on the roof, rear door */
       var xr = dir > 0 ? xa : xb, xfr = dir > 0 ? xb : xa;
@@ -786,7 +803,7 @@ var HeroMiscBorrowed = (function () {
   }
   /* a deckhouse with tumblehome-free walls and windows along its sides (s: both sides) */
   function house(B, x0, x1, hw, z0, z1, win) {
-    box(B.paint, x0, x1, -hw, hw, z0, z1);
+    onDeck(function () { box(B.paint, x0, x1, -hw, hw, z0, z1); });
     box(B.paint, x0 - 0.04, x1 + 0.04, -hw - 0.04, hw + 0.04, z1, z1 + 0.06);
     if (win) for (var x = x0 + win[0]; x < x1 - 0.3; x += win[1]) for (var s = -1; s <= 1; s += 2) sideBox(B.dark, s, hw, 0.015, x, x + 0.32, z1 - 0.75, z1 - 0.35);
   }
@@ -858,15 +875,17 @@ var HeroMiscBorrowed = (function () {
     }
     box(B.paint, -3.4, 1.6, -2.1, 2.1, zr2, zr2 + 0.08);
     box(B.team, -3.0, -1.6, -0.6, 0.6, zr2 + 0.08, zr2 + 0.095);
-    box(B.team, -2.2, -1.0, -0.7, 0.7, za + 0.06, za + 0.075);
+    box(B.team, -9.6, -8.7, -0.7, 0.7, za + 0.06, za + 0.075);          /* (batch 4: it lay at x -2.2 in mid-air, 4.8 m over the deck; on the after house roof behind the 25 mm) */
     /* the funnel-less roof: the uptake grilles aft on the lower block, the searchlights on the wings */
     for (s = -1; s <= 1; s += 2) { box(B.dark, -2.6, -1.2, s * 1.2 - 0.4, s * 1.2 + 0.4, zr1, zr1 + 0.35); cylZ(B.dark, 3.6, s * 3.1, zr2, zr2 + 0.35, 0.18, 10); cyl(B.lamp, [3.75, s * 3.1, zr2 + 0.35], [3.80, s * 3.1, zr2 + 0.35], 0.15, 0.15, 10); }
     /* the tripod mast on the bridge roof with its yard and the round radar dome, the two pole masts [HB] */
     lattice(B.dark, -1.5, 0, zr2, 14.2, 0.85, 0.22, 5);
     cylZ(B.dark, -1.5, 0, 14.2, 15.9, 0.07, 6);
-    bar(B.dark, [-1.5, -1.9, 13.2], [-1.5, 1.9, 13.2], 0.05, 6);
+    bar(B.dark, [-1.5 + 0.32, -1.9, 13.2], [-1.5 + 0.32, 1.9, 13.2], 0.05, 6);        /* the yard across the forward legs (it crossed the hollow centre) */
     box(B.dark, -2.2, -0.8, -0.7, 0.7, 12.2, 12.3);
     cylZ(B.paint, -1.5, 0, 12.3, 12.9, 0.52, 16); cylZ(B.paint, -1.5, 0, 12.9, 13.0, 0.40, 16);
+    /* the navigation radar on its bracket off the after face (batch 4: the pedestal stood 0.5 m clear of the legs) */
+    box(B.dark, -2.85, -1.85, -0.62, 0.62, 10.84, 10.90); for (s = -1; s <= 1; s += 2) bar(B.dark, [-2.80, s * 0.58, 10.86], [-2.106, s * 0.606, 10.40], 0.03, 5);
     cylZ(B.dark, -2.6, 0, 10.9, 11.4, 0.06, 6); radarBar(B, -2.6, 0, 11.4, 1.6);
     cylZ(B.dark, 2.1, 1.3, zr2, 11.6, 0.06, 6); cylZ(B.dark, 3.1, -1.3, zr2, 14.9, 0.07, 6);
     /* the forward twin 25 mm on the lower block's roof ahead of the bridge [HB] */
@@ -961,7 +980,7 @@ var HeroMiscBorrowed = (function () {
     /* "turret": the forward twin 37 mm [HB] */
     var tg = grp(THREE, g, "turret", 9.0, 0, dz(9.0));
     gunMount(TB, 0, 0, 0, 1, { base: [0.70, 0.30], sh: [1.30, 1.55, 1.10], open: true, n: 2, bl: 2.75, br: 0.045, sep: 0.42, bz: 0.80, el: 10 });
-    box(TB.team, -0.30, 0.30, -0.70, -0.62, 0.40, 1.0); box(TB.team, -0.30, 0.30, 0.62, 0.70, 0.40, 1.0);
+    box(TB.team, 0.05, 0.60, -0.815, -0.805, 0.45, 1.05); box(TB.team, 0.05, 0.60, 0.805, 0.815, 0.45, 1.05);   /* on the shield cheeks (they stood inside them) */
     flush(THREE, tg, TB);
     g.name = "pla_e60_patrol";
     return g;
@@ -978,15 +997,16 @@ var HeroMiscBorrowed = (function () {
   function mk38(B, x, y, z, dir) {
     cylZ(B.paint, x, y, z, z + 0.20, 0.45, 12);
     cylZ(B.paint, x, y, z + 0.20, z + 0.85, 0.16, 10);
-    box(B.paint, x - 0.40, x + 0.45, y - 0.22, y + 0.22, z + 0.85, z + 1.15);
-    box(B.dark, x - 0.20, x + 0.20, y + 0.25, y + 0.55, z + 0.80, z + 1.12);
+    box(B.paint, Math.min(x - dir * 0.40, x + dir * 0.45), Math.max(x - dir * 0.40, x + dir * 0.45), y - 0.22, y + 0.22, z + 0.85, z + 1.15);
+    box(B.dark, x - 0.20, x + 0.20, y + 0.21, y + 0.55, z + 0.80, z + 1.12);
     cyl(B.dark, [x - dir * 0.30, y, z + 1.00], [x + dir * 2.05, y, z + 1.06], 0.035, 0.03, 8);
     cyl(B.dark, [x + dir * 0.40, y, z + 1.01], [x + dir * 0.95, y, z + 1.03], 0.06, 0.06, 8);
-    box(B.dark, x - dir * 0.55 - 0.15, x - dir * 0.55 + 0.15, y - 0.25, y + 0.25, z + 0.45, z + 0.55);
+    /* the gunner's arm from the column out to the shoulder rest (batch 4: it stopped 0.24 m short of the column) */
+    box(B.dark, Math.min(x - dir * 0.70, x - dir * 0.10), Math.max(x - dir * 0.70, x - dir * 0.10), y - 0.25, y + 0.25, z + 0.45, z + 0.55);
     box(B.dark, x - dir * 0.75 - 0.05, x - dir * 0.75 + 0.05, y - 0.25, y + 0.25, z + 0.55, z + 1.05);
   }
   function m2(B, x, y, z, dir, L) {
-    box(B.dark, x - dir * 0.20 - 0.18, x - dir * 0.20 + 0.18, y - 0.07, y + 0.07, z - 0.07, z + 0.08);
+    box(B.dark, Math.min(x - dir * 0.38, x + dir * 0.01), Math.max(x - dir * 0.38, x + dir * 0.01), y - 0.07, y + 0.07, z - 0.07, z + 0.08);   /* (the receiver ran to 2 cm short of the barrel) */
     cyl(B.dark, [x, y, z], [x + dir * (L || 1.15), y, z], 0.025, 0.025, 6);
     cyl(B.dark, [x, y, z], [x + dir * 0.45, y, z], 0.04, 0.04, 8);
     box(B.dark, x - dir * 0.20 - 0.06, x - dir * 0.20 + 0.06, y + 0.07, y + 0.22, z - 0.12, z + 0.02);
@@ -1089,10 +1109,13 @@ var HeroMiscBorrowed = (function () {
      side-on, bow left): stem head 168 px to the transom 1262 px = the published 179 ft (54.56 m,
      en.wikipedia "Cyclone-class patrol ship"), 20.05 px/m; waterline y 630.  Beam 25 ft (7.62 m),
      draught 7.5 ft (2.29 m).  [CY2] ("... USS Whirlwind (PC 11) transits the Arabian Gulf", 2011) for
-     the after deckhouse and the stern ramp.  Fit: Mk 38 forward and aft, .50s, the RHIB on its stern ramp. */
+     the after deckhouse and the stern ramp.  Fit: Mk 38 forward and aft, .50s, the RHIB on its stern ramp.
+     (batch 4) The waterline half-beams were 0.1 m inside the deck's, sides within 2 degrees of upright; they are
+     now 0.26 m inside, the sides flared about 5 degrees out to the deck edge (NOT CONFIRMED: no body plan or
+     section was found; [CY1] and [CY2] are broadsides and show no section). */
   var CYC = [
-    [-27.3, 2.55, 3.55, 3.45, -0.80, 2.6], [-24.0, 2.60, 3.75, 3.65, -1.60, 2.8], [-12.0, 2.75, 3.81, 3.72, -2.20, 3.0],
-    [2.0, 2.90, 3.81, 3.70, -2.29, 3.0], [10.0, 3.05, 3.70, 3.45, -2.25, 2.7], [16.0, 3.25, 3.30, 2.80, -2.10, 2.3],
+    [-27.3, 2.55, 3.55, 3.30, -0.80, 2.6], [-24.0, 2.60, 3.75, 3.48, -1.60, 2.8], [-12.0, 2.75, 3.81, 3.55, -2.20, 3.0],
+    [2.0, 2.90, 3.81, 3.54, -2.29, 3.0], [10.0, 3.05, 3.70, 3.36, -2.25, 2.7], [16.0, 3.25, 3.30, 2.80, -2.10, 2.3],
     [20.0, 3.40, 2.60, 1.80, -1.80, 2.0], [23.0, 3.50, 1.80, 0.70, -1.10, 1.6], [24.3, 3.55, 1.35, 0.05, 0.05, 1.4],
     [27.3, 3.70, 0.10, 0.0, 3.40, 1.2]
   ];
@@ -1109,14 +1132,16 @@ var HeroMiscBorrowed = (function () {
     }
     /* the stern launch ramp and the RHIB on it, the crane [CY1] [CY2] */
     box(B.dark, -27.3, -21.0, -1.3, 1.3, dz(-24) - 0.25, dz(-24) + 0.02);
-    body(B.dark, [[-25.3, 3.45, 0.30, 0.25, 0.30, 2], [-24.9, 3.45, 1.05, 0.30, 0.40, 2], [-20.5, 3.45, 1.10, 0.32, 0.40, 2], [-19.4, 3.60, 0.45, 0.20, 0.25, 2]], 12);
-    box(B.paint, -23.6, -21.0, -0.7, 0.7, 3.65, 3.90);
+    /* (batch 4: the boat floated 0.4 m over the ramp; it sits on it now, on two chocks) */
+    body(B.dark, [[-25.3, 3.02, 0.30, 0.25, 0.30, 2], [-24.9, 3.02, 1.05, 0.30, 0.40, 2], [-20.5, 3.02, 1.10, 0.32, 0.40, 2], [-19.4, 3.17, 0.45, 0.20, 0.25, 2]], 12);
+    box(B.paint, -23.6, -21.0, -0.7, 0.7, 3.22, 3.47);
+    [-24.2, -21.4].forEach(function (xc) { box(B.paint, xc - 0.15, xc + 0.15, -0.9, 0.9, dz(-24) - 0.02, dz(-24) + 0.12); });
     cylZ(B.paint, -21.6, -2.6, dz(-21.6), 5.4, 0.16, 8);
     bar(B.paint, [-21.6, -2.6, 5.4], [-24.5, -1.0, 5.8], 0.09, 6);
     /* the after deckhouse with the Stinger lockers and the after Mk 38 on its roof [CY1] [CY2] */
     var za = 5.25;
     house(B, -18.2, -4.2, 2.70, dz(-10), za, [0.8, 2.0]);
-    box(B.paint, -15.0, -11.5, -2.2, 2.2, za, za + 1.0);
+    onDeck(function () { box(B.paint, -15.0, -11.5, -2.2, 2.2, za, za + 1.0); });
     for (s = -1; s <= 1; s += 2) {
       rail(B.dark, [[-18.1, s * 2.65, za], [-4.3, s * 2.65, za]], 1.0, 1.4);
       door(B, s, 2.70, -8.0, dz(-8)); ladderX(B.dark, -18.4, s * 1.4, dz(-18), za);
@@ -1129,9 +1154,11 @@ var HeroMiscBorrowed = (function () {
     for (s = -1; s <= 1; s += 2) cylZ(B.dark, -6.0, s * 2.3, za, za + 1.1, 0.05, 6);
     /* the forward superstructure: the sloped front of the lower house, the bridge block on it [CY1] */
     var zl = dz(6), z1 = 6.0, z2 = 8.0;
-    prismY(B.paint, [[-4.2, zl], [12.3, zl], [11.0, z1], [-4.2, z1]], -2.85, 2.85);
-    prismY(B.paint, [[-4.2, z1], [7.6, z1], [7.3, z2], [1.3, z2], [-0.5, z2 - 0.8], [-4.2, z2 - 0.8]], -2.2, 2.2);
-    for (k = 0; k < 6; k++) slab(B.glass, [7.46, -1.75 + k * 0.70, z1 + 1.35], unit([-0.15, 0, 1]), [0, 1, 0], unit([1, 0, 0.15]), 0.30, 0.30, 0.012);
+    onDeck(function () {
+      prismY(B.paint, [[-4.2, zl], [12.3, zl], [11.0, z1], [-4.2, z1]], -2.85, 2.85);
+      prismY(B.paint, [[-4.2, z1], [7.6, z1], [7.3, z2], [1.3, z2], [-0.5, z2 - 0.8], [-4.2, z2 - 0.8]], -2.2, 2.2);
+    });
+    for (k = 0; k < 6; k++) slab(B.glass, [7.41, -1.75 + k * 0.70, z1 + 1.35], unit([-0.15, 0, 1]), [0, 1, 0], unit([1, 0, 0.15]), 0.30, 0.30, 0.012);
     for (s = -1; s <= 1; s += 2) {
       sideBox(B.glass, s, 2.2, 0.015, 3.0, 6.6, z1 + 1.05, z1 + 1.60);
       door(B, s, 2.85, 2.2, zl); door(B, s, 2.85, 9.0, zl);
@@ -1151,7 +1178,7 @@ var HeroMiscBorrowed = (function () {
     });
     radarBar(B, -1.6, 0, 13.66, 2.4); radarBar(B, -1.8, 0, 12.06, 1.8);
     cylZ(B.dark, -2.0, 0, 16.0, 17.2, 0.06, 6);
-    bar(B.dark, [-2.0, -2.4, 14.8], [-2.0, 2.4, 14.8], 0.05, 6);
+    bar(B.dark, [-2.0 + 0.48, -2.4, 14.8], [-2.0 + 0.48, 2.4, 14.8], 0.05, 6);        /* the yard across the forward legs */
     cylZ(B.paint, -1.2, 0, z1, z1 + 1.4, 0.35, 12);
     /* jackstaff and ensign staff */
     cylZ(B.dark, 27.0, 0, dz(27), 6.6, 0.04, 6); cylZ(B.dark, -27.1, 0, dz(-27), 5.0, 0.04, 6);
@@ -1173,11 +1200,26 @@ var HeroMiscBorrowed = (function () {
      stand and the rails.  Scale: the published 50 ft x 13 ft (15.24 x 3.96 m) and 5 ft draught
      (en.wikipedia "Patrol Craft Fast"); heights from [SW1] against the hull's depth at the pilothouse
      (NOT CONFIRMED: one oblique photograph).  Paint: haze grey, the boot red below. */
+  /* (batch 4) the forward stations narrowed from x 0.5 to the stem: the deck edge drew near full beam to 2 m short
+     of the bow, a plan with no taper ([SW1] shows the flare and the fine entry from 4 m back; the plan's curve is
+     NOT CONFIRMED - no drawing) */
   var PCF = [
     [-7.62, 1.20, 1.85, 1.78, -0.55, 6.0], [-6.0, 1.22, 1.95, 1.90, -0.80, 6.0], [-2.0, 1.32, 1.98, 1.92, -0.95, 6.0],
-    [2.0, 1.48, 1.98, 1.85, -1.00, 5.0], [4.5, 1.65, 1.88, 1.55, -0.95, 3.0], [6.0, 1.80, 1.62, 1.05, -0.70, 2.2],
-    [7.0, 1.92, 1.25, 0.40, -0.10, 1.6], [7.62, 2.00, 0.30, 0.0, 1.20, 1.2]
+    [0.5, 1.42, 1.97, 1.89, -0.98, 5.5], [2.5, 1.51, 1.90, 1.76, -1.00, 4.6], [4.5, 1.65, 1.74, 1.42, -0.95, 3.0],
+    [6.0, 1.80, 1.42, 0.92, -0.70, 2.2], [7.0, 1.92, 0.98, 0.34, -0.10, 1.6], [7.62, 2.00, 0.25, 0.0, 1.20, 1.2]
   ];
+  /* a rounded rectangle in a side's (x, z) plane, corner radius r, nc points a corner (convex, anticlockwise) */
+  function rrect(x0, x1, z0, z1, r, nc) {
+    var P = [], c = [[x1 - r, z1 - r, 0], [x0 + r, z1 - r, 90], [x0 + r, z0 + r, 180], [x1 - r, z0 + r, 270]], i, k, a;
+    for (k = 0; k < 4; k++) for (i = 0; i <= nc; i++) { a = (c[k][2] + 90 * i / nc) * D2R; P.push([c[k][0] + Math.cos(a) * r, c[k][1] + Math.sin(a) * r]); }
+    return P;
+  }
+  /* a round-cornered window on an upright side at y (side s): the pane on the plating, the frame round it */
+  function sideWindow(B, s, y, x0, x1, z0, z1, r) {
+    prismY(B.glass, rrect(x0, x1, z0, z1, r, 4), s > 0 ? y : -y - 0.012, s > 0 ? y + 0.012 : -y);
+    var Q = rrect(x0 - 0.02, x1 + 0.02, z0 - 0.02, z1 + 0.02, r + 0.02, 4), i;
+    for (i = 0; i < Q.length; i++) { var a = Q[i], b = Q[(i + 1) % Q.length]; bar(B.dark, [a[0], s * (y + 0.010), a[1]], [b[0], s * (y + 0.010), b[1]], 0.022, 4); }
+  }
   function buildPcf(THREE, M, C) {
     var T = shipMats(THREE, C, PAL.navy, DECKPAL.alu, 0x8a3b2a), B = bins(T, 0.3), TB = bins(T, 0.5), g = new THREE.Group(), s, k;
     var sta = PCF, dz = function (xx) { return deckAt(sta, xx); };
@@ -1188,53 +1230,86 @@ var HeroMiscBorrowed = (function () {
       for (x = -7.6; x <= 7.2; x += 0.8) { P.push([x, s * (beamAt(sta, x) + 0.03), dz(x) - 0.08]); Q.push([x, s * (hullW(sta, x, 0.35) + 0.02), 0.35]); }
       for (k = 0; k + 1 < P.length; k++) { bar(B.paint, P[k], P[k + 1], 0.045, 5); if (Q[k][1] * s > 0.3) bar(B.paint, Q[k], Q[k + 1], 0.025, 4); }
     }
-    /* the pilothouse with its raked front, the door and windows; the after cabin [SW1] */
-    var zd0 = dz(1.0), zp = 2.95, zc = 2.20;
-    prismY(B.paint, [[-0.8, zd0], [4.2, zd0], [4.2, zp - 0.55], [3.7, zp], [-0.8, zp]], -1.55, 1.55);
-    box(B.paint, -0.9, 3.8, -1.60, 1.60, zp, zp + 0.06);
+    /* the pilothouse with its raked front, the door and windows; the after cabin [SW1].  (batch 4: both stand on the
+       deck at their low end - the cabin's aft end and the pilothouse's hung 3-6 cm over the sheer - and leave out
+       their hidden bottoms; the windows are the round-cornered panes in their frames that [SW1] shows) */
+    var zd0 = dz(-0.9) - 0.02, zp = 2.95, zc = 2.20, zcb = dz(-5.25) - 0.02;
+    onDeck(function () {
+      prismY(B.paint, [[-0.8, zd0], [4.2, zd0], [4.2, zp - 0.55], [3.7, zp], [-0.8, zp]], -1.55, 1.55);
+      box(B.paint, -5.2, -0.8, -1.55, 1.55, zcb, zc);
+      for (s = -1; s <= 1; s += 2) box(B.paint, -5.2, -0.8, s * 1.55 - 0.03, s * 1.55 + 0.03, zcb, zc);
+    });
+    /* the two roofs crowned, their edges rolled down to the sides as [SW1] shows them (they were flat slabs) */
+    var crown = function (z) { return [[-1.60, z], [1.60, z], [1.60, z + 0.03], [0.55, z + 0.12], [-0.55, z + 0.12], [-1.60, z + 0.03]]; };
+    prismX(B.paint, crown(zp), -0.9, 3.8);
+    prismX(B.paint, crown(zc), -5.25, -0.75);
     for (s = -1; s <= 1; s += 2) {
-      sideBox(B.glass, s, 1.55, 0.015, 1.9, 2.6, zp - 0.75, zp - 0.30);
-      sideBox(B.glass, s, 1.55, 0.015, 2.9, 3.6, zp - 0.75, zp - 0.30);
-      sideBox(B.dark, s, 1.55, 0.012, 0.8, 1.6, zd0 + 0.10, zp - 0.15);
-      sideBox(B.glass, s, 1.555, 0.012, 0.95, 1.45, zp - 0.75, zp - 0.35);
+      sideWindow(B, s, 1.55, 1.9, 2.6, zp - 0.75, zp - 0.30, 0.10);
+      sideWindow(B, s, 1.55, 2.9, 3.6, zp - 0.75, zp - 0.30, 0.10);
+      /* the door, its window and handle */
+      prismY(B.dark, rrect(0.8, 1.6, zd0 + 0.10, zp - 0.15, 0.08, 3), s > 0 ? 1.55 : -1.562, s > 0 ? 1.562 : -1.55);
+      sideWindow(B, s, 1.562, 0.97, 1.43, zp - 0.72, zp - 0.38, 0.08);
       sideBox(B.dark, s, 1.56, 0.03, 1.40, 1.48, zd0 + 0.9, zd0 + 1.0);
       slab(B.glass, [3.96, s * 0.75, zp - 0.30], unit([-0.5, 0, 0.55]), [0, 1, 0], unit([0.55, 0, 0.5]), 0.22, 0.55, 0.012);
-      box(B.paint, -5.2, -0.8, s * 1.55 - 0.03, s * 1.55 + 0.03, dz(-3), zc);
-      sideBox(B.glass, s, 1.55, 0.015, -4.2, -2.6, zc - 0.55, zc - 0.20);
-      sideBox(B.glass, s, 1.55, 0.015, -2.4, -1.1, zc - 0.55, zc - 0.20);
+      sideWindow(B, s, 1.58, -4.2, -2.6, zc - 0.58, zc - 0.20, 0.12);
+      sideWindow(B, s, 1.58, -2.4, -1.1, zc - 0.58, zc - 0.20, 0.12);
       ladderX(B.dark, -0.95, s * 0.9, zc, zp);
-      grab(B.dark, -4.8, -1.2, s * 1.4, zc + 0.02, 0.10);
+      grab(B.dark, -4.8, -1.2, s * 1.4, zc + 0.05, 0.10);
     }
-    box(B.paint, -5.2, -0.8, -1.55, 1.55, dz(-3), zc);
-    box(B.paint, -5.25, -0.75, -1.60, 1.60, zc, zc + 0.05);
-    box(B.team, -4.0, -2.2, -0.6, 0.6, zc + 0.05, zc + 0.065);
-    /* the gun tub on the pilothouse roof [SW1], the mast and the radar behind it */
+    /* the windscreen's frames and centre post */
+    var wsu = unit([-0.5, 0, 0.55]);
+    for (k = -1; k <= 1; k++) bar(B.dark, [3.96 - wsu[0] * 0.23 + 0.0, k * 1.32 * (k ? 1 : 0), zp - 0.30 - wsu[2] * 0.23], [3.96 + wsu[0] * 0.23, k * 1.32 * (k ? 1 : 0), zp - 0.30 + wsu[2] * 0.23], 0.025, 5);
+    box(B.team, -4.0, -2.2, -0.5, 0.5, zc + 0.12, zc + 0.135);
+    /* the gun tub on the pilothouse roof [SW1], its rolled rim; the mast and the radar behind it */
     cyl(B.paint, [1.9, 0, zp + 0.06], [1.9, 0, zp + 0.78], 0.62, 0.62, 18, true);
     cyl(B.paint, [1.9, 0, zp + 0.78], [1.9, 0, zp + 0.06], 0.58, 0.58, 18, true);
-    cylZ(B.dark, 0.5, 0, zp + 0.06, zp + 1.25, 0.06, 6);
-    bar(B.dark, [0.5, 0, zp + 1.25], [0.9, 0, zp + 1.65], 0.04, 5);
-    box(B.dark, 0.75, 1.05, -0.35, 0.35, zp + 1.55, zp + 1.70);
+    for (k = 0; k < 18; k++) { var a0 = k / 18 * TAU, a1 = (k + 1) / 18 * TAU; bar(B.paint, [1.9 + Math.cos(a0) * 0.60, Math.sin(a0) * 0.60, zp + 0.78], [1.9 + Math.cos(a1) * 0.60, Math.sin(a1) * 0.60, zp + 0.78], 0.035, 6); }
+    /* the mast (batch 4, [SW1]): the pole with its two back stays, the radar's pedestal arm and the open slotted
+       array, the yard with its lamps, the horn */
+    cylZ(B.dark, 0.5, 0, zp + 0.06, zp + 1.95, 0.06, 8);
+    for (s = -1; s <= 1; s += 2) bar(B.dark, [0.5, 0, zp + 1.30], [-0.3, s * 0.55, zp + 0.06], 0.03, 6);
+    bar(B.dark, [0.5, 0, zp + 1.25], [0.9, 0, zp + 1.65], 0.04, 6);
+    cylZ(B.dark, 0.9, 0, zp + 1.60, zp + 1.72, 0.09, 10);
+    box(B.dark, 0.82, 0.98, -0.60, 0.60, zp + 1.72, zp + 1.84);
+    box(B.dark, 0.98, 1.02, -0.58, 0.58, zp + 1.74, zp + 1.82);
+    bar(B.dark, [0.5, -0.75, zp + 1.85], [0.5, 0.75, zp + 1.85], 0.03, 6);
+    for (s = -1; s <= 1; s += 2) { cylZ(B.lamp, 0.5, s * 0.72, zp + 1.87, zp + 1.97, 0.035, 8); cylZ(B.dark, 0.5, s * 0.72, zp + 1.83, zp + 1.87, 0.045, 8); }
+    cyl(B.dark, [0.5, 0, zp + 1.55], [0.75, 0, zp + 1.50], 0.03, 0.08, 10);
+    /* the searchlight on its pedestal at the roof's forward corner */
+    cylZ(B.dark, 3.3, -1.25, zp + 0.06, zp + 0.30, 0.06, 8); cyl(B.dark, [3.18, -1.25, zp + 0.42], [3.45, -1.25, zp + 0.42], 0.13, 0.13, 14);
+    cyl(B.lamp, [3.45, -1.25, zp + 0.42], [3.47, -1.25, zp + 0.42], 0.11, 0.11, 14);
     whip(B.dark, 0.2, 1.2, zp + 0.06, 4.0); whip(B.dark, 0.2, -1.2, zp + 0.06, 3.2);
-    rail(B.dark, [[-0.7, 1.5, zp + 0.06], [0.9, 1.5, zp + 0.06]], 0.55, 0.8);
-    rail(B.dark, [[-0.7, -1.5, zp + 0.06], [0.9, -1.5, zp + 0.06]], 0.55, 0.8);
+    rail(B.dark, [[-0.7, 1.5, zp + 0.04], [0.9, 1.5, zp + 0.04]], 0.55, 0.8, true);
+    rail(B.dark, [[-0.7, -1.5, zp + 0.04], [0.9, -1.5, zp + 0.04]], 0.55, 0.8, true);
     /* the after deck: rails, the piggyback .50 / 81 mm on its stand, the mortar ammunition box [SW1] */
-    for (s = -1; s <= 1; s += 2) rail(B.dark, edgeLine(sta, -7.5, -5.2, s, 0.06, 4), 0.75, 0.8);
-    rail(B.dark, [[-7.5, -1.7, dz(-7.5)], [-7.5, 1.7, dz(-7.5)]], 0.75, 0.8);
+    for (s = -1; s <= 1; s += 2) rail(B.dark, edgeLine(sta, -7.5, -5.2, s, 0.06, 4), 0.75, 0.8, true);
+    rail(B.dark, [[-7.5, -1.7, dz(-7.5)], [-7.5, 1.7, dz(-7.5)]], 0.75, 0.8, true);
     var mz = dz(-6.3);
-    cylZ(B.paint, -6.3, 0, mz, mz + 0.9, 0.14, 8);
-    cyl(B.dark, [-6.6, 0, mz + 0.95], [-5.3, 0, mz + 1.35], 0.07, 0.07, 10);
-    m2(B, -6.0, 0, mz + 1.25, 1, 1.15);
+    cylZ(B.paint, -6.3, 0, mz, mz + 0.9, 0.14, 10);
+    cylZ(B.paint, -6.3, 0, mz, mz + 0.06, 0.45, 16);
+    for (k = 0; k < 3; k++) { var la = (90 + 120 * k) * D2R; bar(B.dark, [-6.3, 0, mz + 0.55], [-6.3 + Math.cos(la) * 0.42, Math.sin(la) * 0.42, mz + 0.06], 0.025, 6); }
+    box(B.dark, -6.45, -6.15, -0.10, 0.10, mz + 0.88, mz + 1.10);          /* the trunnion block the tube rides on (it stood clear of the pillar) */
+    cyl(B.dark, [-6.6, 0, mz + 0.95], [-5.3, 0, mz + 1.35], 0.07, 0.07, 12);
+    cyl(B.dark, [-6.62, 0, mz + 0.94], [-6.50, 0, mz + 0.98], 0.10, 0.10, 12);
+    m2(B, -6.0, 0, mz + 1.21, 1, 1.15);
     box(B.paint, -7.4, -6.9, -0.6, 0.6, mz, mz + 0.55);
+    for (k = 0; k < 3; k++) box(B.dark, -7.42, -6.88, -0.55 + k * 0.40, -0.25 + k * 0.40, mz + 0.55, mz + 0.58);
     bollard(B.dark, 6.0, 0, dz(6.0)); bollard(B.dark, -7.0, 1.4, dz(-7)); bollard(B.dark, -7.0, -1.4, dz(-7));
-    rail(B.dark, edgeLine(sta, 4.5, 7.4, 1, 0.06, 4).concat(edgeLine(sta, 7.4, 4.5, -1, 0.06, 4)), 0.6, 0.9);
+    rail(B.dark, edgeLine(sta, 4.5, 7.4, 1, 0.06, 4).concat(edgeLine(sta, 7.4, 4.5, -1, 0.06, 4)), 0.6, 0.9, true);
     hatch(B.paint, 5.2, 0, dz(5.2), 0.6, 0.6);
     cylZ(B.dark, -7.4, 0, dz(-7.4), 2.8, 0.03, 6);
     flush(THREE, g, B);
-    /* "turret": the twin .50 in the tub over the pilothouse [SW1] (en.wikipedia) */
+    /* "turret": the twin .50 in the tub over the pilothouse [SW1] (en.wikipedia): the pintle, the cradle, the two
+       guns, their ammunition cans and the spade grips with the gunner's back rest */
     var tg = grp(THREE, g, "turret", 1.9, 0, zp + 0.06);
-    cylZ(TB.dark, 0, 0, 0, 0.65, 0.07, 8);
+    cylZ(TB.dark, 0, 0, 0, 0.65, 0.07, 10);
     box(TB.dark, -0.25, 0.10, -0.30, 0.30, 0.65, 0.80);
     m2(TB, 0.05, 0.20, 0.95, 1, 1.15); m2(TB, 0.05, -0.20, 0.95, 1, 1.15);
+    for (s = -1; s <= 1; s += 2) {
+      box(TB.dark, -0.25, 0.18, s * 0.34 - 0.08, s * 0.34 + 0.08, 0.80, 0.98);
+      bar(TB.dark, [-0.25, s * 0.18, 0.95], [-0.42, s * 0.16, 0.95], 0.02, 6);
+      bar(TB.dark, [-0.42, s * 0.16, 0.90], [-0.42, s * 0.16, 1.00], 0.025, 6);
+    }
     box(TB.team, -0.30, -0.20, -0.30, 0.30, 0.80, 0.90);
     flush(THREE, tg, TB);
     g.name = "nato_e60_patrol";
@@ -1318,7 +1393,7 @@ var HeroMiscBorrowed = (function () {
     cyl(B.metal, [0, o.s * 0.12, 0], [0, o.s * 0.22, 0], 0.08, 0.02, 8);
     for (k = 0; k < o.nb; k++) {
       a = (o.phase + 360 / o.nb * k) * D2R;
-      slab(B.blade, [Math.cos(a) * (o.R / 2 + 0.08), o.s * 0.05, Math.sin(a) * (o.R / 2 + 0.08)], [Math.cos(a), 0, Math.sin(a)], [0, 1, 0], [-Math.sin(a), 0, Math.cos(a)], o.R / 2 - 0.08, 0.012, o.chord / 2);
+      slab(B.blade, [Math.cos(a) * (o.R / 2 + 0.04), o.s * 0.05, Math.sin(a) * (o.R / 2 + 0.04)], [Math.cos(a), 0, Math.sin(a)], [0, 1, 0], [-Math.sin(a), 0, Math.cos(a)], o.R / 2 - 0.04, 0.012, o.chord / 2);
     }
     flush(THREE, tg, B);
     return tg;
@@ -1427,7 +1502,7 @@ var HeroMiscBorrowed = (function () {
       });
       skinPanel(B.dark, SK, s, 3.42, 3.47, 2.30, 2.95, 0.014);
       [1.25, 1.85].forEach(function (z) { skinPanel(B.metal, SK, s, -0.95, 1.85, z + 0.6, z + 0.63, 0.015); });
-      skinPanel(B.metal, SK, s, 1.75, 1.82, 1.80, 1.86, 0.03);
+      skinPanel(B.metal, SK, s, 1.75, 1.82, 1.80, 1.86, 0.012);
       [1.35, 1.95].forEach(function (z) { skinPanel(B.dark, SK, s, 3.40, 3.60, z, z + 0.08, -0.03); });
       bar(B.metal, [4.70, s * 0.28, 1.95], [5.20, s * 0.28, 1.97], 0.014, 5);
       bar(B.metal, [4.62, s * 0.28, 1.95], [4.78, s * 0.28, 1.95], 0.03, 6);
@@ -1438,7 +1513,7 @@ var HeroMiscBorrowed = (function () {
       bar(G.metal, [1.35, fy + s * 0.07, 0.62], [1.42, fy + s * 0.07, 0.46], 0.02, 4);
       bar(G.metal, [1.42, fy + s * 0.07, 0.46], [1.35, fy + s * 0.07, 0.36], 0.02, 4);
     }
-    navLamp(B.navl, [-11.85, 0, 3.95], 0.045, "white");
+    navLamp(B.navl, [-11.75, 0, 4.05], 0.045, "white");          /* (batch 4: on the tail cone's end; it hung 6 cm behind it) */
     slab(B.dark, [-2.4, 0, 0.57], [1, 0, 0], [0, 1, 0], [0, 0, 1], 0.14, 0.012, 0.10);
     slab(B.dark, [-4.9, 0, 0.57], [1, 0, 0], [0, 1, 0], [0, 0, 1], 0.14, 0.012, 0.10);
     box(B.dark, -1.0, -0.7, -0.25, -0.05, 0.585, 0.61); box(B.dark, -1.0, -0.7, 0.05, 0.25, 0.585, 0.61);
@@ -1511,8 +1586,9 @@ var HeroMiscBorrowed = (function () {
     prismZ(B.paint, [[-7.00, -1.50], [-7.50, -1.50], [-7.50, 1.50], [-7.00, 1.50]], 2.30, 2.38);
     for (s = -1; s <= 1; s += 2) prismX(B.paint, [[s * 1.49, 2.10], [s * 1.53, 2.10], [s * 1.53, 2.70], [s * 1.49, 2.70]], -7.05, -7.45);
     cylY(B.paint, -7.93, 0.05, 0.25, 3.80, 0.15, 10);
-    whip(B.dark, -2.6, 0, 2.95, 0.6); whip(B.dark, -5.0, 0, 2.6, 0.45);
-    cylZ(B.red, -3.0, 0, 2.90, 3.00, 0.06, 8);
+    /* (batch 4: the beacon and the two whips stood 3-8 cm over the boom's top; down onto it) */
+    whip(B.dark, -2.6, 0, 2.85, 0.6); whip(B.dark, -5.0, 0, 2.55, 0.45);
+    cylZ(B.red, -3.0, 0, 2.79, 2.89, 0.06, 8);
     box(B.team, -3.8, -2.8, -0.22, 0.22, 2.75, 2.76);
     for (s = -1; s <= 1; s += 2) box(B.team, -7.4, -7.1, s * 1.1 - 0.25, s * 1.1 + 0.25, 2.38, 2.39);
     /* ---- detail pass (POLICY 10) [K3] ----
@@ -1527,7 +1603,7 @@ var HeroMiscBorrowed = (function () {
       [[2.35, 3.05, 2.30, 3.05], [3.20, 3.62, 1.35, 1.85], [1.05, 1.40, 2.35, 2.85]].forEach(function (w) { winFrame(B.dark, KS, s, w[0], w[1], w[2], w[3], 0.035, 0.012); });
       skinPanel(B.dark, KS, s, 2.68, 2.72, 2.30, 3.05, 0.014);
       [1.12, 3.10].forEach(function (z) { skinPanel(B.metal, KS, s, 0.70, 1.70, z, z + 0.03, 0.015); });
-      skinPanel(B.metal, KS, s, 0.80, 0.86, 2.05, 2.11, 0.03);
+      skinPanel(B.metal, KS, s, 0.80, 0.86, 2.05, 2.11, 0.012);
       [1.45, 2.00].forEach(function (z) { skinPanel(B.dark, KS, s, 2.45, 2.62, z, z + 0.07, -0.03); });
       cyl(B.metal, [1.10, s * 0.92, 3.05], [1.14, s * 0.92, 3.05], 0.33, 0.33, 14);
       cyl(B.dark, [-1.30, s * 0.92, 3.05], [-1.38, s * 0.92, 3.05], 0.19, 0.19, 10);
@@ -1563,6 +1639,8 @@ var HeroMiscBorrowed = (function () {
       sideBox(B.dark, s, w, 0.010, xd - 0.01, xd + 0.01, zf + 0.10, zr - 0.10);
       sideBox(B.dark, s, w, 0.03, xd + 0.10, xd + 0.24, zw - 0.25, zw - 0.20);
       for (k = 0; k < 2; k++) box(B.dark, xd + 0.05, xd + 0.65, s * (w - 0.18) - 0.10, s * (w - 0.18) + 0.10, zf - 0.32 - k * 0.30, zf - 0.27 - k * 0.30);
+      /* (batch 4: the treads hung in the air under the cab; the two hanger straps the steps hang from, up into the cab floor) */
+      [xd + 0.05, xd + 0.61].forEach(function (xh) { box(B.dark, xh, xh + 0.04, s * (w - 0.18) - 0.10, s * (w - 0.18) + 0.10, zf - 0.63, zf + 0.04); });
       bar(B.dark, [x1 - 0.20, s * w, zr - 0.25], [x1 + 0.05, s * (w + 0.25), zr - 0.10], 0.02, 4);
       box(B.dark, x1, x1 + 0.08, s * (w + 0.18), s * (w + 0.34), zw - 0.10, zr - 0.15);
       /* lamp clusters at the front corners, amber marker lamps above, their guards */
@@ -1622,12 +1700,19 @@ var HeroMiscBorrowed = (function () {
      2.06 m and 2.14 m off the photographs; they are drawn so, though they look low for these trucks (the
      cabs are farther from the camera than the rounds: NOT CONFIRMED).  Nodes: the "roadwheel" axle groups;
      "podelev" (the round and its cradle, hinged at the rear of the frame; userData.el raises it upright).
-     Not drawn (no photograph): jacks, the erector's rams, the cab's far side. */
+     Not drawn (no photograph): jacks, the erector's rams, the cab's far side.
+     (batch 4, re-measured on [DF1] for the spec tools/model3d/specs/pla_e00_df21d.json, ground at the near front
+     tyre's foot, px 607: the canister's top reads z 2.19 at its tail, 2.77 at x 0.35 and 2.96 at its front end, x 3.54,
+     which is the cab's back; the pale cone runs on from there to the tip at x 5.07, z 2.5, standing over the cab
+     roof.  The DF-21D was drawn at 3.1 degrees with a 10.0 m canister running into the cab and a 0.7 m cone hidden
+     behind the cab roof; it is now 5.5 degrees nose-up, the canister 8.97 m (to the cab's back wall at x 3.30), the
+     cone 1.73 m.  NOT CONFIRMED: an oblique photograph with the cab nearer the camera - the pitch reads 4.9 to 6.3
+     degrees depending on the point taken.) */
   var TELV = {
     df21d: { key: "pla_e00_df21d", L: 11.28, AX: [-4.67, -3.00, -1.19, 2.16, 3.96], RT: 0.61, TY: 1.17, W: 1.45,
              cab: { x0: 3.30, x1: 5.64, zf: 1.05, zr: 2.06, zw: 1.45, zl: 1.15, wins: [[3.55, 4.05], [4.25, 4.55]] },
-             body: { x0: -5.64, x1: 3.25, top: 1.93, foot: 1.03 }, hx: -5.40, hz: 1.45, pitch: 3.1,
-             rd: { tail: -5.64, L: 10.70, r: 0.70, can: 0.85, canL: 10.0, nl: 1.30, zt: 1.34 } },
+             body: { x0: -5.64, x1: 3.25, top: 1.93, foot: 1.03 }, hx: -5.40, hz: 1.45, pitch: 5.5,
+             rd: { tail: -5.64, L: 10.70, r: 0.70, can: 0.85, canL: 8.97, nl: 1.30, zt: 1.34 } },
     df26:  { key: "pla_e00_df26", L: 12.76, AX: [-4.70, -3.54, -2.32, -0.97, 2.06, 3.61], RT: 0.61, TY: 1.17, W: 1.45,
              cab: { x0: 3.92, x1: 6.38, zf: 1.05, zr: 2.14, zw: 1.50, zl: 1.15, wins: [[4.10, 4.60], [4.80, 5.30]] },
              body: { x0: -6.38, x1: 3.88, top: 2.36, foot: 1.26 }, hx: -6.10, hz: 1.80, pitch: 1.6,
@@ -1649,7 +1734,7 @@ var HeroMiscBorrowed = (function () {
         var x0 = b.x0 + 0.2 + k * 1.25;
         locker(B, s, V.W, x0, x0 + 1.15, b.foot + 0.32, b.top - 0.12, k % 3 === 1 ? 4 : 0);
       }
-      ladderX(B.dark, b.x1 - 0.55, s * (V.W + 0.06), b.foot - 0.3, b.top);
+      ladderX(B.dark, b.x1 - 0.55, s * (V.W + 0.02), b.foot - 0.3, b.top);
       grab(B.dark, b.x0 + 1.0, b.x1 - 1.0, s * (V.W - 0.08), b.top, 0.10);
       sideBox(B.team, s, V.W, 0.015, b.x0 + 2.5, b.x0 + 3.6, b.top - 0.10, b.top - 0.02);
       box(B.red, b.x0 - 0.02, b.x0 + 0.01, s * 1.20 - 0.07, s * 1.20 + 0.07, b.foot + 0.10, b.foot + 0.22);
@@ -1660,7 +1745,7 @@ var HeroMiscBorrowed = (function () {
     /* hinge brackets at the rear of the frame */
     for (s = -1; s <= 1; s += 2) { box(B.dark, V.hx - 0.25, V.hx + 0.25, s * 0.55 - 0.08, s * 0.55 + 0.08, b.foot + 0.45, V.hz + 0.05); cylY(B.dark, V.hx, s * 0.45, s * 0.65, V.hz, 0.10, 10); }
     flush(THREE, g, B);
-    addAxles(THREE, g, T, V.AX, V.RT, 0.22, V.TY, PAL.pla.base);
+    addAxles(THREE, g, T, V.AX, V.RT, 0.22, V.TY, PAL.pla.base, null, 24);      /* the big lugged tyres [DF1][DF2] (batch 4: 24 lugs, ten-bolt hubs) */
     /* the round on its cradle, in the "podelev" frame (origin on the hinge) */
     var p = V.pitch * D2R, axz = R.zt - V.hz, xt = R.tail - V.hx;
     var E = podGroup(THREE, g, V.hx, V.hz, 90 - V.pitch, [[xt + 1.5 * Math.cos(p), 0, axz + 1.5 * Math.sin(p), xt - 0.3]]);
@@ -1669,10 +1754,15 @@ var HeroMiscBorrowed = (function () {
     if (R.can) {
       /* DF-21D: the canister, its hoops and end ring; the pale nose cone out of its front [DF1] */
       lathe(NB.paint, [[0, 0.01], [0, R.can], [R.canL, R.can], [R.canL, R.can * 0.75], [R.canL + 0.01, 0.01]], 24);
-      for (k = 0; k < 7; k++) cyl(NB.dark, [0.6 + k * 1.45, 0, 0], [0.68 + k * 1.45, 0, 0], R.can + 0.02, R.can + 0.02, 24);
+      for (k = 0; k < 7; k++) cyl(NB.dark, [0.6 + k * (R.canL - 1.0) / 6, 0, 0], [0.68 + k * (R.canL - 1.0) / 6, 0, 0], R.can + 0.02, R.can + 0.02, 24);
       lathe(NB.lamp, [[R.canL, R.can * 0.70], [R.canL + 0.25, R.can * 0.66], [R.L - 0.45, 0.22], [R.L - 0.08, 0.07], [R.L, 0.01]], 20);
       for (s = -1; s <= 1; s += 2) box(NB.dark, 0.3, R.canL - 0.3, s * (R.can + 0.02) - 0.03, s * (R.can + 0.02) + 0.03, -0.30, 0.10);
       box(NB.team, 4.0, 5.2, -0.25, 0.25, R.can - 0.02, R.can + 0.01);
+      /* (batch 4, [DF1] px 215 to 300) the cluster of fittings on the canister's top behind its tail: the end-cap's
+         hinge block, two lifting eyes and the cable box, sat on the canister skin */
+      box(NB.dark, 0.45, 0.95, -0.30, 0.30, R.can - 0.06, R.can + 0.12);
+      for (s = -1; s <= 1; s += 2) { cylY(NB.dark, 1.15, s * 0.22 - 0.03, s * 0.22 + 0.03, R.can + 0.04, 0.08, 10); box(NB.dark, 1.08, 1.22, s * 0.22 - 0.04, s * 0.22 + 0.04, R.can - 0.05, R.can + 0.02); }
+      box(NB.paint, 1.40, 1.95, -0.45, 0.05, R.can - 0.10, R.can + 0.10);
     } else {
       /* DF-26: the bare round - the two stages' joint bands, the long nose; the cradle clamps [DF2] */
       ballisticRound(NB, R.L, R.r, R.nl, [3.4, 6.9, 9.6]);
@@ -1708,7 +1798,7 @@ var HeroMiscBorrowed = (function () {
     chassis(B, -5.70, 3.40, 1.05, AX, 0.60, 1.20, W);
     /* the equipment cabin behind the cab, its roof chamfered down at the front, the air conditioner [Y1] */
     prismY(B.paint, [[1.40, ZF], [3.35, ZF], [3.35, 2.75], [3.05, 3.05], [1.40, 3.05]], -W, W);
-    for (s = -1; s <= 1; s += 2) { locker(B, s, W, 1.55, 2.35, 1.30, 2.85, 0); locker(B, s, W, 2.45, 3.25, 1.30, 2.85, 5); ladderX(B.dark, 1.30, s * (W + 0.05), 0.5, 3.05); }
+    for (s = -1; s <= 1; s += 2) { locker(B, s, W, 1.55, 2.35, 1.30, 2.85, 0); locker(B, s, W, 2.45, 3.25, 1.30, 2.85, 5); ladderX(B.dark, 1.30, s * (W + 0.02), 0.5, 3.05); }
     box(B.dark, 1.70, 2.60, -0.55, 0.55, 3.05, 3.40);
     /* the rear deck, its side lockers and the cradle posts [Y1] */
     box(B.paint, -5.72, 1.40, -W, W, ZF, 1.40);
@@ -1783,7 +1873,7 @@ var HeroMiscBorrowed = (function () {
     cylZ(B.paint, -0.6, 0, ZD, ZD + 0.35, 1.00, 20);
     for (s = -1; s <= 1; s += 2) { box(B.paint, -2.0, -1.4, s * 0.62 - 0.12, s * 0.62 + 0.12, ZD + 0.35, ZD + 1.25); bar(B.metal, [-0.2, s * 0.40, ZD + 0.35], [-0.8, s * 0.40, ZD + 1.20], 0.08, 8); }
     flush(THREE, g, B);
-    addAxles(THREE, g, T, AX, 0.55, 0.20, 1.05, PAL.pla.base, [true, true]);
+    addAxles(THREE, g, T, AX, 0.55, 0.20, 1.05, PAL.pla.base, [true, true], 24);      /* the twin tyres' lugged treads [H2] (batch 4: 24 lugs) */
     /* the jacks: up on the march, down on their pads set up [H2] */
     var trv = grp(THREE, g, "travelpose"), dep = grp(THREE, g, "deploypose"), JT = bins(T, 0.3), JD = bins(T, 0.3);
     [[3.0, 1.05], [-3.1, 1.05]].forEach(function (j) {
@@ -1798,6 +1888,13 @@ var HeroMiscBorrowed = (function () {
     box(EB.paint, -0.30, 6.10, -0.30, 0.30, 0.0, 0.32);
     box(EB.dark, -0.30, 6.10, -0.10, 0.10, 0.32, 0.38);
     for (k = 0; k < 5; k++) for (s = -1; s <= 1; s += 2) sideBox(EB.dark, s, 0.30, 0.01, 0.3 + k * 1.2, 0.6 + k * 1.2, 0.04, 0.28);
+    /* (batch 4, [H2]) the girder's side stiffeners between its panels, the louvred grilles in two of them, the rail's
+       top flange edges */
+    for (s = -1; s <= 1; s += 2) {
+      for (k = 0; k < 6; k++) sideBox(EB.paint, s, 0.30, 0.025, 0.15 + k * 1.17, 0.21 + k * 1.17, 0.0, 0.32);
+      [1.5, 3.9].forEach(function (xg) { for (var j = 0; j < 5; j++) sideBox(EB.dark, s, 0.31, 0.012, xg, xg + 0.30, 0.07 + j * 0.045, 0.09 + j * 0.045); });
+      box(EB.dark, -0.30, 6.10, s * 0.30 - 0.03, s * 0.30 + 0.03, 0.32, 0.35);
+    }
     /* the forward cradle with its flared blast plates [H2] */
     for (s = -1; s <= 1; s += 2) prismX(EB.paint, [[s * 0.30, 0.0], [s * 0.85, 0.15], [s * 0.85, 1.05], [s * 0.30, 0.80]], 4.40, 5.90);
     box(EB.paint, 4.40, 5.90, -0.85, 0.85, -0.10, 0.02);
@@ -1852,6 +1949,8 @@ var HeroMiscBorrowed = (function () {
     box(B.dark, 3.06, 3.10, -0.10, 0.10, 0.95, 1.38);
     bar(B.dark, [3.30, -0.95, 0.80], [3.30, 0.95, 0.80], 0.06, 10);
     for (s = -1; s <= 1; s += 2) bar(B.dark, [3.10, s * 0.75, 0.80], [3.30, s * 0.75, 0.80], 0.05, 6);
+    /* the brush bar's ends bent back toward the wings [N1] (batch 4) */
+    for (s = -1; s <= 1; s += 2) bar(B.dark, [3.30, s * 0.95, 0.80], [3.12, s * 1.12, 0.80], 0.06, 10);
     box(B.dark, 1.90, 2.60, -0.55, 0.55, 1.77, 1.80);
     /* where the cab would be: the electronics box, its hatch, the mast with its sensors, whips [N1] */
     box(B.paint, 0.20, 1.10, -0.70, 0.70, 0.95, 2.05);
@@ -1867,12 +1966,27 @@ var HeroMiscBorrowed = (function () {
       for (k = 0; k < 3; k++) locker(B, s, W, -2.95 + k * 1.0, -2.05 + k * 1.0, 0.62, 1.02, 0);
       box(B.dark, -3.0, -2.6, s * 0.75 - 0.08, s * 0.75 + 0.08, 1.05, 1.45);
       box(B.red, -3.12, -3.09, s * 1.05 - 0.06, s * 1.05 + 0.06, 0.88, 0.98);
+      /* the round stop and indicator lamps beside the tail block (batch 4) */
+      cyl(B.red, [-3.10, s * 0.82, 0.93], [-3.13, s * 0.82, 0.93], 0.045, 0.045, 10); cyl(B.lamp, [-3.10, s * 0.68, 0.93], [-3.13, s * 0.68, 0.93], 0.04, 0.04, 10);
       sideBox(B.team, s, W, 0.015, -1.0, 0.0, 0.95, 1.03);
       jerrycan(B.dark, -0.20, s * 1.0, 1.05);
     }
-    towHook(B.dark, -3.18, 0, 0.75, -1);
+    towHook(B.dark, -3.15, 0, 0.82, -1);          /* (batch 4: on the bed's tail; it hung 4 cm under and behind it) */
+    /* (batch 4, [N1] [N2]: the running gear under the bonnet and the bed) the frame rails forward under the bonnet; at
+       every wheel the independent suspension's upper and lower wishbones out to the hub and the coil-over damper */
+    for (s = -1; s <= 1; s += 2) box(B.dark, 0.05, 3.00, s * 0.45 - 0.08, s * 0.45 + 0.08, 0.45, 0.82);
+    AX.forEach(function (ax) {
+      for (s = -1; s <= 1; s += 2) {
+        [[0.50, 0.46], [0.84, 0.72]].forEach(function (q) {
+          bar(B.dark, [ax - 0.22, s * 0.50, q[0]], [ax, s * 0.76, q[1]], 0.03, 6);
+          bar(B.dark, [ax + 0.22, s * 0.50, q[0]], [ax, s * 0.76, q[1]], 0.03, 6);
+        });
+        cyl(B.metal, [ax - 0.05, s * 0.66, 0.50], [ax - 0.12, s * 0.56, 0.95], 0.055, 0.055, 10);
+        cyl(B.dark, [ax - 0.06, s * 0.645, 0.58], [ax - 0.11, s * 0.575, 0.86], 0.075, 0.075, 10);
+      }
+    });
     flush(THREE, g, B);
-    addAxles(THREE, g, T, AX, RT, 0.20, 0.98, PAL.usmc.base);
+    addAxles(THREE, g, T, AX, RT, 0.20, 0.98, PAL.usmc.base, null, 28);       /* the JLTV's big lugged tyres, the ten-bolt hubs [N1] (batch 4) */
     /* the canisters, hinged at the rear of the frame */
     var hx = -2.80, hz = 1.45, CW = 0.52, CH = 0.95, CL = 4.30;
     var E = podGroup(THREE, g, hx, hz, 30, [[CL + 0.02, CW, CH * 0.55, -0.05], [CL + 0.02, -CW, CH * 0.55, -0.05]]), EB = bins(T, 0.4);
@@ -1891,6 +2005,9 @@ var HeroMiscBorrowed = (function () {
     }
     box(EB.dark, -0.10, CL - 0.3, -1.0, 1.0, 0.0, 0.08);
     cylY(EB.dark, 0, -0.9, 0.9, 0, 0.09, 10);
+    /* (batch 4, [N1]) the launcher frame's cross tubes under the pack and the tie-down eyes along each canister's foot rib */
+    for (k = 0; k < 5; k++) cylY(EB.dark, 0.35 + k * 0.90, -1.0, 1.0, -0.02, 0.045, 8);
+    for (s = -1; s <= 1; s += 2) for (k = 0; k < 6; k++) cyl(EB.dark, [0.30 + k * 0.74, s * (CW * 2 + 0.015), 0.15], [0.30 + k * 0.74, s * (CW * 2 + 0.05), 0.15], 0.04, 0.04, 8);
     flush(THREE, E, EB);
     g.name = "nato_e20_coastssm";
     return g;
@@ -1944,9 +2061,15 @@ var HeroMiscBorrowed = (function () {
     for (k = 0; k < 4; k++) box(B.dark, xr + 1.8 + k * 0.30, xr + 1.95 + k * 0.30, -0.20, 0.20, H, H + 0.04);
     /* the sides: the stowage bins, grab rails, the rear basket [T1] */
     for (s = -1; s <= 1; s += 2) {
-      box(B.paint, xr + 0.30, xr + 1.60, s * (hw - 0.05), s * (hw + 0.30), 0.50, 1.05);
-      grab(B.dark, xr + 1.8, xf - 1.0, s * (hw - 0.06), 1.30, 0.08);
-      sideBox(B.team, s, hw - 0.12, 0.015, xr + 1.9, xr + 2.9, 1.45, 1.60);
+      /* (batch 4: the side lean was not followed - the grab rails stood 16 cm off the wall, the team strip 13 cm,
+         the bins 4 cm: on the wall now, at its y for their height, hw - (hw - tw) z / H) */
+      box(B.paint, xr + 0.30, xr + 1.60, s * (hw - 0.12), s * (hw + 0.30), 0.50, 1.05);
+      /* the bins' lids proud of their tops, the latches and hinges down their faces (batch 4) */
+      box(B.paint, xr + 0.27, xr + 1.63, s * (hw - 0.10), s * (hw + 0.33), 1.05, 1.09);
+      for (k = 0; k < 2; k++) { box(B.dark, xr + 0.55 + k * 0.70, xr + 0.65 + k * 0.70, s > 0 ? hw + 0.30 : -hw - 0.33, s > 0 ? hw + 0.33 : -hw - 0.30, 0.85, 1.02); }
+      bar(B.dark, [xr + 0.30, s * (hw + 0.31), 1.08], [xr + 1.60, s * (hw + 0.31), 1.08], 0.015, 5);
+      grab(B.dark, xr + 1.8, xf - 1.0, s * (hw - (hw - tw) * 1.30 / H + 0.012), 1.30, 0.08);
+      sideBox(B.team, s, hw - (hw - tw) * 1.60 / H - 0.005, 0.015, xr + 1.9, xr + 2.9, 1.45, 1.60);
       box(B.dark, xf - 0.70, xf - 0.40, s * 0.95 - 0.10, s * 0.95 + 0.10, H - 0.30, H + 0.05);
     }
     for (k = 0; k < 3; k++) bar(B.dark, [xr - 0.05, -1.0 + k * 1.0, 0.40], [xr - 0.05, -1.0 + k * 1.0, 1.10], 0.02, 4);
@@ -2030,7 +2153,7 @@ var HeroMiscBorrowed = (function () {
       for (i = 0; i < 12; i++) { var a = i / 12 * TAU; box(B.metal, 1.75 + Math.cos(a) * 0.33 - 0.03, 1.75 + Math.cos(a) * 0.33 + 0.03, y0, y1, 0.62 + Math.sin(a) * 0.33 - 0.03, 0.62 + Math.sin(a) * 0.33 + 0.03); }
       cylY(B.paint, -2.20, y0, y1, 0.48, 0.28, 14);
       for (k = 0; k < 4; k++) cylY(B.paint, -1.28 + k * 0.67, y0 + 0.04, y1 - 0.04, 0.84, 0.10, 8);
-      for (i = 0; i < 5; i++) bar(B.dark, [M18.XW[i] + 0.35, s * (TRK - 0.30), 0.55], [M18.XW[i], s * (TRK - 0.30), M18.ZW], 0.04, 5);
+      for (i = 0; i < 5; i++) bar(B.dark, [M18.XW[i] + 0.35, s * (TRK - 0.30), 0.55], [M18.XW[i], s * (TRK - 0.11), M18.ZW], 0.04, 5);   /* the torsion arm into the wheel's hub (it stopped 17 cm short) */
     }
     box(B.team, -2.40, -2.00, -0.60, 0.60, D + 0.02, D + 0.035);
     flush(THREE, g, B);
@@ -2054,7 +2177,11 @@ var HeroMiscBorrowed = (function () {
     m2(TB, TR + 0.35, 0.30, TH + 0.50, 1, 1.15);
     /* the gun: the mantlet, the 76 mm tube to 6.65 m overall, the double-baffle brake */
     var gz = 0.42, mzx = (XR + 6.65) - (-0.10);
-    box(TB.paint, TF - 0.10, TF + 0.18, -0.30, 0.30, gz - 0.25, gz + 0.22);
+    box(TB.paint, TF - 0.10, TF + 0.18, -0.44, 0.44, gz - 0.25, gz + 0.22);          /* the mantlet across the gap between the front plates (batch 4: it stood 12 cm clear of them) */
+    /* the mantlet's bolt rows, the sight aperture beside the tube and its hood [M1][M2] (batch 4) */
+    for (k = 0; k < 4; k++) for (s = -1; s <= 1; s += 2) cyl(TB.dark, [TF + 0.18, s * 0.36, gz - 0.18 + k * 0.12], [TF + 0.20, s * 0.36, gz - 0.18 + k * 0.12], 0.018, 0.018, 6);
+    box(TB.dark, TF + 0.17, TF + 0.19, 0.16, 0.26, gz + 0.02, gz + 0.12);
+    box(TB.paint, TF + 0.12, TF + 0.24, 0.14, 0.28, gz + 0.12, gz + 0.16);
     cyl(TB.paint, [TF + 0.15, 0, gz], [TF + 0.55, 0, gz], 0.13, 0.11, 14);
     cyl(TB.paint, [TF + 0.55, 0, gz], [mzx - 0.30, 0, gz], 0.06, 0.055, 12);
     cyl(TB.dark, [mzx - 0.30, 0, gz], [mzx, 0, gz], 0.085, 0.085, 12);
@@ -2086,11 +2213,11 @@ UNIT_MODELS["nato_e90_patrol"] = { len: 54.6, build: HeroMiscBorrowed.cyclone };
 UNIT_MODELS["nato_e60_patrol"] = { len: 15.24, build: HeroMiscBorrowed.pcf };
 UNIT_MODELS["nato_e60_aswhelo"] = { len: 22.41, build: HeroMiscBorrowed.sh3 };
 UNIT_MODELS["nato_e60_lamps"] = { len: 15.87, build: HeroMiscBorrowed.sh2f };
-UNIT_MODELS["pla_e00_df21d"] = { len: 11.65, build: HeroMiscBorrowed.df21d };
+UNIT_MODELS["pla_e00_df21d"] = { len: 11.68, build: HeroMiscBorrowed.df21d };
 UNIT_MODELS["pla_e00_df26"] = { len: 13.13, build: HeroMiscBorrowed.df26 };
 UNIT_MODELS["pla_e00_coastssm"] = { len: 11.86, build: HeroMiscBorrowed.yj62 };
 UNIT_MODELS["pla_e80_coastssm"] = { len: 8.28, build: HeroMiscBorrowed.hy2a };
-UNIT_MODELS["nato_e20_coastssm"] = { len: 6.64, build: HeroMiscBorrowed.nmesis };
+UNIT_MODELS["nato_e20_coastssm"] = { len: 6.61, build: HeroMiscBorrowed.nmesis };
 UNIT_MODELS["pla_e90_tankdestroyer"] = { len: 7.97, build: HeroMiscBorrowed.ptz89 };
 UNIT_MODELS["roc_e50_tankdestroyer"] = { len: 6.79, build: HeroMiscBorrowed.m18 };
 
