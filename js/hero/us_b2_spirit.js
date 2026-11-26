@@ -516,7 +516,13 @@ var HeroB2 = (function () {
     gear.add(strut(THREE, T.metal, [NOSE - 3.60, 0, G + 0.80], [NOSE - 3.38, 0, G + 1.00], 0.025, 5));
     gear.add(strut(THREE, T.metal, [NOSE - 3.38, 0, G + 1.00], [NOSE - 3.66, 0, G + 1.20], 0.025, 5));
     gear.add(strut(THREE, T.metal, [NOSE - 3.70, 0, G + 1.30], [NOSE - 3.68, 0, G + 1.38], 0.15, 10));
-    gear.add(box(THREE, T.glass, 0.10, 0.36, 0.12, NOSE - 3.52, 0, G + 1.55));
+    /* the landing lights: (batch 5) a bracket clamped round the leg's front
+       and a lamp either side of it - before, one glass bar stood 0.1 m clear
+       ahead of the leg in mid-air */
+    var lz = G + 1.55, la = [NOSE - 3.95, belly(3.95, 0)], lb = [NOSE - 3.55, G + 0.45];
+    var lx = la[0] + (lb[0] - la[0]) * (lz - la[1]) / (lb[1] - la[1]);
+    gear.add(box(THREE, T.metal, 0.12, 0.40, 0.08, lx + 0.07, 0, lz));
+    for (s = -1; s <= 1; s += 2) gear.add(box(THREE, T.glass, 0.06, 0.13, 0.12, lx + 0.15, s * 0.12, lz));
     root.add(gear);
   }
 

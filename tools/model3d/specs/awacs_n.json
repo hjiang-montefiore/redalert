@@ -1,0 +1,113 @@
+{
+ "key": "awacs_n",
+ "team": "nato",
+ "name": "Boeing E-3G Sentry (USAF AWACS, present day)",
+ "category": "air",
+ "published": {
+  "len": 44.35,
+  "span": 44.4,
+  "height": 12.6,
+  "source": "USAF E-3 Sentry fact sheet: length 145 ft 6 in (44.35 m), wingspan 145 ft 9 in (44.4 m), height 41 ft 4 in (12.6 m); rotodome 30 ft (9.1 m) across and 6 ft (1.83 m) deep, held 11 ft (3.35 m) above the fuselage by two struts"
+ },
+ "len": 44.35,
+ "nodes": ["gear"],
+ "engine_contract": {
+  "row": "js/hero/us_e3_sentry.js registers nine rows from one builder (HeroE3.build with a per-row spec): nato_e80_awacs, nato_e00_awacs, awacs_n, nato_e90_awacs (E-8C), gbr_e90_awacs, gbr_e00_awacs, awacs_f, fra_e90_awacs, fra_e00_awacs",
+  "current_nodes": "one 'gear' group (the renderer stows it), the lowest opaque part, wheels on z = -3.45",
+  "len_rule": "UNIT_MODELS[key].len = the measured X extent (44.35 m for the E-3 rows, 46.6 m for the E-8C)"
+ },
+ "references": [
+  {
+   "name": "[P1] USAF E-3 from above, 2009",
+   "image": "ref/awacs_n/e3_090512.jpg",
+   "source": "Wikimedia Commons 'Boeing E-3 Sentry 090512-F-7550B-902.jpg' (USAF, public domain), 1280 px thumbnail",
+   "view": "quarter",
+   "exact": false,
+   "note": "Plan-ish view from above and behind the port wing. Shows: the rotodome's two radar halves near-black, a pale band about a quarter of the diameter (2.3 m) wide straight across its centre with toothed edges and pale rib lines running about 1 m from one band edge into the dark half [P1, P2]; the dome centred over the wing's trailing edge root; all-over white/very light grey paint; the four slim pods ahead of the wing on raked pylons; the raked fin with its dorsal fillet; the low tailplane. Not scaled: perspective."
+  },
+  {
+   "name": "[P2] E-3G at Prince Sultan AB, 1 March 2020",
+   "image": "ref/awacs_n/e3g_psab.jpg",
+   "source": "Wikimedia Commons 'E-3G aircrew disembark their aircraft at Prince Sultan Air Base, 1 March 2020.jpg' (USAF, public domain), 1280 px thumbnail",
+   "view": "quarter",
+   "exact": false,
+   "note": "From under the port wing, looking forward-starboard. Shows: the dome edge-on - dark at both ends, pale in the middle, so the band ran athwartships at that moment (the dome turns in service); the two broad struts, white; the four-wheel main bogies; the port entry door aft (open); white overall. Not scaled: close, wide-angle perspective."
+  }
+ ],
+ "must_show": [
+  "the rotodome: a lens 9.1 m across and about 1.8 m deep, centred 28.5 m aft of the nose (x -6.33), bottom at z 5.53, top at z 7.33",
+  "the dome's paint: two near-black radar halves either side of a pale band 2.3 m wide across its centre (x -7.48 .. -5.18, laid athwartships), over the upper face, the rim and the lower face",
+  "two struts under the dome, the forward one broader, at x -4.6 .. -6.6 and -6.8 .. -8.6, from the crown (z 2.1) to the dome (z 5.5)",
+  "the 707 body: 3.76 m wide, level crown at z 2.13 from 7.5 m to 31 m aft of the nose, belly rising aft of x -9",
+  "the wing swept about 35 degrees, leading edge from x 8.4 at the root to x -7.0 at the tip, tips at y +-22.2, z +1.25",
+  "four slim TF33 pods hung well ahead of the wing on raked pylons, 10.1 m and 16.0 m off the centreline, their lips at about x 9.0 (inboard) and x 4.2 (outboard)",
+  "the raked fin with a dorsal fillet from x -10.4, tip at z 9.15 near x -19.5; the low tailplane 14.2 m across at z 0.7 .. 1.5, x -15.8 .. -22.1",
+  "four-wheel main bogies 22.5 m aft of the nose (x -0.33) at y +-3.4; twin nose wheels at x 16.9",
+  "all-over white / very light grey paint over the whole airframe (x -22.2 .. 22.2), plain (no markings); team colour in the ring near the dome's rim, the wingtips, tailplane tips and fin tip"
+ ],
+ "landmarks": [
+  {
+   "name": "nose tip",
+   "ref": 0,
+   "expect_m": [22.175, null, null],
+   "tol_m": 0.1,
+   "model_at": { "in_m": [15.0, -3.0, -4.0, 23.0, 3.0, 4.0], "point": ["max", null, null] },
+   "note": "published length 44.35 m, model centred on x 0"
+  },
+  {
+   "name": "wingtip, port",
+   "ref": 0,
+   "expect_m": [null, 22.2, null],
+   "tol_m": 0.1,
+   "model_at": { "in_m": [-12.0, 19.0, -2.0, 0.0, 23.0, 3.0], "point": [null, "max", null] },
+   "note": "published span 44.4 m"
+  },
+  {
+   "name": "fin tip",
+   "ref": 0,
+   "expect_m": [null, null, 9.15],
+   "tol_m": 0.1,
+   "model_at": { "in_m": [-22.5, -0.6, 7.0, -17.0, 0.6, 10.0], "point": [null, null, "max"] },
+   "note": "published height 12.6 m over the ground at z -3.45"
+  },
+  {
+   "name": "rotodome forward edge",
+   "ref": 0,
+   "expect_m": [-1.775, null, null],
+   "tol_m": 0.1,
+   "model_at": { "material": "#53575a", "in_m": [-12.0, -5.0, 5.0, 0.0, 5.0, 8.0], "point": ["max", null, null] },
+   "note": "dome 9.1 m across (published), centred 28.5 m aft of the nose (the E-3 three-view's side view, scaled to 44.35 m: lens 24.0 to 33.1 m)"
+  },
+  {
+   "name": "rotodome underside",
+   "ref": 0,
+   "expect_m": [null, null, 5.53],
+   "tol_m": 0.1,
+   "model_at": { "material": "#53575a", "in_m": [-12.0, -5.0, 5.0, 0.0, 5.0, 8.0], "point": [null, null, "min"] },
+   "note": "11 ft (3.35 m) over the 5.58 m crown (published) = 8.93 m over the ground, z 5.48; the three-view reads 8.96; the model has 8.98"
+  },
+  {
+   "name": "rotodome top",
+   "ref": 0,
+   "expect_m": [null, null, 7.33],
+   "tol_m": 0.1,
+   "model_at": { "material": "#53575a", "in_m": [-12.0, -5.0, 5.0, 0.0, 5.0, 8.0], "point": [null, null, "max"] },
+   "note": "6 ft (1.83 m) deep (published) over the underside: z 7.36"
+  },
+  {
+   "name": "main bogie, port",
+   "ref": 0,
+   "expect_m": [-0.325, 3.4, null],
+   "tol_m": 0.1,
+   "model_at": { "path": "gear", "in_m": [-2.0, 2.5, -3.5, 1.5, 4.5, -2.3], "point": ["mid", "mid", null] },
+   "note": "the three-view: bogies 22.5 m from the nose; 707-320 main track 22 ft 1 in (6.73 m). The box stops at z -2.3 so the open gear door (y 4.05) and the drag brace are not what is measured: the four tyres and the bogie beam"
+  }
+ ],
+ "not_confirmed": [
+  "the dome band's direction: the dome turns in service; athwartships as in [P2]",
+  "the pale rib lines off one band edge and the toothed band edges ([P1], [P2]): the model draws dark ticks inside the band instead; their count and spacing are not measured",
+  "the strut stations and widths: from the three-view and the Souda Bay photograph named in the hero header, not from [P1] or [P2]",
+  "the blade aerials' stations on the spine and belly",
+  "no dimensioned drawing was fetched for this spec (Commons rate-limited the request for 'AWACS Line drawing.jpg'), so there is no outline reference: the stations are the hero header's readings of that drawing and the published figures"
+ ]
+}
