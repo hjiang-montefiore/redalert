@@ -414,10 +414,11 @@ var HeroUsSamSite = (function () {
   var P_Z = 0.12;                        /* hard-standing thickness            */
 
   function patMats(THREE, u, C) {
-    var m = {};
+    var m = {}, tagged = null;
     u.traverse(function (o) {
       if (!o.isMesh) return;
       var mt = o.material, h = mt.color.getHex();
+      if (mt.userData && mt.userData.role === "skin") tagged = mt;
       if (mt.map) m.skin = mt;
       else if (h === 0x80868a) m.steel = mt;
       else if (h === 0x25292b) m.dark = mt;
@@ -427,6 +428,8 @@ var HeroUsSamSite = (function () {
       else if (h === 0xb9aa82) m.can = mt;
       else m.team = mt;
     });
+    /* the unit hero tags its trailer skin; untagged builds keep the old rule (last mapped one) */
+    if (tagged) m.skin = tagged;
     if (!m.skin) m.skin = m.team;
     if (!m.team) m.team = new THREE.MeshStandardMaterial({ color: (C && C.team !== undefined) ? C.team : 0x3f7fd0, roughness: 0.55, metalness: 0.18 });
     m.conc = new THREE.MeshStandardMaterial({ color: 0x5c5d58, roughness: 0.93, metalness: 0.03 });

@@ -1,0 +1,199 @@
+{
+ "key": "sam_n",
+ "team": "nato",
+ "name": "MIM-104 Patriot launching station M903 with twelve PAC-3 MSE canisters on the M860 semitrailer, coupled to its Oshkosh M983 HEMTT tractor (js/hero/us_patriot.js, HeroUsPatriot 'mse'; the same build draws nato_e80/e90/e00_sam and, through HeroUsPatriot.build, roc_e00_sam and the sam_nato_* sites)",
+ "category": "veh",
+ "published": {
+  "len": 16.9,
+  "span": 3.0,
+  "height": 4.33,
+  "source": "No single published length for the M983 + M860 + M903 combination was found. 16.90 m is the travel-pose X extent of the model, tail lamp bar (x' -0.01) to the M983 bumper face (x' 16.89), measured off [S] (trailer, 64.6 px/m on the 1.30 m 16.00R20 tyre) and [U] (tractor, 72 px/m; axles 1.52 / 3.10 / 1.52 m). Height 4.33 m over the stowed stack ([T]: stack top 4.3 m). render3d sizes the unit by its visible pose, so len is that extent (it was 17.19 m, both poses together)."
+ },
+ "len": 16.9,
+ "nodes": [
+  "turret",
+  "podelev",
+  "travelpose",
+  "deploypose",
+  "roadwheel"
+ ],
+ "engine_contract": {
+  "rows": "HeroUsPatriot.rows (VARS): nato_e80_sam, nato_e90_sam, nato_e00_sam, sam_n; roc_artillery.js builds 'pac2' and repaints it (its own len 17.19 there); us_sam_site.js buildPatriot copies the raw build (root's direct meshes, deploypose, the turret) and sorts materials by colour, a mapped one as the skin: build() adds the turret first so the trailer skin is the last mapped material it meets",
+  "nodes": "'turret' (x -6.745, z 1.70, a direct child of the root) holding 'podelev' (hinge x -0.70 z 0.54 in its frame; userData.el 38 deg; userData.cells mouth x, y, z and rear x per round); 'travelpose' / 'deploypose' (outriggers and mast); six 'roadwheel' groups (four tractor, two trailer)",
+  "draw_calls": "16 (<= 16) either pose; tools/jsc/launcher3d_check.js and deploypose_check.js pass"
+ },
+ "references": [],
+ "must_show": [
+  "a long semitrailer whose tandem sits at the TAIL (axles x -7.42 and -5.97, single 1.30 m tyres) and whose front is a raised gooseneck (deck z 1.95 .. 2.20, x -1.25 .. 1.90) over the tractor's rear pair [S][T][L]",
+  "the tall generator box on the gooseneck (x -1.04 .. 1.50, z 2.20 .. 3.85), louvred grille high on its front and starboard side [S][L][T]",
+  "the canister stack FOUR wide by THREE high, twelve single-round MSE canisters, each its own ribbed box with open X-braced end frames, dark seams between them; stowed level, its bottom z 2.45 and top z 4.30, from x -7.71 to -1.81 [E][T] and en.wikipedia ('in 3 rows of 4')",
+  "fire: the stack raised to 38 deg about the hinge over the rear axle (x -7.45, z 2.24), two long rams under it [S][L][W][K]",
+  "the LEM box under the front of the stack (x -3.90 .. -1.84, z 1.30 .. 2.12) [S][T]",
+  "four A-frame outriggers with round pads, a pair at the tail and a pair behind the gooseneck (x -1.34), down only when set up [S][L][T][W]",
+  "the data-link mast: two poles on the PORT side by the hinge (x -6.78, y 1.36), up only when set up [S][L][K]",
+  "the M983: a short flat-faced cab with a raked screen (x 6.88 .. 8.51, roof z 2.63), the louvred box and upright stack behind it, the spare lying flat, the fifth wheel over the rear pair, axles at x 0.39, 1.91, 5.00, 6.53 [U][T][P]",
+  "the cab steps hung under the doors on hangers (x 7.33 .. 8.01, z 0.70), mirrors on arms from the cab sides [U][P]",
+  "plain CARC tan over tractor, trailer and launcher frame, the MSE canisters (x -7.72 .. -1.82) a lighter tan; no markings, numbers or camouflage; team colour on the cab roof (x 7.11 .. 7.86, z 2.63) and the generator roof (x -0.50 .. 0.91, z 3.85)"
+ ],
+ "landmarks": [
+  {
+   "name": "trailer front axle",
+   "view": "side",
+   "expect_m": [
+    -5.975,
+    0.65
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "node": "roadwheel",
+    "index": 5
+   },
+   "note": "[S]: tandem 0.87 / 2.32 m from the tail, 16.00R20 r 0.65"
+  },
+  {
+   "name": "trailer rear axle",
+   "view": "side",
+   "expect_m": [
+    -7.425,
+    0.65
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "node": "roadwheel",
+    "index": 4
+   },
+   "note": "[S]"
+  },
+  {
+   "name": "tractor front axle",
+   "view": "side",
+   "expect_m": [
+    6.525,
+    0.65
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "node": "roadwheel",
+    "index": 3
+   },
+   "note": "[U]: 1.52 / 3.10 / 1.52 m from the rear axle at x' 8.68"
+  },
+  {
+   "name": "launcher turntable",
+   "view": "side",
+   "expect_m": [
+    -6.745,
+    1.7
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "node": "turret",
+    "index": 0
+   },
+   "note": "[S]: turntable centre x' 1.55 on the 1.70 m deck"
+  },
+  {
+   "name": "bumper face",
+   "view": "side",
+   "expect_m": [
+    8.595,
+    null
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "in_m": [
+     8.0,
+     -1.3,
+     0.6,
+     9.0,
+     1.3,
+     1.1
+    ],
+    "point": [
+     "max",
+     null
+    ]
+   },
+   "note": "[U]"
+  },
+  {
+   "name": "trailer tail",
+   "view": "side",
+   "expect_m": [
+    -8.305,
+    null
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "in_m": [
+     -8.6,
+     -1.3,
+     1.0,
+     -8.0,
+     1.3,
+     1.3
+    ],
+    "point": [
+     "min",
+     null
+    ]
+   },
+   "note": "[S]: the tail lamp bar"
+  },
+  {
+   "name": "stowed stack top",
+   "view": "side",
+   "expect_m": [
+    null,
+    4.3
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "in_m": [
+     -7.5,
+     -0.9,
+     3.9,
+     -3.0,
+     0.9,
+     4.5
+    ],
+    "point": [
+     null,
+     "max"
+    ]
+   },
+   "note": "[T]: stack top 4.3 m in travel"
+  },
+  {
+   "name": "generator roof",
+   "view": "side",
+   "expect_m": [
+    null,
+    3.86
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "in_m": [
+     -0.295,
+     -0.5,
+     3.5,
+     1.205,
+     0.5,
+     4.0
+    ],
+    "point": [
+     null,
+     "max"
+    ]
+   },
+   "note": "[S]: generator 2.20 .. 3.85 m (the team flash 3 cm proud)"
+  }
+ ],
+ "not_confirmed": [
+  "no reference picture could be fetched in batch 5 (Commons answered 429); the spec is written from the header's station table, measured off [S][T][U], so it carries no outline references",
+  "the all-tan scheme for the present-day row: [P][W][K] show US launchers all tan in the 1990s, [E] (2022) shows tan MSE canisters in a GREEN three-colour frame; the plain-paint rule drops the pattern and the row is drawn in the plain tan, which is NOT confirmed by a dated present-day photograph",
+  "the outriggers' travel stowage, the LEM's width, the trailer tyre size, the port side under the deck, cable runs, the M983's exhaust (header)",
+  "the seams between the MSE canisters are drawn from [E]'s canister ends; their width is estimated",
+  "the cab-step hangers' stations (estimated; [U] shows the steps under the doors)"
+ ]
+}

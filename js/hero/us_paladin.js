@@ -95,8 +95,12 @@
        brown #483122, black #25292e): green #46502e, brown #4f3e29, black #232526.
        MERDC was also worn in the early 1980s; no dated US M109A2 photograph in
        it was found, so the three-colour is drawn.
-     M109A6 1990s: NATO three-colour (F, 2016; the 1990s home-station scheme)
-     M109A7: tan (G, H: sampled #c39e5f in shade) -> #a38c62 / #a69069.
+     M109A6 1990s: plain CARC green 383 #444b30 (seen #758053), soft tonal weathering only
+       (2026-11: F's NATO three-colour is a camouflage pattern, which the
+       plain-paint rule leaves out)
+     M109A7: tan (G, H: sampled #c39e5f in shade) -> #937a56 / #967c55
+       (2026-11, HeroKit.authorFor: the old #a38c62 / #a69069 rendered as a
+       near-white cream at the game camera).
    No bumper codes, numbers or markings ("SPH 8" in G is not drawn).
 
    Corrections to the old file: the hull and turret are lofted from the
@@ -135,9 +139,14 @@ var HeroPaladin = (function () {
   var VARIANTS = {
     e60: { gen: 0, hull: HULL_OLD, L: 2.95, paint: { kind: "od", base: "#4b4e32", tone: ["#52553a", "#44472d"], seed: 1963 } },
     e80: { gen: 1, hull: HULL_OLD, L: 5.25, paint: { kind: "nato", base: "#46502e", tone: ["#4f3e29", "#232526"], seed: 1979 } },
-    e90: { gen: 2, hull: HULL_OLD, L: 5.25, paint: { kind: "nato", base: "#46502e", tone: ["#4f3e29", "#232526"], seed: 1992 } },
-    e00: { gen: 3, hull: HULL_A7, L: 5.25, paint: { kind: "tan", base: "#a38c62", tone: ["#aa936a", "#9a835a"], seed: 2017 } },
-    e20: { gen: 3, hull: HULL_A7, L: 5.25, paint: { kind: "tan", base: "#a69069", tone: ["#ad9870", "#9c8760"], seed: 2024 } }
+    /* 2026-11 (batch 5): the A6 in plain CARC green 383, no pattern (plain-paint rule; the
+       three-colour of F dropped), authored #444b30 to show as #758053 in sun (the A2's
+       #46502e shows as a light grass green, #788850), and the A7 tans re-authored with HeroKit.authorFor: the
+       old #a38c62 / #a69069 showed as a near-white cream (seenAs top #dbcea3 / #ddd1ab);
+       #937a56 / #967c55 show as #d3be91 / #d4c090 in sun, the tan of G and H */
+    e90: { gen: 2, hull: HULL_OLD, L: 5.25, paint: { kind: "od", base: "#444b30", tone: ["#4b5236", "#3d432a"], seed: 1992 } },
+    e00: { gen: 3, hull: HULL_A7, L: 5.25, paint: { kind: "tan", base: "#937a56", tone: ["#9b8159", "#8b7351"], seed: 2017 } },
+    e20: { gen: 3, hull: HULL_A7, L: 5.25, paint: { kind: "tan", base: "#967c55", tone: ["#9d8259", "#8f7650"], seed: 2024 } }
   };
 
   /* -------------------------------------------------------- geometry kit */
@@ -375,6 +384,12 @@ var HeroPaladin = (function () {
       cyl(D, [XN + 0.10, ly - 0.17, 1.17 + d], [XN + 0.10, ly - 0.17, 1.45 + d], 0.016, 0.016, 5);
       cyl(D, [XN + 0.10, ly + 0.17, 1.17 + d], [XN + 0.10, ly + 0.17, 1.45 + d], 0.016, 0.016, 5);
       cyl(D, [XN + 0.10, ly - 0.17, 1.45 + d], [XN + 0.10, ly + 0.17, 1.45 + d], 0.016, 0.016, 5);
+      /* the guard's feet: each post bent back into the lamp housing, top and
+         bottom (C, E: the guard is welded to the hull; it stood 6.5 cm clear) */
+      for (k = -1; k <= 1; k += 2) {
+        cyl(D, [XN + 0.10, ly + k * 0.17, 1.21 + d], [XN - 0.04, ly + k * 0.14, 1.21 + d], 0.016, 0.016, 5);
+        cyl(D, [XN + 0.10, ly + k * 0.17, 1.37 + d], [XN - 0.04, ly + k * 0.14, 1.37 + d], 0.016, 0.016, 5);
+      }
       /* tow eyes and shackles on the nose plate (E, G) */
       box(D, XN - 0.02, XN + 0.07, s * 0.62 - 0.07, s * 0.62 + 0.07, 0.86, 1.00);
       /* tail: lamps and tow pintles */
@@ -393,6 +408,15 @@ var HeroPaladin = (function () {
     /* engine deck, front RIGHT: grille and its louvres (C) */
     box(D, XN - 2.05, XN - 1.05, -1.40, -0.30, ZD - 0.01, ZD + 0.015);
     for (k = 0; k < 9; k++) box(Pn, XN - 2.02 + k * 0.11, XN - 1.97 + k * 0.11, -1.37, -0.33, ZD + 0.005, ZD + 0.04);
+    /* the Paladins' engine-deck access doors round the grille: their seams
+       and hinge strips (C, G, H) */
+    if (gen >= 2) {
+      box(D, XN - 2.20, XN - 2.18, -1.50, -0.18, ZD, ZD + 0.012);
+      box(D, XN - 0.92, XN - 0.90, -1.50, -0.18, ZD, ZD + 0.012);
+      box(D, XN - 2.20, XN - 0.90, -0.20, -0.18, ZD, ZD + 0.012);
+      box(D, XN - 2.20, XN - 0.90, -1.50, -1.48, ZD, ZD + 0.012);
+      for (k = 0; k < 3; k++) cylX(D, XN - 2.10 + k * 0.42, XN - 1.90 + k * 0.42, -0.24, ZD + 0.02, 0.022, 6);
+    }
     /* the M109's louvred grille high on the right hull side (B) */
     if (gen === 0) {
       box(D, 0.55, 1.45, -WU - 0.012, -WU + 0.01, 1.30, 1.60);
@@ -405,6 +429,13 @@ var HeroPaladin = (function () {
     belt(D, g0[0], g0[1] + 0.04, g1[0], g1[1] + 0.04, 0.28, 0.34, 0.05);
     belt(D, g1[0] + 0.02, g1[1] + 0.05, g1[0] + 0.16, g1[1] - 0.02, -0.34, 0.34, 0.06);
     box(D, g0[0] - 0.08, g0[0] + 0.04, -0.40, 0.40, g0[1] - 0.06, g0[1] + 0.06);
+    /* lifting eyes on the deck corners (C, G, H) */
+    if (gen >= 2) {
+      for (s = -1; s <= 1; s += 2) {
+        cylY(D, XN - (H.a7 ? 0.85 : 1.06), s * 1.36 - 0.03, s * 1.36 + 0.03, ZD + 0.05, 0.055, 8);
+        cylY(D, XR + 0.30, s * 1.36 - 0.03, s * 1.36 + 0.03, ZD + 0.05, 0.055, 8);
+      }
+    }
     /* team flash on the front deck, left of the turret face */
     box(Tm, XN - 1.95, XN - 1.45, 0.25, 0.95, ZD, ZD + 0.012);
     /* turret ring collar */
@@ -464,6 +495,12 @@ var HeroPaladin = (function () {
         var tx = XW[nw - 1] + i * H.pitch;
         if (tx > XW[0]) break;
         box(D, tx, tx + 0.05, ya - 0.01, yb + 0.01, top + 0.03, top + 0.055);
+        /* the end connectors and their wedge bolts on both edges of the top
+           run (A, D, F, H: the track's beaded edge, the part seen from above; the A7's Bradley track only) */
+        if (V.gen === 3) {
+          box(D, tx + 0.07, tx + 0.12, ya - 0.03, ya + 0.005, top - 0.02, top + 0.05);
+          box(D, tx + 0.07, tx + 0.12, yb - 0.005, yb + 0.03, top - 0.02, top + 0.05);
+        }
       }
       /* drive sprocket, FRONT: two toothed rings and a hub (A, B, G) */
       cylY(D, H.XS, yc - 0.15, yc + 0.15, H.ZS, H.RS - 0.06, 20);
@@ -535,14 +572,19 @@ var HeroPaladin = (function () {
         tsec(-3.70, 1.36, 1.30, 1.83 + dz, ZE - 0.02, ZR - 0.02),
         tsec(-3.79, 1.32, 1.26, 1.87 + dz, ZE - 0.06, ZR - 0.06)
       ]);
-      for (k = -2; k <= 2; k++) box(D, -3.82, -3.78, k * 0.52 - 0.03, k * 0.52 + 0.03, 1.90 + dz, ZR - 0.10);
+      /* the rack on the bustle tail: uprights every 0.26 m and three rails
+         (F, H: a wire-mesh basket; 2026-11 the uprights doubled and the
+         middle rail added to read as that mesh) */
+      for (k = -5; k <= 5; k++) box(D, -3.82, -3.78, k * 0.255 - 0.02, k * 0.255 + 0.02, 1.90 + dz, ZR - 0.10);
       box(D, -3.82, -3.78, -1.30, 1.30, ZR - 0.14, ZR - 0.10);
+      box(D, -3.82, -3.78, -1.30, 1.30, (2.12 + dz + ZR - 0.12) / 2 - 0.02, (2.12 + dz + ZR - 0.12) / 2 + 0.02);
       box(D, -3.82, -3.78, -1.30, 1.30, 2.10 + dz, 2.14 + dz);
       /* rack rails along the bustle sides (F) */
       for (s = -1; s <= 1; s += 2) {
         cyl(D, [-2.60, s * 1.39, ZR - 0.12], [-3.75, s * 1.39, ZR - 0.12], 0.02, 0.02, 6);
         cyl(D, [-2.60, s * 1.39, 2.05 + dz], [-3.75, s * 1.39, 2.05 + dz], 0.02, 0.02, 6);
-        for (k = 0; k < 4; k++) box(D, -2.70 - k * 0.33, -2.68 - k * 0.33, s > 0 ? 1.34 : -1.40, s > 0 ? 1.40 : -1.34, 2.05 + dz, ZR - 0.12);
+        for (k = 0; k < 7; k++) box(D, -2.70 - k * 0.165, -2.68 - k * 0.165, s > 0 ? 1.34 : -1.40, s > 0 ? 1.40 : -1.34, 2.05 + dz, ZR - 0.12);
+        cyl(D, [-2.60, s * 1.39, (2.05 + dz + ZR - 0.12) / 2], [-3.75, s * 1.39, (2.05 + dz + ZR - 0.12) / 2], 0.018, 0.018, 6);
       }
     } else if (gen === 1) {
       /* the A2's bustle rack on the turret tail, loaded with boxes (D) */
@@ -621,12 +663,34 @@ var HeroPaladin = (function () {
       box(D, -1.45, -1.42, Math.min(wy, wo), Math.max(wy, wo), Z0 + 0.20, ZE - 0.19);
       box(D, -0.38, -0.35, Math.min(wy, wo), Math.max(wy, wo), Z0 + 0.20, ZE - 0.19);
       cyl(D, [-1.20, s * 1.47, 2.30 + dz], [-0.60, s * 1.47, 2.30 + dz], 0.018, 0.018, 6);
+      /* its two standoff posts into the wall (B, C; the rail stood 9 cm clear on the M109 / A2) */
+      cyl(D, [-1.12, s * 1.33, 2.30 + dz], [-1.12, s * 1.47, 2.30 + dz], 0.018, 0.018, 6);
+      cyl(D, [-0.68, s * 1.33, 2.30 + dz], [-0.68, s * 1.47, 2.30 + dz], 0.018, 0.018, 6);
       cylY(D, 0.30, s * 1.24, s * 1.27, ZR + 0.05, 0.07, 8);
       cylY(D, -2.20, s * 1.24, s * 1.27, ZR + 0.05, 0.07, 8);
+      if (gen >= 2) {
+        /* the Paladins' grab handles high on the turret walls, over the side
+           doors and the bins (F, G, H): two posts out of the wall and a bar */
+        var hz = ZE - 0.16, hy0 = s * 1.30, hy1 = s * 1.41, hx = [-2.25, -0.95, 0.05];
+        for (i = 0; i < hx.length; i++) {
+          cyl(D, [hx[i], hy0, hz], [hx[i], hy1, hz], 0.016, 0.016, 5);
+          cyl(D, [hx[i] + 0.30, hy0, hz], [hx[i] + 0.30, hy1, hz], 0.016, 0.016, 5);
+          cyl(D, [hx[i] - 0.016, hy1, hz], [hx[i] + 0.316, hy1, hz], 0.016, 0.016, 5);
+        }
+      }
       if (gen === 3) {
         /* the A7's stowage bins along the turret sides (G, H) */
-        for (i = 0; i < 3; i++) box(P, -0.25 - i * 0.40, 0.05 - i * 0.40, s > 0 ? 1.43 : -1.60, s > 0 ? 1.60 : -1.43, 2.00 + dz, 2.38 + dz);
+        for (i = 0; i < 3; i++) {
+          /* seated on the leaning wall (its inner face 1.36: at 1.43 it stood 2.3 cm off) */
+          box(P, -0.25 - i * 0.40, 0.05 - i * 0.40, s > 0 ? 1.36 : -1.60, s > 0 ? 1.60 : -1.36, 2.00 + dz, 2.38 + dz);
+          /* each bin's lid: the hinge line along its top outer edge and two latches (G, H) */
+          box(D, -0.24 - i * 0.40, 0.04 - i * 0.40, s > 0 ? 1.595 : -1.61, s > 0 ? 1.61 : -1.595, 2.31 + dz, 2.335 + dz);
+          box(D, -0.20 - i * 0.40, -0.16 - i * 0.40, s > 0 ? 1.595 : -1.615, s > 0 ? 1.615 : -1.595, 2.18 + dz, 2.30 + dz);
+          box(D, -0.04 - i * 0.40, 0.00 - i * 0.40, s > 0 ? 1.595 : -1.615, s > 0 ? 1.615 : -1.595, 2.18 + dz, 2.30 + dz);
+        }
         box(P, -2.40, -1.55, s > 0 ? 1.37 : -1.54, s > 0 ? 1.54 : -1.37, 2.05 + dz, 2.30 + dz);
+        box(D, -2.38, -1.57, s > 0 ? 1.535 : -1.55, s > 0 ? 1.55 : -1.535, 2.23 + dz, 2.255 + dz);
+        for (k = 0; k < 2; k++) box(D, -2.20 + k * 0.45, -2.16 + k * 0.45, s > 0 ? 1.535 : -1.555, s > 0 ? 1.555 : -1.535, 2.11 + dz, 2.22 + dz);
       } else if (gen === 2) {
         /* ammunition cans hung on the A6's side rack (F) */
         for (i = 0; i < 3; i++) box(P, -0.20 - i * 0.30, 0.02 - i * 0.30, s > 0 ? 1.44 : -1.57, s > 0 ? 1.57 : -1.44, 2.02 + dz, 2.36 + dz);
