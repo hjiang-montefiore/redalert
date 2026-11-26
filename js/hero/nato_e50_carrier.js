@@ -106,6 +106,24 @@
    wear (see the canvas's own note for what is NOT CONFIRMED). 14 draw
    calls (the canvas is its own material).
 
+   GATE FIXES (2026-11, batch 3). 79 floating parts seated: the scuttles
+     now lie on the hull's own surface, turned to its taper (the lower row
+     took the beam of the wrong station and stood up to 0.4 m off the bow),
+     none in a hangar opening or on plating a sponson hides; the gallery's
+     ports only on the sponson's plumb face (none over the port lift's
+     gap) and on its after diagonal; the island's ports, doors, louvres,
+     glazing and ladder on its battered faces; the fantail's bollards on
+     the fantail.  The catwalks' gratings meet the slab's bottom.  The
+     stem head's collapsed deck triangles are dropped.  Hidden faces left
+     out (boxiness 75 -> 61 per cent): the hull's top under the slab and the
+     slab's bottom over the hull and the sponsons (slabEdges draws both
+     only where they show), the sponsons' inner caps, the island tiers'
+     floors, the funnel's top under its cap, frames inside the sponsons.
+     That also closes the light that leaked through the overhangs onto the
+     hull and the sea (the striped shadows).  Added from [F2]'s dotted deck
+     edge: lockers and hose reels on the catwalks (sizes NOT CONFIRMED).
+     Spec: tools/model3d/specs/nato_e50_carrier.json.
+
    MODEL SPACE: +X bow, +Y port, +Z up, metres, WATERLINE z = 0, flight deck
    at z = 21.5.  The forward starboard 5 in mount is the group named
    "turret"; everything else is baked one mesh per material.  The kit is
@@ -413,8 +431,11 @@ var HeroForrestal = (function () {
     s.position.set(x, y, z); p.add(s); return s;
   }
   /* a faceted solid between two convex polygons (CCW from above) */
-  function frustum(THREE, p, m, lo, z0, hi, z1) {
+  function frustum(THREE, p, m, lo, z0, hi, z1, caps) {
+    /* caps: 1 the top, 2 the bottom (default both); a cap hidden inside
+       the hull or under the flight deck is left out */
     var pos = [], uv = [], n = lo.length, i, a, b, c, d;
+    if (caps === undefined) caps = 3;
     function tri(P, Q, R, side) {
       var v = [P, Q, R], k;
       for (k = 0; k < 3; k++) {
@@ -423,8 +444,8 @@ var HeroForrestal = (function () {
       }
     }
     for (i = 1; i < n - 1; i++) {
-      tri([hi[0][0], hi[0][1], z1], [hi[i][0], hi[i][1], z1], [hi[i + 1][0], hi[i + 1][1], z1], false);
-      tri([lo[0][0], lo[0][1], z0], [lo[i + 1][0], lo[i + 1][1], z0], [lo[i][0], lo[i][1], z0], false);
+      if (caps & 1) tri([hi[0][0], hi[0][1], z1], [hi[i][0], hi[i][1], z1], [hi[i + 1][0], hi[i + 1][1], z1], false);
+      if (caps & 2) tri([lo[0][0], lo[0][1], z0], [lo[i + 1][0], lo[i + 1][1], z0], [lo[i][0], lo[i][1], z0], false);
     }
     for (i = 0; i < n; i++) {
       a = [lo[i][0], lo[i][1], z0]; b = [lo[(i + 1) % n][0], lo[(i + 1) % n][1], z0];
@@ -483,7 +504,7 @@ var HeroForrestal = (function () {
   }
   /* a flat plate in the XY plane from a plan polygon, at height z (both
      faces), and its edge band down to z - th */
-  function plate(THREE, p, m, poly, z, th, mSide) {
+  function plate(THREE, p, m, poly, z, th, mSide, noBottom) {
     var shp = new THREE.Shape(), i, n = poly.length;
     shp.moveTo(poly[0][0], poly[0][1]);
     for (i = 1; i < n; i++) shp.lineTo(poly[i][0], poly[i][1]);
@@ -493,7 +514,7 @@ var HeroForrestal = (function () {
       var gB = new THREE.ShapeGeometry(shp); gB.rotateX(PI); gB.scale(1, -1, 1); gB.translate(0, 0, z - th);
       /* rotateX(PI) flips z and y; scale y back so the plan matches; the
          winding is now reversed, so the face looks down */
-      p.add(new THREE.Mesh(gB, mSide || m));
+      if (!noBottom) p.add(new THREE.Mesh(gB, mSide || m));
       var pos = [], uv = [], s = 0;
       for (i = 0; i < n; i++) {
         var a = poly[i], b = poly[(i + 1) % n], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
@@ -638,7 +659,12 @@ var HeroForrestal = (function () {
       }
       for (i = 0; i < X.length - 1; i++) for (j = 0; j < NC; j++) {
         var a = i * (NC + 1) + j, b = a + 1, c = a + NC + 1, d = c + 1;
-        idx.push(a, b, c, b, d, c);
+        [[a, b, c], [b, d, c]].forEach(function (t) {
+          /* the stem head has no width: drop its collapsed triangles */
+          var A = t[0] * 3, B = t[1] * 3, Cc = t[2] * 3;
+          var ux = pos[B] - pos[A], uy = pos[B + 1] - pos[A + 1], vx = pos[Cc] - pos[A], vy = pos[Cc + 1] - pos[A + 1];
+          if (Math.abs(ux * vy - uy * vx) > 1e-5) idx.push(t[0], t[1], t[2]);
+        });
       }
       return new THREE.Mesh(geoOf(THREE, pos, uv, idx), m);
     }
@@ -667,7 +693,7 @@ var HeroForrestal = (function () {
         }
       }
     }
-    return { W: W, zBot: zBot, deckZ: deckZ, halfTop: halfTop, shellBand: shellBand,
+    return { xs: xs, W: W, zBot: zBot, deckZ: deckZ, halfTop: halfTop, shellBand: shellBand,
              deckSheet: deckSheet, transom: transom, railRun: railRun, edgeY: edgeY, pick: pick };
   }
 
@@ -815,7 +841,7 @@ var HeroForrestal = (function () {
        its outer rail (posts and two wires) and its brackets, broken where
        a lift, the island, a 5 in sponson or the bow and stern stand.  The
        whip aerials are lowered outboard, as they are for flight work. */
-    var CZ = FD - 1.6, CW = 1.6;
+    var CZ = HULLTOP - 0.06, CW = 1.6;     /* the grating's top on the slab's bottom */
     var GAP = [[-97.6, -78.0, -1], [-53.2, -33.6, -1], [20.2, 39.8, -1], [-22.0, 15.6, -1], [34.4, 54.0, 1],
                [65.0, 99.0, 1], [-143.5, -115.5, 1], [-153.5, -117.5, -1], [67.5, 94.5, -1]];
     function open(x0, y0) {
@@ -831,7 +857,7 @@ var HeroForrestal = (function () {
         var f = k / n, px = a[0] + ex * f, py = a[1] + ey * f, ok = k <= n && open(px, py);
         if (ok) run.push([px, py]);
         if ((!ok || k === n) && run.length > 1) {
-          var p0 = run[0], p1 = run[run.length - 1], o = CW / 2 + 0.05;
+          var p0 = run[0], p1 = run[run.length - 1], o = CW / 2 - 0.02;
           boxAlong(THREE, g, T.deck, p0[0] + nx * o, p0[1] + ny * o, p1[0] + nx * o, p1[1] + ny * o, CW, 0.12, CZ);
           boxAlong(THREE, g, T.sup, p0[0] + nx * (CW + 0.05), p0[1] + ny * (CW + 0.05), p1[0] + nx * (CW + 0.05), p1[1] + ny * (CW + 0.05), 0.08, 0.35, CZ - 0.12);
           railLine(THREE, g, T, run.map(function (p) { return [p[0] + nx * (CW + 0.02), p[1] + ny * (CW + 0.02)]; }), CZ + 0.06, 1.0, 3.0);
@@ -839,6 +865,14 @@ var HeroForrestal = (function () {
             strut(THREE, g, T.metal, run[q][0] + nx * CW, run[q][1] + ny * CW, CZ - 0.08, run[q][0] - nx * 0.4, run[q][1] - ny * 0.4, CZ - 2.2, 0.06, 3);
           /* rafts on the catwalk every 12 m, a whip aerial every fourth run */
           for (q = 2; q < run.length - 1; q += 6) raft(THREE, g, T, run[q][0] + nx * 1.1, run[q][1] + ny * 1.1, CZ + 0.06, Math.atan2(ey, ex));
+          /* lockers and hose reels against the slab's edge between the
+             rafts ([F2]: the deck edge reads as a dark dotted band of
+             fittings all round; sizes NOT CONFIRMED) */
+          for (q = 5; q < run.length - 1; q += 6) {
+            var lk = box(THREE, g, 1.1, 0.6, 0.7, T.sup, run[q][0] + nx * 0.32, run[q][1] + ny * 0.32, CZ + 0.41);
+            lk.rotation.z = Math.atan2(ey, ex);
+            cylX(THREE, g, 0.3, 0.3, 0.35, 6, T.metal, 0, 0, 0).position.set(run[q][0] + ex / L * 1.0 + nx * 0.35, run[q][1] + ey / L * 1.0 + ny * 0.35, CZ + 0.36);
+          }
           if ((whip++ % 3) === 0) {
             var wq = run[Math.floor(run.length / 2)];
             cylZ(THREE, g, 0.12, 0.16, 0.5, 6, T.metal, wq[0] + nx * CW, wq[1] + ny * CW, CZ + 0.3);
@@ -854,31 +888,43 @@ var HeroForrestal = (function () {
     /* --- the gallery deck under the overhangs: its ports (a row of
        small lights) and the frames under the slab, port and starboard */
     for (x = -86; x < 54; x += 3.2) {
-      pane(THREE, g, T.glass, x, 42.45, HULLTOP - 1.1, 0.9, 0.55, 0, 1);
-      if (Math.round(x) % 2 === 0) box(THREE, g, 0.18, 22.0, 0.35, T.sup, x + 1.6, 31.4, HULLTOP - 0.17);
+      if (x < 33.6) pane(THREE, g, T.glass, x, 42.43, HULLTOP - 1.1, 0.9, 0.55, 0, 1);
+      /* the frames show only in the lift's gap: elsewhere the sponson
+         is under them */
+      if (Math.round(x) % 2 === 0 && x + 1.6 > 34.4) box(THREE, g, 0.18, 22.0, 0.35, T.sup, x + 1.6, 31.4, HULLTOP - 0.17);
     }
     for (x = -101; x < 39; x += 3.2) {
       if (x > -97.6 && x < -78 || x > -53.2 && x < -33.6 || x > 20.2 && x < 39.8) continue;
-      pane(THREE, g, T.glass, x, -32.85, HULLTOP - 1.0, 0.9, 0.55, 0, -1);
+      pane(THREE, g, T.glass, x, -32.82, HULLTOP - 1.0, 0.9, 0.55, 0, -1);
     }
-    for (x = -100; x < 38; x += 6.4) box(THREE, g, 0.18, 12.8, 0.35, T.sup, x, -26.4, HULLTOP - 0.17);
+    for (x = -100; x < 38; x += 6.4)
+      if (x > -97.6 && x < -78 || x > -53.2 && x < -33.6 || x > 20.2 && x < 39.8) box(THREE, g, 0.18, 12.8, 0.35, T.sup, x, -26.4, HULLTOP - 0.17);
     /* the gallery's after diagonal and forward face, ports */
     for (k = 1; k < 7; k++) {
       x = -118.0 + 29.4 * k / 7; y = 26.4 + 16.0 * k / 7;
-      var dn = Math.hypot(16.0, 29.4); pane(THREE, g, T.glass, x - 0.3, y + 0.5, HULLTOP - 1.1, 0.9, 0.55, -16.0 / dn, 29.4 / dn);
+      var dn = Math.hypot(16.0, 29.4); pane(THREE, g, T.glass, x - 16.0 / dn * 0.03, y + 29.4 / dn * 0.03, HULLTOP - 1.1, 0.9, 0.55, -16.0 / dn, 29.4 / dn);
     }
 
     /* --- the hull: two rows of scuttles fore and aft of the hangar, the
        hangar's side doors, the anchors in their hawses (two at the bow,
        one aft, port), the forecastle's windlasses, bollards and fairleads */
+    /* a scuttle laid on the plating at (x, z): stood 2 cm off the hull's
+       own surface and turned to its waterline taper; none in a hangar
+       opening */
+    function scuttle(sd, x, z) {
+      if (inFOpen(x - 0.4, sd * 30, z) || inFOpen(x + 0.4, sd * 30, z)) return;
+      if (inSponson(x - 0.4, sd, z) || inSponson(x + 0.4, sd, z)) return;
+      var w0 = Hh.W(x, z); if (!(w0 > 1)) return;
+      var dw = (Hh.W(x + 0.25, z) - Hh.W(x - 0.25, z)) / 0.5, nl = Math.hypot(dw, 1);
+      pane(THREE, g, T.glass, x - sd * dw / nl * 0.02, sd * (w0 + 0.02 / nl), z, 0.42, 0.42, -sd * dw / nl, sd / nl);
+    }
     for (s = -1; s <= 1; s += 2) {
       for (x = -140; x < 140; x += 3.0) {
         var hang = x > -110 && x < 100;
         if (hang && x % 9 !== 1) continue;
         var zz = hang ? 15.6 : (x > 0 ? 11.0 : 13.0);
-        var wy = Hh.W(x, zz); if (!(wy > 1)) continue;
-        pane(THREE, g, T.glass, x, s * (wy + 0.04), zz, 0.42, 0.42, 0, s);
-        if (!hang) { wy = Hh.W(x, zz - 2.6); if (wy > 1) pane(THREE, g, T.glass, x + 1.5, s * (wy + 0.04), zz - 2.6, 0.42, 0.42, 0, s); }
+        scuttle(s, x, zz);
+        if (!hang) scuttle(s, x + 1.5, zz - 2.6);
       }
       /* the bow anchor: the hawse's lip and the stock-less anchor in it */
       var ax = 141.0, az = 9.0, aw = Hh.W(ax, az);
@@ -902,7 +948,7 @@ var HeroForrestal = (function () {
       for (x = 131; x <= 155; x += 3) rp.push([x, s * Math.max(0.4, Hh.W(x, fz) - 0.2)]);
       railLine(THREE, g, T, rp, fz, 1.0, 2.2);
       /* boat booms, folded along the hull side under the gallery */
-      boxAlong(THREE, g, T.metal, -30.0, s * (Hh.W(-30, 12.0) + 0.3), -10.0, s * (Hh.W(-10, 12.0) + 0.3), 0.3, 0.3, 12.0);
+      boxAlong(THREE, g, T.metal, -30.0, s * (Hh.W(-30, 12.0) + 0.15), -10.0, s * (Hh.W(-10, 12.0) + 0.15), 0.3, 0.3, 12.0);
     }
     /* the stern anchor in its hawse on the port quarter */
     var sw = Hh.W(-140.0, 7.0);
@@ -912,10 +958,10 @@ var HeroForrestal = (function () {
     var tz = HULLTOP - 1.6, tp = [];
     for (y = -12.5; y <= 12.5; y += 2.5) tp.push([-152.2, y]);
     railLine(THREE, g, T, tp, tz - 3.6, 1.0, 2.4);
-    box(THREE, g, 1.6, 26.0, 0.12, T.deck, -152.9, 0, tz - 3.6);
+    box(THREE, g, 1.75, 26.0, 0.12, T.deck, -152.85, 0, tz - 3.6);
     for (s = -1; s <= 1; s += 2) {
-      cylZ(THREE, g, 0.28, 0.3, 0.8, 8, T.metal, -150.6, s * 8.0, tz - 3.2);
-      cylZ(THREE, g, 0.28, 0.3, 0.8, 8, T.metal, -150.6, s * 9.0, tz - 3.2);
+      cylZ(THREE, g, 0.28, 0.3, 0.8, 8, T.metal, -153.1, s * 8.0, tz - 3.14);
+      cylZ(THREE, g, 0.28, 0.3, 0.8, 8, T.metal, -153.1, s * 9.0, tz - 3.14);
     }
 
     /* --- the 5 in sponsons: an outer rail, a ready-use locker, rafts */
@@ -942,16 +988,20 @@ var HeroForrestal = (function () {
       railLine(THREE, g, T, pts, t[4], 1.0, 2.0);
     });
     /* ports along both faces of the block, doors at its foot */
+    /* (the tiers batter in 0.2 m over their height: the ports sit on
+       the face where it is at their sill) */
+    var b1 = 0.2 * (6.65 / 9.05), b2 = 0.2 * (0.85 / 3.05);
     for (x = -20; x < 14; x += 2.2) {
-      pane(THREE, g, T.glass, x, YI + 0.03, FD + 6.6, 0.5, 0.5, 0, 1);
-      pane(THREE, g, T.glass, x, YO - 0.03, FD + 6.6, 0.5, 0.5, 0, -1);
-      if (x > -14) pane(THREE, g, T.glass, x + 1.1, YI - 0.8 + 0.03, FD + 9.8, 0.5, 0.5, 0, 1);
+      pane(THREE, g, T.glass, x, YI - b1 + 0.02, FD + 6.6, 0.5, 0.5, 0, 1);
+      pane(THREE, g, T.glass, x, YO + b1 - 0.02, FD + 6.6, 0.5, 0.5, 0, -1);
+      if (x > -14 && x + 1.1 < 12.4) pane(THREE, g, T.glass, x + 1.1, YI - 0.8 - b2 + 0.02, FD + 9.8, 0.5, 0.5, 0, 1);
     }
-    [-18.0, -6.0, 8.0].forEach(function (dx) { box(THREE, g, 1.0, 0.1, 2.0, T.dark, dx, YI + 0.12, FD + 1.0); });
-    box(THREE, g, 0.1, 1.0, 2.0, T.dark, 15.15, YC, FD + 1.0);
-    box(THREE, g, 0.1, 1.0, 2.0, T.dark, -21.55, YC + 2, FD + 1.0);
+    var bd = 0.2 * (1.05 / 9.05), bl = 0.2 * (3.65 / 9.05);
+    [-18.0, -6.0, 8.0].forEach(function (dx) { box(THREE, g, 1.0, 0.1, 2.0, T.dark, dx, YI - bd + 0.04, FD + 1.0); });
+    box(THREE, g, 0.1, 1.0, 2.0, T.dark, 15.1 - bd + 0.04, YC, FD + 1.0);
+    box(THREE, g, 0.1, 1.0, 2.0, T.dark, -21.5 + bd - 0.04, YC + 2, FD + 1.0);
     [[-12, YI], [2, YI], [-12, YO], [4, YO]].forEach(function (q) {
-      box(THREE, g, 3.0, 0.08, 1.6, T.dark, q[0], q[1] + (q[1] === YI ? 0.04 : -0.04), FD + 3.6);
+      box(THREE, g, 3.0, 0.08, 1.6, T.dark, q[0], q[1] === YI ? YI - bl + 0.03 : YO + bl - 0.03, FD + 3.6);
     });
     /* bridge wings over the side (outboard only: nothing overhangs the deck) */
     plate(THREE, g, T.deck, polyCCW([[8.0, YO + 0.8], [13.0, YO + 0.8], [13.0, YO - 2.0], [8.0, YO - 2.0]]), FD + 9.0, 0.25, T.sup);
@@ -960,8 +1010,8 @@ var HeroForrestal = (function () {
     railLine(THREE, g, T, [[-19.0, YO], [-19.0, YO - 2.3], [-8.0, YO - 2.3], [-8.0, YO]], FD + 4.6, 1.0, 1.8);
     for (k = 0; k < 3; k++) strut(THREE, g, T.metal, -18.0 + k * 4.5, YO, FD + 2.6, -18.0 + k * 4.5, YO - 2.2, FD + 4.4, 0.08, 3);
     /* the ladder up the island's after face to the first roof */
-    for (s = -1; s <= 1; s += 2) box(THREE, g, 0.06, 0.06, 9.0, T.metal, -21.62, YC - 3 + s * 0.25, FD + 4.5);
-    for (k = 1; k < 30; k++) box(THREE, g, 0.05, 0.5, 0.04, T.metal, -21.62, YC - 3, FD + k * 0.3);
+    for (s = -1; s <= 1; s += 2) box(THREE, g, 0.06, 0.06, 9.0, T.metal, -21.53, YC - 3 + s * 0.25, FD + 4.5);
+    for (k = 1; k < 30; k++) box(THREE, g, 0.05, 0.5, 0.04, T.metal, -21.53, YC - 3, FD + k * 0.3);
     /* searchlights and whips on the top tier, a lattice yard on the funnel */
     for (s = -1; s <= 1; s += 2) {
       cylZ(THREE, g, 0.25, 0.25, 0.5, 8, T.metal, 9.0, YC + s * 4.4, FD + 14.95);
@@ -984,6 +1034,78 @@ var HeroForrestal = (function () {
     sphere(THREE, g, 0.3, T.white, -1.0, YC, FD + 33.2, 8, 6);
   }
 
+  /* THE SLAB'S UNDERSIDE AND THE HULL'S TOP, drawn only where they show.
+     The flight deck slab's bottom (z 20) is seen only where the deck
+     overhangs the hull and no sponson stands under it: at the lifts, round
+     the open bow, aft of the transom, along the outer metre of every
+     gallery; the hull's top (z 20) only where the hull is wider than the
+     deck.  Both are strips along each side between the hull's half-top
+     and the deck edge, sampled at the hull's stations and either side of
+     every corner of the deck outline, so the strip edges follow the
+     outline; under the sponsons the slab's bottom is left out (hidden). */
+  /* the plating a sponson encloses (above its knuckle, between its ends):
+     hidden, so no scuttle is drawn on it */
+  function inSponson(x, y, z) {
+    var sd = y > 0 ? 1 : -1, R = SPON_X[sd], k;
+    if (z < (sd > 0 ? 12.1 : 15.5)) return false;
+    for (k = 0; k < R.length; k++) if (x > R[k][0] + 0.01 && x < R[k][1] - 0.01) return true;
+    return false;
+  }
+  var XFC = 128.0;               /* the forecastle's after end            */
+  var EDGE_P = [[-163.05, 27.2], [-118.6, 27.2], [-89.0, 43.4], [57.7, 43.4], [63.6, 18.9], [160.0, 18.3], [163.05, 16.0]];
+  var EDGE_S = [[-163.05, 13.0], [-104.4, 13.0], [-104.4, 33.6], [41.2, 33.6], [41.2, 20.3], [160.0, 18.4], [163.05, 16.0]];
+  var SPON_X = { "1": [[-118.0, 34.2], [54.2, 56.6]], "-1": [[-103.6, -97.6], [-78.0, -53.2], [-33.6, 20.2]] };
+  function edgeAt(E, x) {
+    var best = 1e9, i;
+    for (i = 0; i < E.length - 1; i++) {
+      var a = E[i], b = E[i + 1];
+      if (x < a[0] - 1e-9 || x > b[0] + 1e-9) continue;
+      var y = b[0] - a[0] < 1e-6 ? Math.min(a[1], b[1]) : a[1] + (b[1] - a[1]) * (x - a[0]) / (b[0] - a[0]);
+      best = Math.min(best, y);
+    }
+    return best < 1e8 ? best : 0;
+  }
+  function slabEdges(THREE, g, T, Hh) {
+    var X = Hh.xs().slice(), i, k, s;
+    DECK.forEach(function (p) { X.push(p[0] - 0.02, p[0], p[0] + 0.02); });
+    [-1, 1].forEach(function (sd) { SPON_X[sd].forEach(function (r) { X.push(r[0], r[1]); }); });
+    X.push(-163.05, 163.05, HF.XS0 - 0.02, XFC - 0.02, XFC);
+    for (k = -162; k < HF.XS0; k += 3) X.push(k);
+    for (k = XFC; k < 163; k += 3) X.push(k);
+    X = X.filter(function (v) { return v >= -163.05 && v <= 163.05; }).sort(function (p, q) { return p - q; })
+         .filter(function (v, n, a) { return n === 0 || v - a[n - 1] > 0.005; });
+    var UP = { P: [], U: [] }, DN = { P: [], U: [] };
+    function tri(B, a, b, c, up) {
+      var ux = b[0] - a[0], uy = b[1] - a[1], vx = c[0] - a[0], vy = c[1] - a[1], cz = ux * vy - uy * vx;
+      if (Math.abs(cz) < 1e-5) return;
+      if ((cz > 0) !== up) { var t = b; b = c; c = t; }
+      [a, b, c].forEach(function (q) { B.P.push(q[0], q[1], HULLTOP); B.U.push(q[0] / 8, q[1] / 8); });
+    }
+    for (s = -1; s <= 1; s += 2) {
+      var E = s > 0 ? EDGE_P : EDGE_S, R = SPON_X[s];
+      var cols = X.map(function (x) {
+        var inHull = x >= HF.XS0 && x < XFC, h = inHull ? Hh.halfTop(x) : 0, e = edgeAt(E, x);
+        var top0 = Math.max(0, Math.min(h, e - 0.4));
+        var u0 = inHull ? Math.max(0, Math.min(h - 0.3, e)) : 0, um = Math.max(u0, e - 1.2);
+        return { x: x, top: [top0, h], dn: [u0, um, Math.max(u0, e)] };
+      });
+      for (i = 0; i < cols.length - 1; i++) {
+        var A = cols[i], B = cols[i + 1], xa = A.x, xb = B.x, xm = (xa + xb) / 2;
+        function band(Bk, ya0, ya1, yb0, yb1, up) {
+          var p0 = [xa, s * ya0], p1 = [xa, s * ya1], q0 = [xb, s * yb0], q1 = [xb, s * yb1];
+          tri(Bk, p0, q0, q1, up); tri(Bk, p0, q1, p1, up);
+        }
+        if (xa >= HF.XS0 && xb <= XFC) band(UP, A.top[0], A.top[1], B.top[0], B.top[1], true);
+        var under = false;
+        for (k = 0; k < R.length; k++) if (xm > R[k][0] && xm < R[k][1]) under = true;
+        if (!under) band(DN, A.dn[0], A.dn[1], B.dn[0], B.dn[1], false);
+        band(DN, A.dn[1], A.dn[2], B.dn[1], B.dn[2], false);
+      }
+    }
+    if (UP.P.length) g.add(new THREE.Mesh(geoOf(THREE, UP.P, UP.U), T.deck));
+    if (DN.P.length) g.add(new THREE.Mesh(geoOf(THREE, DN.P, DN.U), T.sup));
+  }
+
   function build(THREE, M, C) {
     var g = new THREE.Group(), T = sealMats(makeMats(THREE, C, FPAINT)), Hh = makeHull(HF), s, i, k, x;
     g.add(Hh.shellBand(THREE, T.under, -12, -0.4, 5));
@@ -995,10 +1117,13 @@ var HeroForrestal = (function () {
     g.add(Hh.shellBand(THREE, T.hull, FHD, FOH, 2, inFOpen));
     g.add(Hh.shellBand(THREE, T.hull, FOH, HULLTOP + 1, 1));
     Hh.transom(THREE, g, T.hull, T.under);
-    g.add(Hh.deckSheet(THREE, T.deck, HF.XS0, HF.XS1));
+    /* the forecastle deck under the open bow; aft of it the hull's top
+       is drawn only where it shows outside the flight deck (slabEdges) */
+    g.add(Hh.deckSheet(THREE, T.deck, XFC, HF.XS1));
 
     /* the flight deck: one slab 1.5 m deep, its uv in 8 m tiles */
-    var dk = plate(THREE, g, T.fdeck, polyCCW(DECK), FD, FD - HULLTOP, T.sup);
+    var dk = plate(THREE, g, T.fdeck, polyCCW(DECK), FD, FD - HULLTOP, T.sup, true);
+    slabEdges(THREE, g, T, Hh);
     var uv = dk.geometry.attributes.uv;
     for (i = 0; i < uv.count; i++) uv.setXY(i, (uv.getX(i) - FDK.x0) / FDK.lx, (uv.getY(i) - FDK.y0) / FDK.ly);
     /* SPONSONS.  The overhangs are carried on plated sponsons, as on every
@@ -1016,8 +1141,8 @@ var HeroForrestal = (function () {
         return [q[0], sd * Math.min(ya, hw + 0.25 + (ya - hw) * 0.06)];
       });
       var hi = poly.map(function (q) { return [q[0], q[1]]; });
-      frustum(THREE, g, m || T.hull, lo, zKnee, hi, zTop - plumb);
-      frustum(THREE, g, m || T.hull, hi, zTop - plumb, hi, zTop);
+      frustum(THREE, g, m || T.hull, lo, zKnee, hi, zTop - plumb, 2);
+      frustum(THREE, g, m || T.hull, hi, zTop - plumb, hi, zTop, 0);
       /* the knuckle's drip strip where the bottom meets the plating */
       for (var q = 0; q < poly.length; q++) {
         var a = poly[q], b = poly[(q + 1) % poly.length];
@@ -1071,22 +1196,27 @@ var HeroForrestal = (function () {
 
     /* the island [F1][F3]: X -21.5..15.1, Y -33.6..-20.7 */
     var YI = -20.7, YO = -33.6, YC = (YI + YO) / 2;
+    /* (each tier's floor stands on the deck or the roof under it: no
+       bottom face) */
     function isl(x0, x1, yo, yi, z0, z1, m) {
-      return frustum(THREE, g, m || T.sup, [[x0, yo], [x1, yo], [x1, yi], [x0, yi]], z0, [[x0 + 0.2, yo + 0.2], [x1 - 0.2, yo + 0.2], [x1 - 0.2, yi - 0.2], [x0 + 0.2, yi - 0.2]], z1);
+      return frustum(THREE, g, m || T.sup, [[x0, yo], [x1, yo], [x1, yi], [x0, yi]], z0, [[x0 + 0.2, yo + 0.2], [x1 - 0.2, yo + 0.2], [x1 - 0.2, yi - 0.2], [x0 + 0.2, yi - 0.2]], z1, 1);
     }
     isl(-21.5, 15.1, YO, YI, FD - 0.05, FD + 9.0);
     isl(-15.0, 13.0, YO + 0.8, YI - 0.8, FD + 8.95, FD + 12.0);
     isl(-4.0, 11.0, YO + 1.4, YI - 1.4, FD + 11.95, FD + 14.7);
-    box(THREE, g, 0.12, 9.0, 1.0, T.glass, 13.06, YC, FD + 10.8);
-    box(THREE, g, 15.0, 0.12, 1.0, T.glass, 4.0, YO + 0.75, FD + 10.8);
-    box(THREE, g, 15.0, 0.12, 1.0, T.glass, 4.0, YI - 0.75, FD + 10.8);
-    box(THREE, g, 0.12, 7.6, 0.9, T.glass, 11.05, YC, FD + 13.7);
-    box(THREE, g, 14.0, 0.12, 0.9, T.glass, 3.5, YO + 1.35, FD + 13.7);
+    /* the bridge and the flag bridge glazing, 2 cm proud of the battered
+       faces at their mid height */
+    var g2 = 0.2 * (1.85 / 3.05) - 0.04, g3 = 0.2 * (1.75 / 2.75) - 0.04;
+    box(THREE, g, 0.12, 9.0, 1.0, T.glass, 13.0 - g2, YC, FD + 10.8);
+    box(THREE, g, 15.0, 0.12, 1.0, T.glass, 4.0, YO + 0.8 + g2, FD + 10.8);
+    box(THREE, g, 15.0, 0.12, 1.0, T.glass, 4.0, YI - 0.8 - g2, FD + 10.8);
+    box(THREE, g, 0.12, 7.6, 0.9, T.glass, 11.0 - g3, YC, FD + 13.7);
+    box(THREE, g, 14.0, 0.12, 0.9, T.glass, 3.5, YO + 1.4 + g3, FD + 13.7);
     /* the funnel at the island's after end, -16..-5, to 20.6 over the deck */
     frustum(THREE, g, T.sup, chamf(-16.0, -5.0, 4.4, 1.5, 1.0).map(function (p) { return [p[0], p[1] + YC]; }), FD + 11.95,
-            chamf(-16.6, -6.4, 3.6, 1.4, 1.0).map(function (p) { return [p[0], p[1] + YC]; }), FD + 19.8);
+            chamf(-16.6, -6.4, 3.6, 1.4, 1.0).map(function (p) { return [p[0], p[1] + YC]; }), FD + 19.8, 2);
     frustum(THREE, g, T.dark, chamf(-16.6, -6.4, 3.6, 1.4, 1.0).map(function (p) { return [p[0], p[1] + YC]; }), FD + 19.75,
-            chamf(-16.8, -6.6, 3.5, 1.4, 1.0).map(function (p) { return [p[0], p[1] + YC]; }), FD + 20.6);
+            chamf(-16.8, -6.6, 3.5, 1.4, 1.0).map(function (p) { return [p[0], p[1] + YC]; }), FD + 20.6, 1);
     /* the main mast abaft the bridge: a lattice tripod to 33 m over the
        deck, a yard, the SPS-12 dish and the SPS-8 screen; the after pole
        over the funnel (heights NOT CONFIRMED) */
@@ -1116,7 +1246,7 @@ var HeroForrestal = (function () {
       /* the sponson: its deck, a plumb lip and the bottom sloping back
          into the plating, as [F2] shows under the port mounts */
       var sp = [[q[0] - 6, yin], [q[0] + 6, yin], [q[0] + 5, yout], [q[0] - 5, yout]];
-      plate(THREE, g, T.deck, polyCCW(sp), ZS, 0.05, T.sup);
+      plate(THREE, g, T.deck, polyCCW(sp), ZS, 0.05, T.sup, true);
       sponsonSolid(sp, ZS - 0.05, 0.75, ZS - 6.5);
       var mg = new THREE.Group(); mg.position.set(q[0], q[1], ZS); mg.rotation.z = q[2];
       fiveInch(THREE, mg, T);
