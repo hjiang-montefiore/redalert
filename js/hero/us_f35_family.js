@@ -367,8 +367,10 @@ var HeroF35 = (function () {
   function rSide(z, stbd) { return (stbd ? B_STBD : B_PORT) + clamp((ZTOP - z) * PXM, 1, SIDEH - 1); }
 
   var BASE = "#768086";          /* the old A hero's modern US grey (PAINT.twotone) */
-  var EDGE = "#677177";          /* the radar-absorbent edge strips             */
-  var LINE = "rgba(38,46,52,0.62)";
+  var EDGE = "#606a70";          /* the radar-absorbent edge strips (batch 5: a
+                                    shade darker, so they still read on the
+                                    darker skin, as the photographs show them) */
+  var LINE = "rgba(38,46,52,0.80)";     /* (batch 5) up from 0.62: the darker skin took their contrast */
   var _tex = {};
 
   function rngFor(seed) {
@@ -475,11 +477,15 @@ var HeroF35 = (function () {
       trace(g, [tp(7.55, 0, 0), tp(8.55, 0, 0)], LINE, 1.0);
     }
     if (v.lift) {                                          /* lift-fan doors and auxiliary inlets */
-      disc(g, cu(X(5.70)), rTop(0), 0.66 * PXM, "rgba(74,82,88,0.22)");
-      g.strokeStyle = LINE; g.lineWidth = 1.5;
-      g.beginPath(); g.arc(cu(X(5.70)), rTop(0), 0.66 * PXM, 0, Math.PI * 2); g.stroke();
-      g.beginPath(); g.arc(cu(X(5.70)), rTop(0), 0.52 * PXM, 0, Math.PI * 2); g.stroke();
-      S(4.95, 5.05, -0.66, 0.66, 1.2);
+      /* (batch 5) the closed lift-fan door, not the fan: one door hinged at
+         its aft edge, its fore and aft edges saw-toothed like every door on
+         the type; the fan under it does not show. The door was painted as
+         the fan's two rings, which no photograph of a closed door shows. */
+      g.fillStyle = "rgba(74,82,88,0.16)";
+      g.fillRect(cu(X(LFD[1])), rTop(LFD[2]), (LFD[1] - LFD[0]) * PXM, 2 * LFD[2] * PXM);
+      LFD_OUT().forEach(function (pth) {
+        trace(g, pth.map(function (q) { return tp(q[0], q[1], 0); }), LINE, 1.5);
+      });
       S(6.50, 7.30, 0.08, 0.62, 1.5); S(6.50, 7.30, -0.62, -0.08, 1.5);
       S(7.40, 8.10, -0.30, 0.30, 1.0);
       g.fillStyle = "rgba(30,36,42,0.55)";
@@ -606,7 +612,14 @@ var HeroF35 = (function () {
     var tex = sheet(v), m = {};
     m.skin = new V.MeshStandardMaterial({ color: 0xffffff, roughness: 0.80, metalness: 0.10,
                                           side: V.DoubleSide });
-    if (tex) m.skin.map = tex; else m.skin.color.setHex(0x768086);
+    /* (batch 5) the sheet's greys are authored as paint chips, and the true
+       renderer lifts the base 0x768086 to about 0xbac4c9 on a sunlit top
+       face (HeroKit.seenAs): near-white at the game camera, where the
+       photographs show the darker grey of the F-35's coating, darker than
+       the F-22's. The material colour scales the whole sheet (insignia and
+       lines keep their contrast) to HeroKit.authorFor(0x858c91) = 0x4e5559
+       for the base, a gain of 0.43 in linear light (0xb0 sRGB). */
+    if (tex) { m.skin.map = tex; m.skin.color.setHex(0xb0b0b0); } else m.skin.color.setHex(0x768086);
     var tc = (C && C.team !== undefined) ? C.team : "#3f7fd0";
     m.team = new V.MeshStandardMaterial({ color: new V.Color(tc), roughness: 0.60, metalness: 0.12,
                                           emissive: new V.Color(tc), emissiveIntensity: 0.10 });
@@ -777,9 +790,21 @@ var HeroF35 = (function () {
       pg.translate(X(13.92), 0, Z(1.92));
       K.hot.push(pg);
     }
-    if (v.id === "B") {
-      var j0 = rrect(X(13.52), 0, Z(1.92), 0.585, 0.585, 24, 1.0), j1 = rrect(X(13.74), 0, Z(1.92), 0.585, 0.585, 24, 1.0);
-      K.dark.push(bridge([j0, j1], null, false, false));
+    if (v.lift) {
+      /* (batch 5) the three-bearing swivel module is three segments: the
+         joint ring, now seated on the duct (it stood 2-7 cm off it), and the
+         other two bearings' seams either side of it */
+      /* a band from s0 to s1 standing `e` proud of the duct and sunk 1 cm
+         into it, closed at both ends, so it sits on the duct */
+      var band = function (s0, s1, e) {
+        var ri = function (q) { return pl(st, q) - 0.01; }, ro = function (q) { return pl(st, q) + e; };
+        K.dark.push(orient(bridge([rrect(X(s0), 0, Z(1.92), ri(s0), ri(s0), 24, 1.0), rrect(X(s0), 0, Z(1.92), ro(s0), ro(s0), 24, 1.0),
+                                   rrect(X(s1), 0, Z(1.92), ro(s1), ro(s1), 24, 1.0), rrect(X(s1), 0, Z(1.92), ri(s1), ri(s1), 24, 1.0)],
+                                  null, false, false)));
+      };
+      band(13.52, 13.74, 0.03);
+      band(13.075, 13.125, 0.014);
+      band(13.915, 13.965, 0.014);
     }
   }
 
@@ -831,6 +856,82 @@ var HeroF35 = (function () {
     var ar = new V.TorusGeometry(0.565, 0.022, 4, 28); ar.rotateY(Math.PI / 2); ar.translate(X(13.20), 0, Z(1.92));
     K.metal.push(ar);
     K.ink.push(rod([X(13.40), 0, Z(1.92)], [X(13.95), 0, Z(1.92)], 0.36, 16));
+  }
+  /* ---- (batch 5) door and panel seams, laid on the skin ------------------
+     LFD: the lift-fan door [s0, s1, half-width], its fore and aft edges
+     toothed (LFD_OUT gives the outline as [s, y] paths). The door's place
+     is the painted one's (the fan's 1.27 m under it); the tooth count is
+     NOT CONFIRMED. Behind it the two auxiliary-inlet doors, and the
+     roll-post doors under each wing; on every row the engine-bay access
+     panels, and on the A the receptacle door. All drawn as thin dark seams, 4 mm
+     proud of the skin, found by casting down (or up) onto it. */
+  var LFD = [4.95, 6.45, 0.60];
+  function LFD_OUT() {
+    function teeth(s0, n, d) {
+      var p = [], q;
+      for (q = 0; q <= 2 * n; q++) p.push([s0 + (q % 2 ? d : 0), -LFD[2] + 2 * LFD[2] * q / (2 * n)]);
+      return p;
+    }
+    return [teeth(LFD[0], 4, 0.12), teeth(LFD[1], 4, -0.12),
+            [[LFD[0], LFD[2]], [LFD[1], LFD[2]]], [[LFD[0], -LFD[2]], [LFD[1], -LFD[2]]]];
+  }
+  function rectPath(s0, s1, y0, y1) { return [[s0, y0], [s1, y0], [s1, y1], [s0, y1], [s0, y0]]; }
+  function addSeams(K, v) {
+    if (!V.Raycaster) return;
+    var mesh = new V.Mesh(merge(K.skin), new V.MeshBasicMaterial({ side: V.DoubleSide }));
+    mesh.updateMatrixWorld(true);
+    var rc = new V.Raycaster(), o = new V.Vector3(), dn = new V.Vector3(0, 0, -1), up = new V.Vector3(0, 0, 1);
+    var pos = [];
+    function hit(s, y, below) {
+      o.set(X(s), y, below ? -20 : 20);
+      rc.set(o, below ? up : dn);
+      var h = rc.intersectObject(mesh, false);
+      if (!h.length) return null;
+      var n = h[0].face.normal.clone();
+      if ((n.z < 0) !== !!below) n.negate();
+      return { p: h[0].point, n: n };
+    }
+    function seam(path, w, below) {
+      var smp = [], i, k;
+      for (i = 0; i < path.length - 1; i++) {
+        var a = path[i], b = path[i + 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]), m = Math.max(1, Math.ceil(L / 0.08));
+        for (k = (i ? 1 : 0); k <= m; k++) smp.push([a[0] + (b[0] - a[0]) * k / m, a[1] + (b[1] - a[1]) * k / m]);
+      }
+      var H = smp.map(function (q) { return hit(q[0], q[1], below); });
+      for (i = 0; i < smp.length - 1; i++) {
+        if (!H[i] || !H[i + 1]) continue;
+        var P0 = H[i].p.clone().addScaledVector(H[i].n, 0.004), P1 = H[i + 1].p.clone().addScaledVector(H[i + 1].n, 0.004);
+        var t = P1.clone().sub(P0);
+        if (t.lengthSq() < 1e-8) continue;
+        var nn = H[i].n.clone().add(H[i + 1].n).normalize();
+        var sd = new V.Vector3().crossVectors(t, nn).normalize().multiplyScalar(w / 2);
+        var A = P0.clone().add(sd), B = P1.clone().add(sd), C = P1.clone().sub(sd), D = P0.clone().sub(sd);
+        /* wound to face along the skin's normal (the dark material is one-sided) */
+        var f = new V.Vector3().crossVectors(B.clone().sub(A), C.clone().sub(A)).dot(nn) > 0;
+        var tri = f ? [A, B, C, A, C, D] : [A, C, B, A, D, C];
+        for (k = 0; k < 6; k++) pos.push(tri[k].x, tri[k].y, tri[k].z);
+      }
+    }
+    /* every row: the two big access panels over the engine (the painted
+       outlines' places, from the drawings) */
+    seam(rectPath(8.80, 11.30, -0.88, 0.88), 0.025, false);
+    seam([[11.30, -0.70], [13.20, -0.70], [13.20, 0.70], [11.30, 0.70]], 0.025, false);
+    /* the A: the dorsal refuelling receptacle's door */
+    if (v.id === "A") seam(rectPath(7.55, 8.55, -0.28, 0.28), 0.025, false);
+    if (v.lift) {
+      LFD_OUT().forEach(function (pth) { seam(pth, 0.035, false); });
+      /* the hinge line across the aft edge's teeth roots */
+      seam([[LFD[1] - 0.12, -LFD[2]], [LFD[1] - 0.12, LFD[2]]], 0.025, false);
+      seam(rectPath(6.50, 7.30, 0.08, 0.62), 0.03, false);
+      seam(rectPath(6.50, 7.30, -0.62, -0.08), 0.03, false);
+      seam(rectPath(7.40, 8.10, -0.30, 0.30), 0.025, false);
+      for (var sd = -1; sd <= 1; sd += 2) seam(rectPath(10.0, 10.55, sd > 0 ? 1.78 : -2.20, sd > 0 ? 2.20 : -1.78), 0.03, true);
+    }
+    if (!pos.length) return;
+    var g = new V.BufferGeometry();
+    g.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
+    g.computeVertexNormals();
+    K.dark.push(g);
   }
   /* a door plate in the x-z plane centred on (0, 0), its lower edge toothed */
   function toothDoor(hl, ht, hb, n, d) {
@@ -902,11 +1003,13 @@ var HeroF35 = (function () {
       G.tyre.push(wheelG(mr, v.mainW, X(m), s * my, Z(mr), 20));
       G.metal.push(wheelG(0.21, v.mainW + 0.02, X(m), s * my, Z(mr), 12));
       var md = toothDoor(0.55, 0.31, -0.31, 4, 0.10);
-      md.translate(X(m + 0.05), s * (my + 0.24), Z(hm - 0.20));
+      /* (batch 5) hung from the wing root's underside (1.90 m up at this
+         station, all three wings), not 0.9 m below it in the air */
+      md.translate(X(m + 0.05), s * (my + 0.24), Z(1.91 - 0.31));
       G.skin.push(md);
       /* the detail pass: collar, torque links, brake line, hub bolts */
-      var mcl = new V.CylinderGeometry(v.legR + 0.03, v.legR + 0.03, 0.07, 12); mcl.rotateX(Math.PI / 2);
-      mcl.translate(X(m - 0.07), s * (my - 0.06), Z(mr + 0.55)); G.metal.push(mcl);
+      var mcl = new V.CylinderGeometry(v.legR + 0.045, v.legR + 0.045, 0.07, 12); mcl.rotateX(Math.PI / 2);
+      mcl.translate(X(m - 0.07), s * (my - 0.06), Z(mr + 0.50)); G.metal.push(mcl);
       G.metal.push(rod([X(m) + 0.04, s * (my - 0.13), Z(mr + 0.14)], [X(m) + 0.22, s * (my - 0.12), Z(mr + 0.32)], 0.018, 4));
       G.metal.push(rod([X(m) + 0.22, s * (my - 0.12), Z(mr + 0.32)], [X(m - 0.06) + 0.04, s * (my - 0.08), Z(mr + 0.50)], 0.018, 4));
       G.ink.push(rod([X(m - 0.14), s * 1.24, Z(hm - 0.05)], [X(m) - 0.04, s * (my - 0.15), Z(mr + 0.12)], 0.010, 4));
@@ -923,7 +1026,15 @@ var HeroF35 = (function () {
       var g = list[i].index ? list[i].toNonIndexed() : list[i];
       if (!g.attributes.normal) g.computeVertexNormals();
       var p = g.attributes.position.array, n = g.attributes.normal.array;
-      for (j = 0; j < p.length; j++) { pos.push(p[j]); nor.push(n[j]); }
+      /* a fan cap or a strip across a doubled crease point gives triangles
+         with no area: they draw nothing, so they are left out */
+      for (j = 0; j + 8 < p.length; j += 9) {
+        var ux = p[j + 3] - p[j], uy = p[j + 4] - p[j + 1], uz = p[j + 5] - p[j + 2];
+        var wx = p[j + 6] - p[j], wy = p[j + 7] - p[j + 1], wz = p[j + 8] - p[j + 2];
+        var cx = uy * wz - uz * wy, cy = uz * wx - ux * wz, cz = ux * wy - uy * wx;
+        if (cx * cx + cy * cy + cz * cz < 4e-12) continue;
+        for (var q = 0; q < 9; q++) { pos.push(p[j + q]); nor.push(n[j + q]); }
+      }
     }
     var out = new V.BufferGeometry();
     out.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
@@ -954,6 +1065,7 @@ var HeroF35 = (function () {
     addNozzle(K, v);
     addFlash(K, v);
     addDetail(K, v);
+    addSeams(K, v);
     addGear(G, v);
 
     var mats = makeMats(C, v);
