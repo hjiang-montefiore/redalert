@@ -492,8 +492,11 @@ var HeroF35 = (function () {
     for (sd = -1; sd <= 1; sd += 2) {                      /* fin footprints and boom seams */
       trace(g, [tp(12.00, sd * 1.30, 0), tp(14.80, sd * 1.30, 0)], LINE, 1.0);
     }
-    /* (the low-visibility star-and-bar and roundels the first pass painted
-       are left off in the detail pass: no national markings) */
+    /* insignia: US low-vis star on the port upper wing, UK roundels on both
+       (restored at the owner's request) */
+    T = v.semi * 0.72;
+    insignia(g, tp(pl(v.wTE, T) - 1.0, T, 0)[0], rTop(T), 24, uk);
+    if (uk) insignia(g, tp(pl(v.wTE, T) - 1.0, -T, 0)[0], rTop(-T), 24, true);
 
     /* ---- from below ---- */
     S = function (s0, s1, a, b, lw) { rect(g, cu(X(s1)), rBot(b), cu(X(s0)), rBot(a), LINE, lw || 1.3); };
@@ -509,6 +512,9 @@ var HeroF35 = (function () {
     if (v.lift) {
       for (sd = -1; sd <= 1; sd += 2) S(10.0, 10.55, sd > 0 ? 1.78 : -2.20, sd > 0 ? 2.20 : -1.78, 1.0);   /* roll-post doors */
     }
+    T = v.semi * 0.72;
+    insignia(g, tp(pl(v.wTE, T) - 1.0, -T, 1)[0], rBot(-T), 24, uk);
+    if (uk) insignia(g, tp(pl(v.wTE, T) - 1.0, T, 1)[0], rBot(T), 24, true);
     /* the detail pass: the bay doors' and gear wells' fore and aft edges
        are saw-toothed on the aeroplane; the toothed edges are painted over
        the plain outlines above, and fluid streaks run aft from the wells */
@@ -542,6 +548,7 @@ var HeroF35 = (function () {
       g.fillStyle = "rgba(24,28,32,0.70)";
       g.fillRect(SS(2.60, 2.02)[0], SS(2.60, 2.02)[1], 10, 8);
       g.fillRect(SS(6.10, 1.92)[0], SS(6.10, 1.92)[1], 10, 8);
+      if (uk) insignia(g, SS(10.6, 2.45)[0], SS(10.6, 2.45)[1], 15, true);
       /* rain streaks down the sides and grime round the nozzle */
       for (i = 0; i < 14; i++) {
         var rs0 = cu(X(2.0 + R() * 12.0)), rz0 = rSide(2.6 - R() * 0.9, sg);

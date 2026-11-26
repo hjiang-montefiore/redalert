@@ -570,9 +570,11 @@ var HeroF22 = (function () {
     }
     g.globalAlpha = 1;
 
-    /* 8. (the low-visibility national insignia the first pass painted here
-          are left off in the detail pass: the review policy allows no
-          national markings) */
+    /* 8. low-visibility insignia: upper port wing, lower starboard wing, and
+          both intake trunks, as the type wears them (restored at the owner's request) */
+    star(g, cu(X(12.0)), rTop(4.9), 0.42 * PXM, "rgba(84,92,98,0.85)");
+    star(g, cu(X(12.0)), rBot(-4.9), 0.42 * PXM, "rgba(84,92,98,0.85)");
+    for (k = 0; k < 2; k++) star(g, cu(X(9.3)), rSide(Z(1.32), k), 0.20 * PXM, "rgba(84,92,98,0.85)");
 
     /* 9. fin rudders: the hinge and the lower aft corner */
     g.strokeStyle = "rgba(20,24,28,0.50)"; g.lineWidth = 1.4;
