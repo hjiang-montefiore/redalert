@@ -1,0 +1,175 @@
+{
+ "key": "spg_n",
+ "team": "nato",
+ "name": "M109A7 Paladin 155 mm self-propelled howitzer (present-day row; js/hero/us_paladin.js HeroPaladin 'e20', the same build as nato_e00_spg 'e00' in another tan)",
+ "category": "veh",
+ "published": {
+  "span": 3.15,
+  "height": 3.25,
+  "source": "en.wikipedia 'M109 howitzer': hull 20.3 ft (6.19 m), width 10 ft 4 in (3.15 m), height 10 ft 8 in (3.25 m, over the hull roof fittings, not the whips), 32 ft (9.75 m) gun forward for the A1-A7 - NOT used as the gated published length: it is not confirmed for the A7 and reference A's tube is drawn too long to settle it (see not_confirmed). The model's X extent is 9.52 m (the bustle rack x -3.82 to the muzzle x 5.70, a 39-calibre M284 taken as 5.25 m trunnion to muzzle); the 2.4% gap to 9.75 is the reference sheet's own tube discrepancy (header) and is left. Width 3.20 m over the turret bins."
+ },
+ "len": 9.52,
+ "nodes": [
+  "turret",
+  "barrel",
+  "roadwheel"
+ ],
+ "engine_contract": {
+  "rows": "HeroPaladin.build(THREE, M, C, which): e60 nato_e60_spg, e80 nato_e80_spg (also deu_us_pattern.js, roc_artillery.js, gb rows), e90 nato_e90_spg (also skirmish_reuse.js spg_r), e00 nato_e00_spg, e20 spg_n. HeroPaladin.variants and .pack are read by other files.",
+  "nodes": "'turret' at the ring (x -1.0, z = deck) with 'barrel' on the trunnion inside it; six 'roadwheel' groups (A7); render3d lays the gun",
+  "draw_calls": "15 (<= 16)"
+ },
+ "references": [],
+ "must_show": [
+  "flat-topped hull 6.16 m long (x -3.08 .. 3.08), deck z 1.80, a tall upright nose plate (x 3.08, z 0.60 .. 1.50) and a short glacis to the deck at x 2.33 [G, H]",
+  "SIX road wheels a side (x 1.80 .. -1.70 at 0.70 m pitch, r 0.32, z 0.41), the drive sprocket at the FRONT (x 2.58 z 0.62), the idler at the rear (x -2.50), no return rollers: the top run lies on the wheels [G, H; en.wikipedia]",
+  "the wide 0.53 m Bradley track (y +-1.31 centre) with its pads and end connectors on the top run [G, H]",
+  "the big box turret over the rear two thirds: walls leaning in, the long sloped face (foot x 0.98, top x 0.55), roof z 2.91, ring at x -1.0 [A, G]",
+  "the armoured bustle overhanging the hull tail to x -3.79 (floor z 1.94), a wire rack on its tail and rails down its sides [A, F, H]",
+  "the 39-calibre M284 with its cradle cover, bore evacuator half way and the double-baffle brake, the muzzle at x 5.70 z 2.33 [A, G]",
+  "the deep Paladin gun-mount housing in the turret face (x 0.62 .. 1.16, y +-0.56) [A]",
+  "the commander's cupola at the right rear of the roof (x -1.10, y -0.80) with the M2 on a raised mount [A, G]",
+  "the armoured panoramic-sight hood on the left front of the roof (x -0.15 .. 0.32, y 0.62 .. 1.10) [B, D]",
+  "stowage bins along both turret sides (x -1.05 .. 0.05 and -2.40 .. -1.55, y +-1.43 .. 1.60) with lids and latches [G, H]",
+  "the travel lock folded on the glacis, lamp clusters in their welded brush guards on the nose corners (y +-1.20), black rubber flaps over the nose corners [C, E, G, H]",
+  "two whip aerials at the rear corners of the roof (x -3.40, y +-1.15) [A, G]",
+  "plain tan paint over hull and turret (seen #d4c090 in sun), no markings, numbers or camouflage; team colour on the front deck (x 1.13 .. 1.63, y 0.25 .. 0.95) and the roof tail (x -3.10 .. -2.70)"
+ ],
+ "landmarks": [
+  {
+   "name": "front road wheel centre",
+   "view": "side",
+   "expect_m": [
+    1.8,
+    0.41
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "node": "roadwheel",
+    "index": 0
+   },
+   "note": "header station table, A7 (G, H): six wheels at 0.70 m pitch"
+  },
+  {
+   "name": "rear road wheel centre",
+   "view": "side",
+   "expect_m": [
+    -1.7,
+    0.41
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "node": "roadwheel",
+    "index": 5
+   },
+   "note": "G, H"
+  },
+  {
+   "name": "turret ring centre",
+   "view": "side",
+   "expect_m": [
+    -1.0,
+    1.8
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "node": "turret",
+    "index": 0
+   },
+   "note": "A: ring centre x -1.0; A7 deck 1.80 (G, H)"
+  },
+  {
+   "name": "nose plate",
+   "view": "side",
+   "expect_m": [
+    3.08,
+    null
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "in_m": [
+     2.8,
+     -0.5,
+     0.6,
+     3.3,
+     0.5,
+     1.4
+    ],
+    "point": [
+     "max",
+     null
+    ]
+   },
+   "note": "A7 hull 6.16 m over the nose and tail plates"
+  },
+  {
+   "name": "bustle rack tail",
+   "view": "side",
+   "expect_m": [
+    -3.8,
+    null
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "in_m": [
+     -4.0,
+     -1.0,
+     2.0,
+     -3.5,
+     1.0,
+     2.8
+    ],
+    "point": [
+     "min",
+     null
+    ]
+   },
+   "note": "A: bustle to x -3.79; F: the rack on its tail"
+  },
+  {
+   "name": "turret roof",
+   "view": "side",
+   "expect_m": [
+    0.45,
+    2.91
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "edge": "upper"
+   },
+   "note": "A: roof z 2.80 on the A6, the A7 deck 0.11 higher (G, H); taken at x 0.45, just behind where the face meets the roof and clear of the roof fittings"
+  },
+  {
+   "name": "muzzle",
+   "view": "side",
+   "expect_m": [
+    5.7,
+    2.33
+   ],
+   "tol_m": 0.08,
+   "model_at": {
+    "in_m": [
+     5.4,
+     -0.4,
+     1.9,
+     6.0,
+     0.4,
+     2.8
+    ],
+    "point": [
+     "max",
+     "mid"
+    ]
+   },
+   "note": "trunnion x 0.45 + 5.25 m tube; gun axis z 2.33 (A, raised with the A7 deck)"
+  }
+ ],
+ "not_confirmed": [
+  "no reference picture could be fetched in batch 5 (Commons answered 429); the spec is written from the header's station table, measured off A (US Army sheet, M109A6) and G, H (M109A7 photographs, perspective), so it carries no outline references",
+  "the A7's exact hull height (G and H are perspective views: the deck is raised 0.11 m on their evidence)",
+  "the A7's recoil spades (G and H do not show the tail; not drawn)",
+  "the published 9.75 m gun-forward length against the 9.52 m drawn",
+  "the grab handles' exact stations on the turret walls and the bins' latch count (photographs at game-camera size only)",
+  "the A7 tan: G sampled #c39e5f in shade, authored #967c55 (HeroKit.authorFor) to show as sunlit sand"
+ ]
+}

@@ -497,7 +497,7 @@ var HeroF22 = (function () {
     g.globalAlpha = 1;
 
     /* 3. fuselage frames and stringers, saw-toothed, top and belly */
-    g.lineWidth = 1.2; g.strokeStyle = "rgba(26,30,34,0.34)";
+    g.lineWidth = 1.2; g.strokeStyle = "rgba(26,30,34,0.46)";   /* (batch 5) up from 0.34: the darker skin below took their contrast */
     var frames = [1.8, 2.5, 6.4, 7.6, 8.8, 10.0, 11.2, 12.4, 13.6, 14.8, 16.0];
     for (i = 0; i < frames.length; i++) {
       s = frames[i];
@@ -515,7 +515,7 @@ var HeroF22 = (function () {
 
     /* 4. wing control surfaces, both wings, both skins: the full-span LE
           flap, the flaperon inboard and the aileron outboard of 4.6 m */
-    g.strokeStyle = "rgba(20,24,28,0.55)"; g.lineWidth = 1.6;
+    g.strokeStyle = "rgba(20,24,28,0.70)"; g.lineWidth = 1.6;
     for (k = -1; k <= 1; k += 2) {
       var fn = [rTop, rBot];
       for (var b = 0; b < 2; b++) {
@@ -532,11 +532,11 @@ var HeroF22 = (function () {
         g.moveTo(cu(X(wingTE(4.6) - 0.85)), row(k * 4.6));
         g.lineTo(cu(X(wingTE(4.6))), row(k * 4.6)); g.stroke();
         /* rib seams */
-        g.strokeStyle = "rgba(24,28,32,0.26)"; g.lineWidth = 1.0;
+        g.strokeStyle = "rgba(24,28,32,0.36)"; g.lineWidth = 1.0;
         for (y = 3.0; y < 5.7; y += 0.7) {
           zig(g, cu(X(wingLE(y) + 0.1)), row(k * y), cu(X(wingTE(y) - 0.1)), row(k * y), 1.6, 8);
         }
-        g.strokeStyle = "rgba(20,24,28,0.55)"; g.lineWidth = 1.6;
+        g.strokeStyle = "rgba(20,24,28,0.70)"; g.lineWidth = 1.6;
       }
     }
 
@@ -570,9 +570,11 @@ var HeroF22 = (function () {
     }
     g.globalAlpha = 1;
 
-    /* 8. (the low-visibility national insignia the first pass painted here
-          are left off in the detail pass: the review policy allows no
-          national markings) */
+    /* 8. low-visibility insignia: upper port wing, lower starboard wing, and
+          both intake trunks, as the type wears them (restored at the owner's request) */
+    star(g, cu(X(12.0)), rTop(4.9), 0.42 * PXM, "rgba(84,92,98,0.85)");
+    star(g, cu(X(12.0)), rBot(-4.9), 0.42 * PXM, "rgba(84,92,98,0.85)");
+    for (k = 0; k < 2; k++) star(g, cu(X(9.3)), rSide(Z(1.32), k), 0.20 * PXM, "rgba(84,92,98,0.85)");
 
     /* 9. fin rudders: the hinge and the lower aft corner */
     g.strokeStyle = "rgba(20,24,28,0.50)"; g.lineWidth = 1.4;
@@ -647,7 +649,14 @@ var HeroF22 = (function () {
     var tex = sheet(), m = {};
     m.skin = new V.MeshStandardMaterial({ color: 0xffffff, roughness: 0.80, metalness: 0.10,
                                           side: V.DoubleSide });
-    if (tex) m.skin.map = tex; else m.skin.color.setHex(0x768086);
+    /* (batch 5) the sheet's greys are authored as paint chips, and the true
+       renderer lifts a chip's 0x7e888e to about 0xc2cacb on a sunlit top
+       face (HeroKit.seenAs): near-white at the game camera, where the
+       photographs show a medium grey. The material colour scales the whole
+       sheet (insignia, lines and the disruptive tone keep their contrast) to
+       HeroKit.authorFor(0x959ca1) = 0x595f64 for the base, a gain of 0.47
+       in linear light (0xb6 sRGB). */
+    if (tex) { m.skin.map = tex; m.skin.color.setHex(0xb6b6b6); } else m.skin.color.setHex(0x768086);
     var tc = (C && C.team !== undefined) ? C.team : "#3f7fd0";
     m.team = new V.MeshStandardMaterial({ color: new V.Color(tc), roughness: 0.60, metalness: 0.12,
                                           emissive: new V.Color(tc), emissiveIntensity: 0.10 });
@@ -929,7 +938,15 @@ var HeroF22 = (function () {
       var g = list[i].index ? list[i].toNonIndexed() : list[i];
       if (!g.attributes.normal) g.computeVertexNormals();
       var p = g.attributes.position.array, n = g.attributes.normal.array;
-      for (j = 0; j < p.length; j++) { pos.push(p[j]); nor.push(n[j]); }
+      /* a fan cap or a strip across a doubled crease point gives triangles
+         with no area: they draw nothing, so they are left out */
+      for (j = 0; j + 8 < p.length; j += 9) {
+        var ux = p[j + 3] - p[j], uy = p[j + 4] - p[j + 1], uz = p[j + 5] - p[j + 2];
+        var wx = p[j + 6] - p[j], wy = p[j + 7] - p[j + 1], wz = p[j + 8] - p[j + 2];
+        var cx = uy * wz - uz * wy, cy = uz * wx - ux * wz, cz = ux * wy - uy * wx;
+        if (cx * cx + cy * cy + cz * cz < 4e-12) continue;
+        for (var q = 0; q < 9; q++) { pos.push(p[j + q]); nor.push(n[j + q]); }
+      }
     }
     var out = new V.BufferGeometry();
     out.setAttribute("position", new V.Float32BufferAttribute(pos, 3));

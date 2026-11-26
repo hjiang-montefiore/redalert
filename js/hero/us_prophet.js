@@ -83,7 +83,7 @@
      row's turret:true), four "roadwheel" groups (axle on local Y).  The mast is hull, as photographed.
    Materials (7): skin (canvas paint, world-mapped UVs), dark, glass, white, blue, team (exactly C.team, a
      roof panel), vc (vertex colours: tyres, lamps, red handles).  14 draw calls (7 baked hull meshes, 4
-     wheels, 3 turret), 11,640 triangles (five tyres are 5,100 of them; the Krasukha-4 peer is 12,056).
+     wheels, 3 turret), 11,652 triangles (five tyres are 5,100 of them; the Krasukha-4 peer is 12,056).
      Measured 6.31 x 3.27 x 4.00 m (L x W x H): the winch to the spare wheel 6.31 m against the published
      6.27; the width is over the mirrors and the PE stub, the height to the whip.  Colours authored in sRGB
      and left to prepModel() to linearise; vertex colours are linear.  ASCII only.  */
@@ -800,6 +800,9 @@ var HeroProphet = (function () {
     }
     K.bb(T.dark, XT - 0.16, XT, -0.10, 0.10, 0.62, 0.74);
     K.torus(T.dark, 0.05, 0.015, XT - 0.20, 0, 0.68, 0, 0, 0, 4, 10);
+    /* (batch 5) the pintle's mounting plate, up the back of the hull to the
+       rear bumper bar: the hook stood 0.12 m below the bar in mid-air */
+    K.bb(T.dark, XT - 0.05, XT + 0.01, -0.14, 0.14, 0.60, 0.99);
     K.bb(T.dark, XT - 0.06, XT, -1.00, 1.00, 0.86, 0.98);
   }
 

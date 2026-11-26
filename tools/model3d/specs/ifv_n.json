@@ -1,0 +1,61 @@
+{
+ "key": "ifv_n",
+ "team": "nato",
+ "name": "M2A3 Bradley, present day (tan, no tiles, TOW launcher raised)",
+ "category": "veh",
+ "published": { "len": 6.55, "span": 3.28, "height": 2.97, "source": "en.wikipedia 'M2 Bradley': M2A2 6.55 m long, 3.28 m wide (3.61 m with tiles), 2.97 m high; 533 mm track, six road wheels, front drive, ground clearance 0.46 m" },
+ "len": 6.54,
+ "nodes": ["turret", "roadwheel"],
+ "references": [
+  {
+   "name": "[D1] M2A2 port-side line drawing",
+   "image": "ref/ifv_n/d1_m2a2_side.png",
+   "source": "Wikimedia Commons 'M2BRADLEY.png' (866 x 434; the 960 px thumbnail is stored)",
+   "view": "side",
+   "flip": true,
+   "px_per_m": 145.2,
+   "origin_px": [477.5, 478],
+   "mask": "alpha",
+   "exact": false,
+   "note": "Bow LEFT, so flip. Scale 145.2 px a metre at 960 px from the six road-wheel centres (px 190, 298.5, 406.5, 546, 654, 760.5 -> 570.5 px over the 3.93 m from first to last wheel); it gives the nose at 3.26-3.28 m and the stern at -3.23..-3.30 m, i.e. 6.5 m, the published 6.55 m (two figures agree). Ground (track foot) at py 478, wheel centres at py 425 (z 0.365). X = (477.5 - px) / 145.2, Z = (478 - py) / 145.2. Kept not exact: it draws an M2A2 with the TOW launcher stowed and the ISU sight; this row is an A3 with the launcher raised and the CIV, so the turret top differs on purpose."
+  }
+ ],
+ "must_show": [
+  "tall slab-sided hull, flat roof at z 1.95 from the stern (x -2.85) to the glacis knee at x 1.62, the long glacis down to the nose at x 3.26, z 1.0..1.22 [D1]",
+  "six road wheels at x +1.98, +1.23, +0.47, -0.46, -1.21, -1.95 with the wide gap behind the third (0.93 m against 0.75 m), tan discs with black rubber tyres, raised front sprocket at x 2.88 z 0.66 and rear idler at x -2.62 z 0.64, 533 mm track [D1; R2 2020 photo]",
+  "side armour standing over the track to a skirt line at z 0.72 from x -2.30 to 2.40, stepping up over the idler (x -2.42) and sweeping up over the sprocket (x 2.4..3.1), six panel joints, lifting loops on the lower panels [D1, Q1]",
+  "turret ring at x -0.45 (aft of mid-length), sloped turret front, roof at z 2.69, M242 25 mm on the gun axis z 2.40 reaching x 2.34 with the coaxial on its right (y -0.43) [D1]",
+  "twin TOW launcher on the turret's LEFT side, raised: rolled onto its side over the left of the turret roof (y +0.55..+1.17), x -1.87..-0.55, level to 3 deg nose down, belly z 2.85, top about 3.25 with the lid hump, two tube ends side by side facing forward, held by two posts and a spring strut under its front 40 per cent, the rear free [R2 2020 photo at 253 px/m; Q1]",
+  "four-tube M257 smoke clusters on both turret front corners, y +-0.84, x 0.33..0.63 [D1, Q1]",
+  "A3: the IBAS gunner's sight head on the roof front left of the gun (x -0.39..0.17, y -0.11..0.29, top z 3.05) and the commander's independent viewer drum on the right rear (x -1.09, y -0.91, top z 3.25) [R2, R5]",
+  "headlamp pairs in guards on both nose corners (x 3.02..3.20, y +-1.39), the louvred intake on the right glacis (y -0.72) and the exhaust grille on the right shoulder (x 0.48..1.48) [P1, Q1]",
+  "stern: the ramp between the two rear corner boxes (x -2.85..-3.25), the raised rear cargo hatch on the roof (x -2.80..-2.10, z 2.09) [D1, P2]",
+  "bolt heads only on the side armour, glacis applique and turret sides, column pairs on the panel joints (x -1.98, -1.17, -0.36, 0.45, 1.26, 2.07) and rows at z 0.80..1.76 [Q1, D1]",
+  "plain tan paint, no camouflage, numbers or markings; team colour in two roof strips beside the cargo hatch (x -2.74..-2.16, y +-0.70..1.00, z 1.96) and the gunner's hatch lid (x -0.83, y +0.17, z 2.76)"
+ ],
+ "landmarks": [
+  { "name": "front road wheel", "ref": 0, "expect_m": [1.98, 0.365], "tol_m": 0.08, "model_at": { "node": "roadwheel", "index": 0 },
+    "note": "[D1] hub at px (190, 425)" },
+  { "name": "fourth road wheel (after the wide gap)", "ref": 0, "expect_m": [-0.47, 0.365], "tol_m": 0.08, "model_at": { "node": "roadwheel", "index": 3 },
+    "note": "[D1] hub at px (546, 425)" },
+  { "name": "rear road wheel", "ref": 0, "expect_m": [-1.95, 0.365], "tol_m": 0.08, "model_at": { "node": "roadwheel", "index": 5 },
+    "note": "[D1] hub at px (760.5, 425)" },
+  { "name": "nose tip", "ref": 0, "expect_m": [3.27, null], "tol_m": 0.08, "model_at": { "point": ["max", null] },
+    "note": "[D1] the nose face at px 2..5, rows 325..335 (z 1.0..1.05)" },
+  { "name": "stern (rear corner boxes)", "ref": 0, "expect_m": [-3.27, null], "tol_m": 0.08, "model_at": { "in_m": [-3.5, -1.7, 1.3, -2.8, 1.7, 1.95], "point": ["min", null] },
+    "note": "[D1] the rear boxes at px 942..956 (x -3.20..-3.30) between z 1.05 and 1.6" },
+  { "name": "25 mm muzzle", "ref": 0, "expect_m": [2.345, 2.39], "tol_m": 0.08, "model_at": { "in_m": [2.0, -0.5, 2.2, 2.6, 0.0, 2.6], "point": ["max", "mid"] },
+    "note": "[D1] the barrel tip at px (137, 131)" },
+  { "name": "turret roof at x 0.19", "ref": 0, "expect_m": [0.19, 2.68], "tol_m": 0.08, "model_at": { "edge": "upper", "in_m": [0.05, -1.2, 2.45, 0.35, -0.3, 2.8] },
+    "note": "[D1] the turret roof's front edge at px 450, top at py 89; box kept right of the sight head" },
+  { "name": "skirt foot at x 0", "ref": 0, "expect_m": [0.0, 0.71], "tol_m": 0.08, "model_at": { "edge": "lower", "in_m": [-1.2, -1.70, 0.6, 1.2, -1.60, 1.1] },
+    "note": "[D1] the skirt's lower edge at px 480, py 375; the box is wide in x because the skirt loft's strips run station to station (x -1, 0, 1), and y -1.70..-1.60 keeps the hub caps (to -1.595) out" }
+ ],
+ "not_confirmed": [
+  "the turret ring's side offset: no top view; drawn 0.25 m to the right so the turret and its TOW box sit centred as head-on photographs show",
+  "the raised TOW launcher: R2 (Combined Resolve XIII, 2020, 253 px a metre off the wheel hubs) shows the box level or about 3 deg nose down, belly z about 2.85, top about 3.25 with the lid, 0.40-0.45 m deep, carried under its front 40 per cent with the rear unsupported; Q1 shows it rolled onto its side with the tubes side by side. Drawn so (-1.7 deg, 0.38 m deep); the arm's linkage (two posts and a spring strut from a bracket on the turret side) is simplified",
+  "the CIV head's shape (drawn as a drum and a box head) and the IBAS head's door layout",
+  "the return rollers (hidden by the skirt, three drawn) and the roof hatch outlines",
+  "the two lifting loops at the turret front top (Q1) and the engine access plate outline on the right front roof: stations by eye"
+ ]
+}

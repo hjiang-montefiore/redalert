@@ -1,0 +1,203 @@
+{
+ "key": "stealth_n",
+ "team": "nato",
+ "name": "Lockheed Martin F-22A Raptor",
+ "category": "air",
+ "published": {
+  "len": 18.92,
+  "span": 13.56,
+  "height": 5.08,
+  "source": "USAF F-22A fact sheet: 62 ft 1 in long, 44 ft 6 in span, 16 ft 8 in high. stealth_n DRAWS a 13.20 m span on purpose (js/hero/us_f22_raptor.js THE SPAN: the airbase revetments at r 16); nato_e00_fighter draws the true 13.56 m"
+ },
+ "len": 18.92,
+ "nodes": [
+  "gear"
+ ],
+ "references": [],
+ "sources_not_fetched": [
+  "Wikimedia Commons 'Lockheed Martin F-22A Raptor 3-view line drawing.jpg' (the model's planform, fins, stabilators and wheel stations were read off it by the first builder, at its own 62 ft 1 in / 44 ft 6 in scale; numbers in the model header)",
+  "Commons 'F-22 Raptor taxis, Nellis AFB - 070903-F-6911G-024.jpg' (starboard side, long lens: wheels, spine, canopy top, fin tips)",
+  "Commons 'F-22 Raptor flying overhead at the Reno Air Races, September 14, 2008.jpg' (underside planform, caret intakes)",
+  "Commons 'F-22 Raptor, head on view - 030709-F-6911G-005.jpg' (chined nose)"
+ ],
+ "reference_note": "Batch 5: no picture could be fetched (Wikimedia answered HTTP 429 to every request during the session), so the spec has no outline references; the landmarks below are the published figures and the drawing's numbers as the model header records them. A later pass should add the 3-view (plan exact, side advisory) under specs/ref/stealth_n/.",
+ "must_show": [
+  "clipped-diamond wing: LE swept 42 deg, TE swept FORWARD 17 deg, the tip's trailing corner cut back at 42 deg; drawn half-span y +-6.60 (true 6.78), tip LE about s 12.3 (x -2.9)",
+  "diamond stabilators right behind the wing, LE 42 deg from s 15.81 at y 3.0, the cranked TE whose aftmost point is a third of the way out (y about 2.95, s 18.92, x -9.46)",
+  "twin fins canted 28 deg out from y +-1.55 at the boom shoulder (h 2.10), LE swept 22.9 deg from s 13.1 (x -3.64), TE swept forward to the rudder over the nozzles, tips at z 3.13 (h 5.08)",
+  "two flat 2-D vectoring nozzles side by side on the centreline pair at the tail, s 17.0-17.9 (x -7.5..-8.4), dark flap seams and sidewall plates",
+  "caret intakes 1.83 m off the centreline (y +-1.83), mouth at s 4.75 (x 4.71), the lip swept back 49 deg in plan, lower lip behind the upper, dark duct inside",
+  "long frameless bubble canopy with the gold indium-tin-oxide tint, top about h 3.03 (z 1.08) near s 4.0, over the chined forebody",
+  "a wide flat body about 4.5 m across from the intakes to the tail (chine y +-2.28 at s 9.6)",
+  "everything internal: main bay on the belly s 7.2-11.9 (x 2.26..-2.44) and the side bays low on the trunks s 6.2-8.7, drawn shut with saw-toothed door outlines; the M61A2 door over the starboard trunk at s 7.85",
+  "tricycle gear: nose wheel at s 5.72 (x 3.74), mains at s 11.82 (x -2.36), saw-toothed gear doors",
+  "plain two-tone grey paint, the darker disruptive blotches, saw-toothed panel seams; low-visibility star insignia on the upper port wing at s 12.0 y 4.9, the lower starboard wing and both intake trunks (kept: the owner's decision); team colour only on the tips and edge bands"
+ ],
+ "landmarks": [
+  {
+   "name": "radome tip",
+   "expect_m": [
+    9.46,
+    null,
+    null
+   ],
+   "model_at": {
+    "in_m": [
+     -20,
+     -10,
+     -5,
+     20,
+     10,
+     10
+    ],
+    "point": [
+     "max",
+     null,
+     null
+    ]
+   },
+   "note": "half the published 18.92 m: the model is centred on its length"
+  },
+  {
+   "name": "stabilator aftmost point",
+   "expect_m": [
+    -9.46,
+    null,
+    null
+   ],
+   "model_at": {
+    "in_m": [
+     -20,
+     -10,
+     -5,
+     20,
+     10,
+     10
+    ],
+    "point": [
+     "min",
+     null,
+     null
+    ]
+   },
+   "note": "the published length; the 3-view puts the aftmost point on the stabilators"
+  },
+  {
+   "name": "fin tips (overall height)",
+   "expect_m": [
+    null,
+    null,
+    3.13
+   ],
+   "model_at": {
+    "in_m": [
+     -20,
+     -10,
+     -5,
+     20,
+     10,
+     10
+    ],
+    "point": [
+     null,
+     null,
+     "max"
+    ]
+   },
+   "note": "published 16 ft 8 in (5.08 m) above the ground at z -1.95"
+  },
+  {
+   "name": "nose wheel axle station",
+   "expect_m": [
+    3.74,
+    null,
+    null
+   ],
+   "tol_m": 0.1,
+   "model_at": {
+    "material": "#131414",
+    "in_m": [
+     2.0,
+     -0.6,
+     -2.1,
+     5.5,
+     0.6,
+     -1.0
+    ]
+   },
+   "note": "3-view s 5.72 (Nellis photograph 5.76): x = 9.46 - 5.72"
+  },
+  {
+   "name": "main wheel axle station",
+   "expect_m": [
+    -2.36,
+    null,
+    null
+   ],
+   "tol_m": 0.1,
+   "model_at": {
+    "material": "#131414",
+    "in_m": [
+     -4.0,
+     0.5,
+     -2.1,
+     -0.5,
+     3.5,
+     -1.0
+    ]
+   },
+   "note": "3-view s 11.82 (Nellis photograph 11.9): x = 9.46 - 11.82"
+  },
+  {
+   "name": "canopy top",
+   "expect_m": [
+    null,
+    null,
+    1.08
+   ],
+   "tol_m": 0.06,
+   "model_at": {
+    "material": "#6a5527",
+    "point": [
+     null,
+     null,
+     "max"
+    ]
+   },
+   "note": "the head-on and Nellis photographs: canopy top 3.0-3.07 m above the ground (the 3-view's 3.17 is not used, see the model header)"
+  },
+  {
+   "name": "intake outer corner, off the centreline",
+   "expect_m": [
+    null,
+    1.83,
+    null
+   ],
+   "tol_m": 0.06,
+   "model_at": {
+    "material": "#060708",
+    "in_m": [
+     3.0,
+     1.0,
+     -1.6,
+     5.2,
+     2.6,
+     0.5
+    ],
+    "point": [
+     null,
+     "max",
+     null
+    ]
+   },
+   "note": "Reno underside photograph: the caret intakes stand 1.83 m off the centreline (the duct plate's outer corner)"
+  }
+ ],
+ "not_confirmed": [
+  "no outline reference in this spec (Wikimedia rate-limited the session): the planform is the first builder's reading of the 3-view, not re-checked here",
+  "the drawn span on this row is 13.20 m, not the published 13.56 (deliberate, the revetment fit: js/hero/us_f22_raptor.js THE SPAN)",
+  "panel seams, door outlines, bypass doors and probes placed from photographs, not measured",
+  "the paint's shade: the sheet is scaled so the base shows about 0x959ca1 at the game camera (HeroKit.seenAs), judged against memory of sunlit photographs, not a measured chip",
+  "gear leg lengths and track"
+ ]
+}

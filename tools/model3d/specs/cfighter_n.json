@@ -1,0 +1,81 @@
+{
+  "key": "cfighter_n",
+  "team": "nato",
+  "name": "Boeing F/A-18E Super Hornet",
+  "category": "air",
+  "published": { "len": 18.31, "span": 13.62, "height": 4.88, "source": "Boeing / US Navy fact sheet as commonly quoted (en.wikipedia 'Boeing F/A-18E/F Super Hornet'): 60 ft 1.25 in x 44 ft 8.5 in (over the wingtip launchers) x 16 ft" },
+  "len": 18.31,
+  "nodes": ["gear"],
+  "engine": {
+    "row": "cfighter_n, the US carrier fighter of the e00 and e20 decks; drawn by js/hero/us_f18_family.js (key 'E'), which also draws nato_e90_cfighter (F/A-18C), nato_e00_ewair and ew_n (EA-18G).",
+    "current_nodes": "one engine node, the group 'gear' (hidden in flight); no 'wingfold' groups (tools/jsc/wingfold_check.js does not list the F/A-18).",
+    "span": "drawn 12.84 m over the tip launchers, not the published 13.62 m: the game scales an aircraft by length and the airbase revetments (tools/jsc/parked3d_check.js B) leave room for 12.86 m. The wing is cut 0.4 m short of its tip; planform and stations otherwise the drawing's (see the file header, THE SPAN)."
+  },
+  "references": [
+    {
+      "name": "[D1] YF-17 / F/A-18 / F/A-18E/F silhouettes, plan",
+      "source": "Wikimedia Commons 'Northrop YF-17 McDonnell Douglas FA-18 Boeing FA-18EF Super Hornet.png' (not stored here; read for the first build, see the file header)",
+      "view": "quarter",
+      "exact": false,
+      "note": "Plan silhouettes at one scale, fixed to the published lengths. Read off it: the LEX 0.55 m off the centreline 3.7 m aft of the radome tip growing to a straight 1.94 m shoulder at 7.75 m, the wing leading edge starting again at 8.9 m and sweeping about 29 deg, the horizontal tail tip 3.6 m off the centreline at 17.1 m. Kept as a reviewer reference only: no copy is in specs/ref, so outline.py skips it."
+    },
+    {
+      "name": "[D2] F/A-18E/F three-view",
+      "source": "Wikimedia Commons 'F18 schem 02.gif' (not stored here)",
+      "view": "quarter",
+      "exact": false,
+      "note": "For the fin (canted 20 deg outward) and the canopy line."
+    },
+    {
+      "name": "[P1] EA-18G head-on, VAQ-138, RED FLAG-Alaska 2026",
+      "source": "Wikimedia Commons 'EA-18G pair of NGJ-MB pods and a single TJS pod on centerline.jpg' (US Marine Corps photograph; not stored here)",
+      "view": "quarter",
+      "exact": false,
+      "note": "Same airframe as the E: main wheels about 3.2 m apart, the rectangular caret intakes under the wide LEX, the wing flat (no dihedral), tanks on the inboard stations. Its squadron colours are NOT to be drawn."
+    }
+  ],
+  "must_show": [
+    "rectangular (caret) intake mouths under the LEX, one each side at y 0.74 - 1.28 m, h 1.20 - 2.24 m above the ground, their lips 6.45 m aft of the radome tip (x +2.70) - NOT the legacy Hornet's rounded D mouths",
+    "the wide LEX: a blade from 0.55 m off the centreline at 3.7 m aft of the nose (x +5.45) to a straight shoulder 1.94 m out at 7.75 m (x +1.40), running into the wing leading edge at 8.9 m (x +0.25)",
+    "a larger trapezoidal wing, leading edge swept about 29 deg, the AIM-9X launcher rails on the tips (y +-6.27)",
+    "twin fins canted 20 deg outward, leading edge from 13.1 m to 15.0 m aft (x -3.9 .. -5.8), tips 4.9 m above the ground",
+    "the all-moving horizontal tail set low under the fins, tips 3.6 m off the centreline at 17.1 m aft (x -7.95)",
+    "two F414 nozzles side by side at y +-0.72 m, ending at 18.05 m aft (x -8.9)",
+    "a single-seat bubble canopy from 3.7 m to 7.6 m aft of the nose (x +5.5 .. +1.5) with the dark anti-glare panel ahead of it",
+    "tricycle gear: twin nose wheels with the catapult launch bar ahead of the leg (x +5.1 .. +5.7), single main wheels 3.2 m apart under the wing root (x -0.6)",
+    "the loads of the row, hung at x -1.5 .. +2.5: AIM-9X tips (y +-6.27), AIM-120 outboard (y +-4.5), GBU-32 JDAM mid-wing (y +-3.5), 480 gal tanks inboard (y +-2.3), ATFLIR on the port cheek and AIM-120 on the starboard cheek (y +-1.02)",
+    "plain paint over the whole airframe (x -9.2 .. +9.2): FS 36320-like grey upper, a lighter grey belly, panel lines, hinge lines, no insignia, numbers or squadron marks"
+  ],
+  "landmarks": [
+    { "name": "LEX shoulder half-width at 7.75 m aft", "ref": 0, "view": "top",
+      "expect_m": [1.405, 1.94],
+      "model_at": { "in_m": [0.8, 0.3, -0.15, 2.0, 2.6, 0.45], "edge": "upper" },
+      "note": "[D1] the straight LEX shoulder 1.94 m off the centreline at 7.75 m aft of the radome tip (model x = 9.155 - 7.75 = 1.405)" },
+    { "name": "LEX start half-width at 3.7 m aft", "ref": 0, "view": "top",
+      "expect_m": [5.455, 0.55],
+      "model_at": { "in_m": [5.0, 0.2, -1.0, 5.9, 1.2, 1.5], "edge": "upper" },
+      "tol_m": 0.06,
+      "note": "[D1] the LEX 0.55 m off the centreline 3.7 m aft of the nose (x 5.455); the fuselage side there is about as wide, so the point is the outer skin" },
+    { "name": "horizontal tail tip off the centreline", "ref": 0, "view": "top",
+      "expect_m": [null, 3.6],
+      "model_at": { "in_m": [-9.2, 2.8, -0.4, -6.8, 4.2, 0.3], "point": ["mid", "max"] },
+      "note": "[D1] the stabilator tip 3.6 m off the centreline at 17.1 m aft" },
+    { "name": "main wheel half-track", "ref": 2, "view": "front",
+      "expect_m": [1.60, null],
+      "model_at": { "material": "#131414", "in_m": [-2.0, 0.5, -2.0, 1.0, 3.0, 0.0], "point": ["mid", null] },
+      "tol_m": 0.08,
+      "note": "[P1] main wheels about 3.2 m apart, read off the head-on photograph scaled on the tank pair (2.3 m off the centreline); a photograph, so 0.08 m" },
+    { "name": "fin tip height (published height)", "ref": 1, "view": "side",
+      "expect_m": [null, 2.98],
+      "model_at": { "in_m": [-9.2, -3.0, 2.3, 0.0, 3.0, 3.5], "point": [null, "max"] },
+      "note": "published height 16 ft = 4.88 m over the fin tips; the gear stands on z = -1.90, so 2.98" }
+  ],
+  "not_confirmed": [
+    "the span is cut to 12.84 m (see engine.span); the tip chord is therefore 1.7 m, not 1.4 m",
+    "the wing-fold seam station (drawn at y 4.05 m, between the mid and outboard pylons): no reference here gives the E/F hinge station",
+    "the fittings' stations (pitots, AoA vanes, louvres, blade aerials, beacons, frame seams) are the legacy Hornet's, scaled 1.073 / 1.047 / 1.10 like the body tables: NOT measured on a Super Hornet",
+    "the paint: authored so that it shows at the game camera as a sunlit FS 36320 / 36375 grey (HeroKit.authorFor of #a7afb4 / #c6cbce), not measured off a photograph",
+    "the wheelbase (5.75 m as drawn) and the gear leg lengths",
+    "the launch bar's stowed angle"
+  ]
+}

@@ -1,0 +1,218 @@
+{
+  "key": "nato_e00_lhd",
+  "team": "nato",
+  "name": "Wasp-class amphibious assault ship, drawn as USS Wasp (LHD-1) in the 2000s (RAM and the port-quarter radome added)",
+  "category": "ship",
+  "published": {
+    "len": 257.0,
+    "beam": 31.8,
+    "draught": 8.1,
+    "source": "en.wikipedia 'Wasp-class amphibious assault ship': 257 m overall, 31.8 m waterline beam, 8.1 m draught, well deck 81 x 15.2 m"
+  },
+  "len": 257,
+  "nodes": [
+    "wellgate",
+    "ciws"
+  ],
+  "references": [],
+  "reference_notes": [
+    "Wikimedia Commons 'Wasp class amphibious assault ship line drawing 1995.png': starboard profile, read at 3.646 px/m on the 257 m length (the builder's header gives every station). Not copied into specs/ref: Commons answered 429 (rate limit) to every request in batch 5, so there is no outline reference here.",
+    "Commons 'Aerial view of USS Kearsarge (LHD-3) ... Northern Viking 2022': deck plan, lifts, island place and width.",
+    "DPLA 'A starboard amidships view of the amphibious assault ship USS WASP (LHD 1) underway': the island as built.",
+    "Commons 'USS Essex (LHD-2) - Port Bow view.jpg', 'USS Wasp (LHD-1).jpg' (port quarter): bow lip and stem; the stern and its gate."
+  ],
+  "must_show": [
+    "one long flush flight deck x -122.5..128.5, 40 m across the plate at z 20.3, square bow lip 4.3 m deep over x 100..128.5, stern corners chamfered, a railed stern gallery a deck lower at x -124..-128.5",
+    "island on the starboard edge x -47.5..+42.5, outboard face y -20.4, inboard -7.0: forward deckhouse (roof z 24.1), forward step with the Phalanx (named ciws, at x 21.4 z 27.7), main block roof z 28.45, bridge roof z 34.5",
+    "black-capped stack at x -19..-26.2 between two dark pole masts: forward mast at x -1.0 with the SPS-48 planar array leaning on its forward platform (x 6.6, z 39.7), after mast at x -29.8 taller (top z 54.3) with the SPN-43 dish, Mk 23 TAS and SPS-67",
+    "the big white dome on the after deckhouse at x -42.6, y -14.6, z 26.8..30.2",
+    "two deck-edge lifts outboard of the deck at z 20.3: port x -55..-39.5 out to y 30.5, starboard x -96.5..-81 out to y -30.5, each over a dark hangar opening with its truss",
+    "stern: chamfered quarters, the well opening 15.2 m wide at x -121.4, the stern gate (named wellgate, hinge at x -121.4 z 0.6) across its lower 5.75 m, the dark well deck running forward to x -40",
+    "gallery band 2.1 m deep under the deck edge (z 16.8..18.9) on a knee into the flared hull side, catwalk at z 18.8 with rail, white life-raft canisters every 11 m along it",
+    "sponson weapons 3.2 m under the deck: Mk 29 starboard at x 48.5 and port quarter at x -111.5, Phalanx at x 98.8 (port) and -108.8 (starboard), RAM at x 105.8 (starboard) and -100.8 (port); the port-quarter radome at x -84",
+    "hull flaring from the 31.8 m waterline beam (half 15.9 at z 0) to 35.2 m at the gallery deck (z 18.9), keel flat at z -8.1 from x -52 to 96, narrow raked stem meeting the water near x 118"
+  ],
+  "landmarks": [
+    {
+      "name": "island Phalanx (ciws node)",
+      "expect_m": [
+        21.4,
+        -14.4,
+        27.7
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "node": "ciws"
+      }
+    },
+    {
+      "name": "stern gate hinge (wellgate node)",
+      "expect_m": [
+        -121.4,
+        0.0,
+        0.6
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "node": "wellgate"
+      }
+    },
+    {
+      "name": "flight deck forward edge",
+      "expect_m": [
+        128.5,
+        null,
+        null
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "material": "#5a5d60",
+        "in_m": [
+          100,
+          -21,
+          19.5,
+          131,
+          21,
+          20.6
+        ],
+        "point": [
+          "max",
+          null,
+          null
+        ]
+      }
+    },
+    {
+      "name": "port lift, outboard edge",
+      "expect_m": [
+        null,
+        30.5,
+        null
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "material": "#5a5d60",
+        "in_m": [
+          -56,
+          20.2,
+          19.0,
+          -38,
+          31.5,
+          20.6
+        ],
+        "point": [
+          null,
+          "max",
+          null
+        ]
+      }
+    },
+    {
+      "name": "port lift, centre station",
+      "expect_m": [
+        -47.25,
+        null,
+        null
+      ],
+      "tol_m": 0.5,
+      "model_at": {
+        "material": "#5a5d60",
+        "in_m": [
+          -56,
+          20.2,
+          19.0,
+          -38,
+          31.5,
+          20.6
+        ],
+        "point": [
+          "mid",
+          null,
+          null
+        ]
+      }
+    },
+    {
+      "name": "starboard lift, centre station",
+      "expect_m": [
+        -88.75,
+        null,
+        null
+      ],
+      "tol_m": 0.5,
+      "model_at": {
+        "material": "#5a5d60",
+        "in_m": [
+          -98,
+          -31.5,
+          19.0,
+          -80,
+          -20.2,
+          20.6
+        ],
+        "point": [
+          "mid",
+          null,
+          null
+        ]
+      }
+    },
+    {
+      "name": "island outboard face",
+      "expect_m": [
+        null,
+        -20.4,
+        null
+      ],
+      "tol_m": 0.15,
+      "model_at": {
+        "material": "#7c838a",
+        "in_m": [
+          -37,
+          -21.0,
+          21.0,
+          18,
+          -19.8,
+          27.0
+        ],
+        "point": [
+          null,
+          "min",
+          null
+        ]
+      }
+    },
+    {
+      "name": "keel",
+      "expect_m": [
+        null,
+        null,
+        -8.1
+      ],
+      "tol_m": 0.1,
+      "model_at": {
+        "material": "#532926",
+        "in_m": [
+          -40,
+          -10,
+          -9,
+          40,
+          10,
+          -7
+        ],
+        "point": [
+          null,
+          null,
+          "min"
+        ]
+      }
+    }
+  ],
+  "not_confirmed": [
+    "the amidships topside flare (4-5 degrees to the knuckle, 5-7 above it): the drawing is a profile and gives only the waterline beam; the bow photograph shows the side opening out under the gallery",
+    "the gallery band's sloped underside (a knee into the hull): photographs show the overhang but no reference was measured for its section",
+    "stations of the after Mk 29, the second and third Phalanx and both RAM launchers; the port-quarter radome's purpose",
+    "identities of the after mast's antennas (SPN-43, Mk 23 TAS, SPS-67 read from shape) and the white dome (taken as SPN-35); the SPS-49 is not drawn",
+    "no outline reference: Commons rate-limited every fetch in batch 5, so the line drawing could not be copied into specs/ref"
+  ]
+}

@@ -103,7 +103,8 @@
    PAINT (taken to about 0.8 of the sampled level for the ACES pass): olive drab #4a5235 (the US redo
      family, us_pershing.js; A1's colour slide has faded magenta and was not sampled); MERDC woodland
      forest green, field drab, sand and black as us_m270_himars.js draws it (V2, T3: 1985); desert tan
-     #9a8862 from V1 (#c0af9a sunlit, #91816e shade).  No markings.
+     #9a8862 from V1 (#c0af9a sunlit, #91816e shade), authored #887759 since 2026-11 (HeroKit.authorFor:
+     #9a8862 rendered as a near-white cream).  No markings.
    Nodes: "turret" (ring centre, gun or launcher along +X) on the turret:true rows; "podelev" inside the
      M901 turret; seven "roadwheel" groups (five wheel stations, the sprocket, the idler; both sides each).
    Model space: +X nose, +Y left, +Z up, metres, tracks on z = 0.  ASCII only.  */
@@ -129,7 +130,9 @@ var HeroM113 = (function () {
   /* paint: olive drab, MERDC woodland, CARC desert tan */
   var OD = { key: "m113_od", base: "#4a5235", blots: [["#525a3c", 9, 55], ["#40472e", 9, 45]], seed: 1966, soft: true };
   var MERDC = { key: "m113_merdc", base: "#4a5537", blots: [["#6b5b40", 9, 34], ["#a7946c", 7, 20], ["#1d1d19", 9, 10]], seed: 1979 };
-  var TAN = { key: "m113_tan", base: "#9a8862", blots: [["#a39169", 9, 50], ["#8c7b57", 9, 40]], seed: 1991, soft: true };
+  /* re-authored 2026-11 with HeroKit.authorFor: the old #9a8862 showed as a near-white cream
+     (seenAs top #d7cba3); #887759 shows as #cbbb96 in sun, V1's sunlit sand */
+  var TAN = { key: "m113_tan2", base: "#887759", blots: [["#907f60", 9, 50], ["#7c6c50", 9, 40]], seed: 1991, soft: true };
 
   var VARIANTS = {
     ACAV:   { kind: "acav", paint: OD,    vane80: false },
@@ -620,7 +623,16 @@ var HeroM113 = (function () {
       box(B.dark, -0.78, -0.76, -0.82, 0.82, ROOF, ROOF + 0.03);
       for (k = -1; k <= 1; k += 2) box(B.dark, -2.32, -2.18, k * 0.55 - 0.10, k * 0.55 + 0.10, ROOF, ROOF + 0.07);
       box(B.dark, -0.98, -0.88, -0.06, 0.06, ROOF + 0.035, ROOF + 0.06);
+      /* two grab handles on the lid by its front edge, its lock lever (A3, T1, T4) */
+      for (k = -1; k <= 1; k += 2) {
+        box(B.dark, -1.06, -1.03, k * 0.45 - 0.13, k * 0.45 - 0.10, ROOF + 0.035, ROOF + 0.10);
+        box(B.dark, -1.06, -1.03, k * 0.45 + 0.10, k * 0.45 + 0.13, ROOF + 0.035, ROOF + 0.10);
+        box(B.dark, -1.07, -1.02, k * 0.45 - 0.13, k * 0.45 + 0.13, ROOF + 0.085, ROOF + 0.11);
+      }
+      box(B.dark, -1.30, -0.98, 0.60, 0.66, ROOF + 0.035, ROOF + 0.065);
     }
+    /* the welded seam where the roof plate meets each side plate (D1, A1, T1) */
+    for (s = -1; s <= 1; s += 2) box(B.dark, XR + 0.04, 1.48, s > 0 ? HW - 0.03 : -HW + 0.01, s > 0 ? HW - 0.01 : -HW + 0.03, ROOF, ROOF + 0.008);
     /* the whip aerial at the left rear; the M163 carries a second on the right (V1, V2) */
     cylZ(B.dark, -2.18, HW - 0.16, ROOF, ROOF + 0.12, 0.05, 8);
     cylZ(B.dark, -2.18, HW - 0.16, ROOF + 0.12, ROOF + 1.60, 0.010, 4);
@@ -642,7 +654,9 @@ var HeroM113 = (function () {
       box(B.dark, XR - 0.06, XR, s * (HW - 0.20) - 0.10, s * (HW - 0.20) + 0.10, 1.60, 1.78);
       cylX(B.glass, XR - 0.065, XR - 0.06, s * (HW - 0.20) - 0.045, 1.69, 0.035, 8);
       cylX(B.glass, XR - 0.065, XR - 0.06, s * (HW - 0.20) + 0.045, 1.69, 0.035, 8);
-      box(B.dark, XR - 0.10, XR, s * 1.02 - 0.05, s * 1.02 + 0.05, 0.62, 0.72);
+      /* tow pintles on the rear plate's lower corners (D1, T5); they hung
+         5 cm clear of the plate, outboard of its edge, at y 1.02 */
+      box(B.dark, XR - 0.10, XR, s * 0.84 - 0.05, s * 0.84 + 0.05, 0.62, 0.72);
     }
     box(B.dark, XR - 0.06, XR, -0.07, 0.07, 0.50, 0.60);
     cylZ(B.dark, XR - 0.02, 0, 0.60, 0.66, 0.035, 8);

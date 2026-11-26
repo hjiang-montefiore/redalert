@@ -82,17 +82,18 @@
    stern. render3d.js stands the model up with rotation.x = -PI/2 and scales
    it by its X extent, so nothing stands past the stem or the transom.
 
-   Materials (10): hull, non-skid deck, deckhouse plate, flight deck, VLS
-   lids, radome white, black, bare metal, glass and the team colour (exactly
+   Materials (11): hull, non-skid deck, deckhouse plate, flight deck, VLS
+   lids, radome white, the SPY-1D face atlas (haze grey face, darker
+   frame), black, bare metal, glass and the team colour (exactly
    C.team, a ring on the flight deck and a patch on the forecastle). Paint:
    the sunlit hull and house samples off the 2006 Nitze and 2008 Churchill
    photographs (0x96938b, 0x897f66 with the haze taken out) at 0.9 of their
    level, the US Navy haze grey the Ticonderoga hero wears: hull 0x69717a,
    house 0x737a81. No hull numbers, names or flags.
 
-   Every static part is merged into one mesh per material (ten) and the
+   Every static part is merged into one mesh per material (eleven) and the
    5-inch, the one mount that trains, is the "turret" group with three:
-   thirteen draws. No two surfaces lie on one another: a deckhouse roof is
+   fourteen draws. No two surfaces lie on one another: a deckhouse roof is
    the non-skid itself, the hull's deck underlay sits 0.45 m under the deck
    and the flight deck, and the hangar walls rise from the deck edge. ASCII only -- a stray byte in a hex literal has broken
    this project.
@@ -203,6 +204,19 @@ var HeroBurkeFlights = (function () {
     return t;
   }
 
+  /* the SPY-1 array faces: haze grey a shade over the house (#7b8288),
+     their frame rings a shade under it (#5f666c). One 4 x 1 atlas, read
+     with nearest filtering: u 0.125 = frame, u 0.875 = face. They had been
+     in the white radome material and read as white discs at game zoom    */
+  function spyTex(THREE) {
+    var cv = cvs(4, 1), g = cv.getContext("2d");
+    g.fillStyle = "#5f666c"; g.fillRect(0, 0, 2, 1);
+    g.fillStyle = "#7b8288"; g.fillRect(2, 0, 2, 1);
+    var t = tex(THREE, cv, false);
+    t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false;
+    return t;
+  }
+
   /* ================================================================ textures
      Painted once per page and flight.                                      */
   var _tx = {};
@@ -210,7 +224,7 @@ var HeroBurkeFlights = (function () {
     var k = V.flight;
     if (_tx[k]) return _tx[k];
     _tx[k] = { hull: hullTex(THREE, V), sup: supTex(THREE), deck: deckTex(THREE),
-               pad: padTex(THREE, V), vls: vlsTex(THREE, V) };
+               pad: padTex(THREE, V), vls: vlsTex(THREE, V), spy: spyTex(THREE) };
     return _tx[k];
   }
 
@@ -411,6 +425,7 @@ var HeroBurkeFlights = (function () {
     M.metal = S({ color: 0x80878d, roughness: 0.55, metalness: 0.50 });
     M.team  = S({ color: new THREE.Color(team), roughness: 0.62, metalness: 0.08,
                   polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 });
+    M.spy   = S({ map: T.spy, roughness: 0.86, metalness: 0.06 });
     M.glass = S({ color: 0x2b3a44, roughness: 0.12, metalness: 0.25,
                   transparent: true, opacity: 0.86 });
     return M;
@@ -634,7 +649,7 @@ var HeroBurkeFlights = (function () {
     var IIA = !!V.hangar;
     var M = makeMats(THREE, team, V);
     var G = new THREE.Group();
-    var KEYS = ["sup", "deck", "pad", "vls", "rad", "dark", "metal", "team", "glass"];
+    var KEYS = ["sup", "deck", "pad", "vls", "rad", "spy", "dark", "metal", "team", "glass"];
     var Bt = {}, cur;
     KEYS.forEach(function (k) { Bt[k] = new Batch(); });
     cur = Bt;
@@ -766,6 +781,16 @@ var HeroBurkeFlights = (function () {
       return [F.o[0] + F.t[0] * s1 + F.w[0] * r1 + F.n[0] * d,
               F.o[1] + F.t[1] * s1 + F.w[1] * r1 + F.n[1] * d,
               F.o[2] + F.t[2] * s1 + F.w[2] * r1 + F.n[2] * d];
+    }
+    /* plate() with one fixed uv: a solid swatch of an atlas */
+    function plateU(k, F, pts, d0, d1, u) {
+      var B = cur[k], n = pts.length, q;
+      function P(p, d) { var w = fp(F, p[0], p[1], d); return [w[0], w[1], w[2], u, 0.5]; }
+      for (q = 1; q < n - 1; q++) B.tri(P(pts[0], d1), P(pts[q], d1), P(pts[q + 1], d1));
+      for (q = 0; q < n; q++) {
+        var a = pts[q], b = pts[(q + 1) % n];
+        B.tri(P(a, d0), P(b, d0), P(b, d1)); B.tri(P(a, d0), P(b, d1), P(a, d1));
+      }
     }
     function plate(k, F, pts, d0, d1) {
       var B = cur[k], n = pts.length, q;
@@ -990,8 +1015,8 @@ var HeroBurkeFlights = (function () {
     var SPY2 = [[11.45, -3.37], [14.9, -6.75], [18.0, -6.75], [18.0, 6.75], [14.9, 6.75], [11.45, 3.37]];
     if (V.highAft) house(SPY2, ZPH, ZPH + 2.4, 0.3);
     function spyFace(F) {
-      plate("sup", F, octPts(1.98), 0, 0.14);
-      plate("rad", F, octPts(1.80), 0.14, 0.21);
+      plateU("spy", F, octPts(1.98), 0, 0.14, 0.125);
+      plateU("spy", F, octPts(1.80), 0.14, 0.21, 0.875);
     }
     var ZSPY = 14.25;
     spyFace(face(SPY, 2, Z1, ZPH, 0.85, 0.5, ZSPY));
@@ -1183,9 +1208,10 @@ var HeroBurkeFlights = (function () {
         prism("dark", tp, z1, z1 + 1.35, 0.06, 4.0, true);
         /* the inside of the open top: the same walls wound inward */
         prism("dark", roofOf(tp, 0.06, 0.12).slice().reverse(), z1 + 0.4, z1 + 1.33, 0.06, 4.0, true);
-        prism("dark", roofOf(tp, 0.06, 0.22), z1 + 0.4, z1 + 0.41, 0.0, 4.0);
-        /* the louvre bars across the open top */
-        for (var q = -2; q <= 2; q++) bx("dark", 0.12, 4.0, 0.12, xc + q * 1.5, 0, z1 + 1.25);
+        prism("dark", roofOf(tp, 0.06, 0.12), z1 + 0.4, z1 + 0.41, 0.0, 4.0);
+        /* the louvre bars across the open top, their ends let into the
+           inner walls (at 4.0 m they stopped 0.3 m short of both walls)  */
+        for (var q = -2; q <= 2; q++) bx("dark", 0.12, 4.7, 0.12, xc + q * 1.5, 0, z1 + 1.25);
       }
     }
     stack(5.85, Z1, 18.85);
@@ -1311,7 +1337,9 @@ var HeroBurkeFlights = (function () {
     }
     if (!IIA) {
       /* Flight I: the 61-cell field on the main deck before the step */
-      vlsField(-38.9, topZ(-38.9, 0) - 0.02, 7.2, 6.6);
+      /* 9.0 x 6.6: eight modules, twice the four-module forward field
+         (4.5 x 6.6); it had been drawn 7.2 long                          */
+      vlsField(-38.9, topZ(-38.9, 0) - 0.02, 9.0, 6.6);
       /* the two Harpoon quads abaft the after house, crossing the deck:
          each fires over the far side (the 1991 quarter view, and the two
          end-on frames the profile shows)                                  */
@@ -1382,7 +1410,7 @@ var HeroBurkeFlights = (function () {
         var FS = face(HG, s > 0 ? 4 : 0, Z0 - 0.08, ZH, 0.55, 0.5, Z0 + 0.4, 0.0);
         plate("dark", FS, rectPts(-1.5, 0.0, 1.5, 1.6), -0.02, 0.05);
       }
-      vlsField(-40.6, ZH, 7.4, 6.6);
+      vlsField(-40.6, ZH, 9.0, 6.6);   /* eight modules, as the Flight I field */
       /* the deck lockers along the roof's after end and the low house on
          its centre aft (DDG-88 and DDG-81)                                */
       [[-51.0, 5.6], [-48.6, 5.6], [-46.2, 5.6]].forEach(function (p) {

@@ -70,10 +70,10 @@
    plus a few flat colours (radar faces, radomes, the parked aircraft) and
    the team material, which is exactly C.team because this key stands in
    for thirteen other carriers and eraPaint only leaves a material alone if
-   it matches the team colour. The island's hull number is painted in a
-   spare corner of the deck canvas rather than costing a material and a
-   draw of its own. The canvases depend on nothing but the ship, so they
-   are painted once per page and shared by every build.
+   it matches the team colour. No hull number is painted, on the bow or
+   the island (plain paint, AGENT_POLICY 6). The canvases depend on
+   nothing but the ship, so they are painted once per page and shared by
+   every build.
 
    Every static part is merged into ONE mesh per material. The ship is the
    biggest thing on the map and every mesh costs a draw call and a shadow
@@ -200,14 +200,16 @@ var HeroFordCVN = (function () {
     }
     return this;
   };
-  /* an ExtrudeGeometry's caps and sides into two different batches       */
-  Batch.addGroups = function (geo, batches) {
+  /* an ExtrudeGeometry's caps and sides into two different batches;
+     skip(P, i), if given, drops the triangle starting at vertex i        */
+  Batch.addGroups = function (geo, batches, skip) {
     var g = geo.index ? geo.toNonIndexed() : geo;
     var P = g.getAttribute("position"), N = g.getAttribute("normal"), U = g.getAttribute("uv");
     var groups = g.groups.length ? g.groups : [{ start: 0, count: P.count, materialIndex: 0 }];
     groups.forEach(function (gr) {
       var B = batches[gr.materialIndex] || batches[0];
       for (var i = gr.start; i < gr.start + gr.count; i++) {
+        if (skip && (i - gr.start) % 3 === 0 && skip(P, i)) { i += 2; continue; }
         B.p.push(P.getX(i), P.getY(i), P.getZ(i));
         B.n.push(N.getX(i), N.getY(i), N.getZ(i));
         if (U) B.u.push(U.getX(i), U.getY(i)); else B.u.push(0, 0);
@@ -267,7 +269,10 @@ var HeroFordCVN = (function () {
      Ford's island leans inboard, and this is how it gets that for free.
      pts run counter-clockwise seen from above. UVs are in metres / 16 so
      the plate texture tiles at a constant size whatever the block.      */
-  function frustum(THREE, pts, zb, zt, sBot, sTop) {
+  function frustum(THREE, pts, zb, zt, sBot, sTop, caps) {
+    /* caps: which end caps to draw, "tb" (the default), "t", "b" or "" -
+       a cap that lies on the deck or under the next tier is never seen   */
+    if (caps === undefined) caps = "tb";
     pts = ccw(pts);
     var n = pts.length, cx = 0, cy = 0, i;
     for (i = 0; i < n; i++) { cx += pts[i][0]; cy += pts[i][1]; }
@@ -292,10 +297,12 @@ var HeroFordCVN = (function () {
       tri(b0, t1, t0, [u0, zb * K], [u1, zt * K], [u0, zt * K]);
     }
     for (i = 1; i < n - 1; i++) {
-      tri([T[0][0], T[0][1], zt], [T[i][0], T[i][1], zt], [T[i + 1][0], T[i + 1][1], zt],
-          [T[0][0] * K, T[0][1] * K], [T[i][0] * K, T[i][1] * K], [T[i + 1][0] * K, T[i + 1][1] * K]);
-      tri([B[0][0], B[0][1], zb], [B[i + 1][0], B[i + 1][1], zb], [B[i][0], B[i][1], zb],
-          [B[0][0] * K, B[0][1] * K], [B[i + 1][0] * K, B[i + 1][1] * K], [B[i][0] * K, B[i][1] * K]);
+      if (caps.indexOf("t") >= 0)
+        tri([T[0][0], T[0][1], zt], [T[i][0], T[i][1], zt], [T[i + 1][0], T[i + 1][1], zt],
+            [T[0][0] * K, T[0][1] * K], [T[i][0] * K, T[i][1] * K], [T[i + 1][0] * K, T[i + 1][1] * K]);
+      if (caps.indexOf("b") >= 0)
+        tri([B[0][0], B[0][1], zb], [B[i + 1][0], B[i + 1][1], zb], [B[i][0], B[i][1], zb],
+            [B[0][0] * K, B[0][1] * K], [B[i + 1][0] * K, B[i + 1][1] * K], [B[i][0] * K, B[i][1] * K]);
     }
     var g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
@@ -314,7 +321,7 @@ var HeroFordCVN = (function () {
     return a < 0 ? pts.slice().reverse() : pts;
   }
   /* a flat plate on a plan outline (any convex polygon), z0 to z1        */
-  function plate(THREE, pts, z0, z1) { return frustum(THREE, pts, z0, z1, 1, 1); }
+  function plate(THREE, pts, z0, z1, caps) { return frustum(THREE, pts, z0, z1, 1, 1, caps); }
   /* the same plate drawn in the XZ plane (outline as [x, z]) and extruded
      th across Y: fins, vertical tails, blast deflectors                  */
   function vplate(THREE, pts, th) {
@@ -442,13 +449,6 @@ var HeroFordCVN = (function () {
      it and none of it costs a triangle. The lift slabs sample the same
      painting, so their outlines line up across the joint.                */
   var DX0 = -170, DX1 = 170, DY0 = -38, DY1 = 44;
-  /* The island's hull number lives in a corner of the same painting that
-     no deck ever samples (off the port bow, 13 m clear of the deck edge,
-     so even the smallest mip does not bleed it onto the deck). The two
-     number panels map their UVs onto it. 18 x 9 m of canvas for a
-     9.6 x 4.8 m panel is ~110 px across: several times what the closest
-     zoom puts on screen.                                                 */
-  var NUMR = { x0: 149.0, x1: 167.0, y0: 30.0, y1: 39.0 };
 
   function deckTex(THREE) {
     var W = 2048, H = 512, cv = mkCv(W, H), g = cv.getContext("2d");
@@ -571,6 +571,29 @@ var HeroFordCVN = (function () {
       mline([a[0] - 0.6, a[1] - 1.6], [a[0] - 0.6, a[1] + 1.6], 0.5, "#e8ecee");
     }
     CATS.forEach(function (c) { cat(c[0], c[1]); });
+    /* the yellow lead-in (taxi) lines every US carrier paints onto each
+       catapult, curving in from aft to the track's after end, and the
+       exhaust scorch on the deck behind each bow deflector (batch 5; the
+       curves' exact run is NOT measured)                                  */
+    CATS.forEach(function (c) {
+      var a = c[0], dxc = c[1][0] - a[0], dyc = c[1][1] - a[1], Lc = Math.sqrt(dxc * dxc + dyc * dyc);
+      var ux = dxc / Lc, uy = dyc / Lc, side = a[1] > 10 ? 1 : -1, prev = null;
+      for (var q = 0; q <= 10; q++) {
+        var t = q / 10, back = 26 * (1 - t), off = -side * 9 * Math.pow(1 - t, 2);   /* in from the deck centre */
+        var pt = [a[0] - ux * back - uy * off, a[1] - uy * back + ux * off];
+        if (prev) mline(prev, pt, 0.35, "#d8a23a");
+        prev = pt;
+      }
+      mline(pt0(a, ux, uy, 2), [a[0] + ux * 30, a[1] + uy * 30], 0.30, "#d8a23a");
+    });
+    function pt0(a, ux, uy, d) { return [a[0] + ux * d, a[1] + uy * d]; }
+    [[-16.1], [5.0]].forEach(function (c) {
+      var gs = g.createLinearGradient(cx(33.0), 0, cx(14.0), 0);
+      gs.addColorStop(0, "rgba(16,15,14,0.55)");
+      gs.addColorStop(1, "rgba(16,15,14,0.0)");
+      g.fillStyle = gs;
+      g.fillRect(cx(14.0), cy(c[0] + 5.0), 19.0 * SX, 10.0 * SY);
+    });
     /* The waist deflectors lie flush, so they are paint and nothing else:
        on the overhead each is a rust-tan frame round a panel scorched
        nearly black down the middle, where the exhaust hits.               */
@@ -595,11 +618,6 @@ var HeroFordCVN = (function () {
     [[-30.7, 29.0], [-2.2, 29.5], [26.3, 30.0], [54.7, 30.5]].forEach(function (h, k) {
       mline([h[0] - 6, h[1]], [h[0] + 6, h[1]], 0.5, "#e8ecee");
       mline([h[0], h[1] - 3], [h[0], h[1] + 3], 0.5, "#e8ecee");
-      g.save(); g.translate(cx(h[0] - 9), cy(h[1])); g.rotate(PI / 2);
-      g.font = "bold " + Math.round(3.2 * SY) + "px Arial";
-      g.textAlign = "center"; g.textBaseline = "middle";
-      g.fillStyle = "#e8ecee"; g.fillText(String(6 - k), 0, 0);
-      g.restore();
     });
 
     /* --- lift outlines: a red dashed safety border inside a white edge -- */
@@ -621,27 +639,9 @@ var HeroFordCVN = (function () {
     for (i = 1; i < DECK.length; i++) g.lineTo(cx(DECK[i][0]), cy(DECK[i][1]));
     g.closePath(); g.stroke(); g.restore();
 
-    /* --- the hull number at the bow, reading forward from aft, "7" to
-       port and "8" to starboard, 11 m tall: measured on the overhead     */
-    g.save();
-    g.translate(cx(161.5), cy(1.6)); g.rotate(PI / 2);
-    g.font = "bold " + Math.round(11.5 * SX) + "px Arial";
-    g.textAlign = "center"; g.textBaseline = "middle";
-    g.lineWidth = 0.6 * SX; g.strokeStyle = "#e8ecee";
-    g.strokeText("78", 0, 0);
-    g.restore();
-
-    /* --- the island's hull number, in its spare corner: white with a black
-       edge on island grey, as painted on both faces of CVN-78's island     */
-    var nx0 = cx(NUMR.x0), ny0 = cy(NUMR.y1), nw = (NUMR.x1 - NUMR.x0) * SX, nh = (NUMR.y1 - NUMR.y0) * SY;
-    g.fillStyle = hx(PAINT.sup); g.fillRect(nx0 - 4, ny0 - 4, nw + 8, nh + 8);
-    g.save();
-    g.font = "bold " + Math.round(nh * 0.86) + "px Arial";
-    g.textAlign = "center"; g.textBaseline = "middle";
-    g.lineWidth = Math.max(2, nh * 0.055); g.strokeStyle = "#16181b";
-    g.strokeText("78", nx0 + nw * 0.5, ny0 + nh * 0.54);
-    g.fillStyle = "#eef0f1"; g.fillText("78", nx0 + nw * 0.5, ny0 + nh * 0.54);
-    g.restore();
+    /* no hull numbers and no spot numerals: the house rule is plain paint
+       (AGENT_POLICY 6), so the "78" at the bow and on the island and the
+       spot numbers are left off (batch 5)                                */
 
     var t = finish(THREE, cv);
     t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
@@ -846,6 +846,9 @@ var HeroFordCVN = (function () {
       f.k.forEach(function (k) { (around[k] || (around[k] = [])).push(fi); });
     });
     faces.forEach(function (f) {
+      /* the loft's lid at the gallery deck lies under the flight-deck
+         plate (and under the lift slabs in their notches): not drawn      */
+      if (f.p[0][2] > FD_BOT - 1e-3 && f.p[1][2] > FD_BOT - 1e-3 && f.p[2][2] > FD_BOT - 1e-3) return;
       var o = (f.p[0][2] + f.p[1][2] + f.p[2][2]) / 3 >= 0 ? OUT.top : OUT.bot;
       for (var c = 0; c < 3; c++) {
         var q = f.p[c], sx = 0, sy = 0, sz = 0;
@@ -934,6 +937,7 @@ var HeroFordCVN = (function () {
       P.push(["K", place(THREE, new THREE.CylinderGeometry(0.4, 0.4, 0.3, 8), -1.0, s * 1.4, 0.4)]);
     }
     P.push(["M", strut(THREE, 6.2, 0, 0.3, 6.2, 0, 1.5, 0.12, 5)]);
+    P.push(["K", place(THREE, new THREE.CylinderGeometry(0.3, 0.3, 0.22, 8), 6.2, 0, 0.3)]);   /* nose wheel on the deck */
     return P;
   }
   function hawkeyeParts(THREE, M) {
@@ -967,14 +971,16 @@ var HeroFordCVN = (function () {
       }
       P.push(["A", plate(THREE, s > 0 ? [[2.8, 1.2], [-0.2, 1.2], [-0.2, 5.0], [2.3, 5.0]]
                                       : [[2.8, -1.2], [2.3, -5.0], [-0.2, -5.0], [-0.2, -1.2]], 3.2, 3.5)]);
-      P.push(["A", place(THREE, vplate(THREE, [[-0.2, 0], [-9.8, 0], [-9.8, 1.9], [-0.2, 2.6]], 0.25), 0, s * 5.2, 2.2, 0, 0, 0)]);
-      P.push(["M", strut(THREE, 1.4, s * 3.9, 0.3, 1.4, s * 3.9, 2.3, 0.14, 5)]);
+      P.push(["A", place(THREE, vplate(THREE, [[-0.2, 0], [-9.8, 0], [-9.8, 1.9], [-0.2, 2.6]], 0.25), 0, s * 5.1, 2.2, 0, 0, 0)]);   /* hinged at the wing root's tip */
+      P.push(["M", strut(THREE, 1.4, s * 3.9, 0.36, 1.4, s * 3.9, 2.3, 0.14, 5)]);
+      P.push(["K", place(THREE, new THREE.CylinderGeometry(0.36, 0.36, 0.3, 8), 1.4, s * 3.9, 0.36)]);
       /* the quad fins' outer pair                                          */
       P.push(["A", place(THREE, vplate(THREE, [[-7.0, 0], [-8.9, 0], [-8.9, 2.4], [-7.6, 2.4]], 0.2), 0, s * 3.9, 2.6, 0, 0, 0)]);
       P.push(["A", place(THREE, vplate(THREE, [[-7.0, 0], [-8.9, 0], [-8.9, 2.0], [-7.6, 2.0]], 0.2), 0, s * 1.4, 2.8, 0, 0, 0)]);
     }
     P.push(["A", plate(THREE, [[-7.0, -4.0], [-7.0, 4.0], [-8.8, 4.0], [-8.8, -4.0]], 2.55, 2.8)]);
     P.push(["M", strut(THREE, 6.0, 0, 0.3, 6.0, 0, 1.3, 0.12, 5)]);
+    P.push(["K", place(THREE, new THREE.CylinderGeometry(0.3, 0.3, 0.22, 8), 6.0, 0, 0.3)]);
     return P;
   }
 
@@ -1013,13 +1019,17 @@ var HeroFordCVN = (function () {
       });
     }
 
-    /* a hand rail round a plan outline at height z: one thin bar a side  */
+    /* a hand rail round a plan outline at height z: one thin bar a side,
+       on stanchions a metre high every 4 m or so, so it stands on its deck */
     function ringRail(pts, z) {
       for (var k = 0; k < pts.length; k++) {
         var p0 = pts[k], p1 = pts[(k + 1) % pts.length];
-        var ddx = p1[0] - p0[0], ddy = p1[1] - p0[1];
-        B.M.add(box(THREE, Math.sqrt(ddx * ddx + ddy * ddy), 0.08, 0.08,
+        var ddx = p1[0] - p0[0], ddy = p1[1] - p0[1], LL = Math.sqrt(ddx * ddx + ddy * ddy);
+        B.M.add(box(THREE, LL, 0.08, 0.08,
                     (p0[0] + p1[0]) * 0.5, (p0[1] + p1[1]) * 0.5, z, 0, 0, Math.atan2(ddy, ddx)));
+        var np = Math.max(1, Math.round(LL / 4));
+        for (var q = 0; q < np; q++)
+          B.M.add(box(THREE, 0.07, 0.07, 1.0, p0[0] + ddx * q / np, p0[1] + ddy * q / np, z - 0.5));
       }
     }
 
@@ -1035,7 +1045,45 @@ var HeroFordCVN = (function () {
     shp.closePath();
     var dg = new THREE.ExtrudeGeometry(shp, { depth: FD_TH, bevelEnabled: false, curveSegments: 1 });
     dg.translate(0, 0, FD_BOT);
-    Batch.addGroups(dg, [B.D, B.S]);
+    /* its underside is drawn only where it is seen: over the hull it lies
+       on the loft, so only the strip from the hull's top edge out to the
+       deck edge, and the overhangs past either end of the loft           */
+    Batch.addGroups(dg, [B.D, B.S], function (P, q) {
+      return P.getZ(q) < FD_BOT + 1e-3 && P.getZ(q + 1) < FD_BOT + 1e-3 && P.getZ(q + 2) < FD_BOT + 1e-3;
+    });
+    (function () {
+      var xs = [], q, k;
+      for (q = -168.5; q <= 168.5; q += 3) xs.push(q);
+      DECK.forEach(function (p) { xs.push(p[0] - 0.01, p[0] + 0.01); });
+      [HX0, HX1].forEach(function (e) { xs.push(e - 0.01, e + 0.01); });
+      xs = xs.filter(function (v) { return v >= -168.5 && v <= 168.5; }).sort(function (a, b) { return a - b; });
+      function hullTop(x, side) {
+        if (x < HX0 || x > HX1) return 0;
+        var R = sideRing(x, side);
+        return Math.max(0, R[R.length - 1][0] - 0.3);
+      }
+      var pos = [], uv = [];
+      for (var side = -1; side <= 1; side += 2) {
+        for (k = 0; k + 1 < xs.length; k++) {
+          var xa = xs[k], xb = xs[k + 1];
+          if (xb - xa < 1e-4) continue;
+          var oa = deckHalf(xa + 1e-3, side), ob = deckHalf(xb - 1e-3, side);
+          var ia = Math.min(oa, hullTop(xa, side)), ib = Math.min(ob, hullTop(xb, side));
+          if (oa - ia < 0.05 && ob - ib < 0.05) continue;
+          var Q = [[xa, side * ia], [xb, side * ib], [xb, side * ob], [xa, side * oa]];
+          [side > 0 ? [0, 2, 1] : [0, 1, 2], side > 0 ? [0, 3, 2] : [0, 2, 3]].forEach(function (t3) {
+            var A = Q[t3[0]], Bq = Q[t3[1]], Cq = Q[t3[2]];
+            if (Math.abs((Bq[0] - A[0]) * (Cq[1] - A[1]) - (Cq[0] - A[0]) * (Bq[1] - A[1])) < 1e-3) return;
+            t3.forEach(function (t) { pos.push(Q[t][0], Q[t][1], FD_BOT); uv.push(Q[t][0] / 16, Q[t][1] / 16); });
+          });
+        }
+      }
+      var ug = new THREE.BufferGeometry();
+      ug.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+      ug.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+      ug.computeVertexNormals();
+      B.S.add(ug);
+    })();
     /* the lifts: the same deck painting, a hair proud of the deck        */
     LIFTS.forEach(function (L) {
       var ls = new THREE.Shape();
@@ -1092,6 +1140,19 @@ var HeroFordCVN = (function () {
       /* the catwalk's outer hand rail: the fine light line that fringes
          the deck edge in every photograph                                  */
       B.M.add(box(THREE, L2, 0.08, 0.08, mx + ox * 1.6, my + oy * 1.6, FD_TOP - 0.25, 0, 0, ang));
+      /* on stanchions off the plank's outer edge, every 6 m or so         */
+      var nst = Math.max(1, Math.round(L2 / 6));
+      for (var q2 = 0; q2 <= nst; q2++) {
+        var fq = lerp(0.03, 0.97, q2 / nst);
+        B.M.add(box(THREE, 0.07, 0.07, 1.2, a[0] + dx * fq + ox * 1.6, a[1] + dy * fq + oy * 1.6, FD_TOP - 0.88));
+      }
+      /* hose-reel and fuel-station lockers standing on the plank, one
+         every 30 m or so along the long runs                              */
+      var nlk = Math.floor(L2 / 30);
+      for (q2 = 0; q2 < nlk; q2++) {
+        var fl = (q2 + 0.5) / nlk;
+        B.K.add(box(THREE, 1.1, 0.6, 0.9, a[0] + dx * fl + ox * 0.8, a[1] + dy * fl + oy * 0.8, FD_TOP - 1.33 + 0.44, 0, 0, ang));
+      }
     }
 
     /* life-raft canister racks along the gallery: the white rows under the
@@ -1283,9 +1344,17 @@ var HeroFordCVN = (function () {
     B.M.add(box(THREE, 0.3, 7.0, 0.3, -89.4, 39.8, FD_TOP + 1.9));
     /* the tall folding pole mast at the forward starboard deck edge, and
        whips spaced along the starboard deck edge forward of the island   */
-    B.M.add(strut(THREE, 60.0, -35.8, FD_TOP - 1.0, 60.0, -35.8, FD_TOP + 13.0, 0.18, 5, 0.08));
-    for (i = 0; i < 4; i++)
-      B.M.add(strut(THREE, -46 + i * 34, -36.1, FD_TOP - 1.0, -46 + i * 34, -37.0, FD_TOP + 6.5, 0.07, 4));
+    /* both stand on the catwalk plank (top 1.33 m under the deck edge,
+       centred 0.9 m outboard of it), clear of the lifts, which have none */
+    B.M.add(strut(THREE, 60.0, -35.9, FD_TOP - 1.36, 60.0, -35.9, FD_TOP + 13.0, 0.18, 5, 0.08));
+    [-46.0, -12.0, 40.0, 56.0].forEach(function (wx) {
+      B.M.add(strut(THREE, wx, -35.9, FD_TOP - 1.36, wx, -37.0, FD_TOP + 6.5, 0.07, 4));
+    });
+    /* the same folding whips down the port side, on the catwalk under the
+       straight edge abaft the angled deck (batch 5)                      */
+    [-128.0, -104.0, -80.0].forEach(function (wx) {
+      B.M.add(strut(THREE, wx, 39.5, FD_TOP - 1.36, wx, 40.4, FD_TOP + 6.5, 0.07, 4));
+    });
     /* deck-edge identification: team flashes on the bow and at the round-
        down, laid on the deck so they read from the RTS camera. 0.2 m
        proud and on the offset team material: 0.06 m scaled by 0.31 is
@@ -1300,33 +1369,17 @@ var HeroFordCVN = (function () {
     var Z0 = FD_TOP;
     var base = [[ISL_X1, ISL_YO], [ISL_X1, ISL_YI - 2.0], [ISL_X1 - 2.0, ISL_YI],
                 [ISL_X0 + 1.5, ISL_YI], [ISL_X0, ISL_YI - 1.5], [ISL_X0, ISL_YO]];
-    B.S.add(frustum(THREE, base, Z0, Z0 + 8.5, 1.0, 0.985));
+    /* caps that lie on the deck or under the next tier are left off      */
+    B.S.add(frustum(THREE, base, Z0, Z0 + 8.5, 1.0, 0.985, ""));
     /* the annex under pri-fly, and its after glazing                       */
     var annex = [[-93.0, -34.3], [-93.0, -25.2], [-99.0, -26.4], [-99.0, -33.6]];
-    B.S.add(frustum(THREE, annex, Z0, Z0 + 7.2, 1.0, 0.96));
+    B.S.add(frustum(THREE, annex, Z0, Z0 + 7.2, 1.0, 0.96, "t"));
     B.G.add(box(THREE, 0.14, 6.4, 1.3, -99.05, -30.0, Z0 + 5.6));
-    /* number panels, both sides of the base block. Their UVs are set in
-       deck-painting metres, onto the corner where deckTex paints the "78";
-       u runs with the panel's own +X, which reads left to right from
-       either side once the port panel is turned about                   */
-    function numberPanel(flip) {
-      var np = new THREE.PlaneGeometry(9.6, 4.8), uv = np.getAttribute("uv");
-      for (var q = 0; q < uv.count; q++)
-        uv.setXY(q, lerp(NUMR.x0, NUMR.x1, uv.getX(q)), lerp(NUMR.y0, NUMR.y1, uv.getY(q)));
-      np.rotateX(PI / 2);
-      if (flip) np.rotateZ(PI);
-      /* 0.2 m off the leaning wall: at 0.06 it was under one depth step
-         at full zoom-out once scaled by 0.31                              */
-      np.translate(-84.5, flip ? ISL_YI + 0.2 : ISL_YO - 0.2, Z0 + 4.4);
-      B.D.add(np);
-    }
-    numberPanel(false);
-    numberPanel(true);
     /* flight deck control looks out over the deck from the island's
        inboard face, a long low window band just above the deck            */
     B.G.add(box(THREE, 11.0, 0.3, 1.1, -84.0, ISL_YI + 0.1, Z0 + 3.0));
     /* team band round the head of the base block                           */
-    B.T.add(frustum(THREE, base, Z0 + 7.0, Z0 + 8.2, 1.012, 1.004));
+    B.T.add(frustum(THREE, base, Z0 + 7.0, Z0 + 8.2, 1.012, 1.004, ""));
     /* balcony deck and its rail                                            */
     B.S.add(plate(THREE, scalePts(base, 1.07), Z0 + 8.3, Z0 + 8.65));
     ringRail(scalePts(base, 1.065), Z0 + 9.65);
@@ -1337,12 +1390,12 @@ var HeroFordCVN = (function () {
                [-92.6, -30.7], [-83.5, -35.4]];
     var hc = centroid(HEX);
     var Z1 = Z0 + 8.65, Z2 = Z0 + 15.6;
-    B.S.add(frustum(THREE, HEX, Z1, Z2, 1.0, 0.93));
+    B.S.add(frustum(THREE, HEX, Z1, Z2, 1.0, 0.93, "t"));
     /* bridge band: glass all round, a visor plate over it                  */
     B.G.add(frustum(THREE, HEX, Z2, Z2 + 1.55, 0.925, 0.925));
     B.S.add(plate(THREE, scalePts(HEX, 0.98), Z2 + 1.55, Z2 + 1.9));
     var Z3 = Z2 + 1.9, Z4 = Z0 + 24.0;
-    B.S.add(frustum(THREE, HEX, Z3, Z4, 0.86, 0.80));
+    B.S.add(frustum(THREE, HEX, Z3, Z4, 0.86, 0.80, ""));
 
     /* The six arrays: SPY-4 low on the big block, SPY-3 high on the upper.
        Both photographs of the island's faces show them SQUARE, a dark
@@ -1390,8 +1443,23 @@ var HeroFordCVN = (function () {
     B.S.add(plate(THREE, [[-83.5, -37.6], [-78.8, -37.6], [-78.8, -20.6], [-83.5, -20.6]], Z0 + 21.9, Z0 + 22.25));
     ringRail([[-83.3, -37.4], [-79.0, -37.4], [-79.0, -20.8], [-83.3, -20.8]], Z0 + 23.2);
     /* the roof: a team-coloured coaming round a plated roof                */
-    B.T.add(frustum(THREE, HEX, Z4 - 0.9, Z4 + 0.25, 0.808, 0.808));
-    B.S.add(plate(THREE, scalePts(HEX, 0.66), Z4 + 0.25, Z4 + 0.45));
+    B.T.add(frustum(THREE, HEX, Z4 - 0.9, Z4 + 0.25, 0.808, 0.808, "t"));
+    B.S.add(plate(THREE, scalePts(HEX, 0.66), Z4 + 0.25, Z4 + 0.45, "t"));
+    /* roof and balcony clutter every photograph of the island shows:
+       lockers and vent trunks on the balcony ring, a row of whips and
+       small boxes on the roof round the mast foot (batch 5)              */
+    [[-92.9, -33.0], [-92.9, -29.4], [-92.9, -25.8], [-75.3, -33.6], [-75.3, -24.6]].forEach(function (v, q) {
+      B.S.add(box(THREE, 0.6, 1.6, 1.1 + (q % 2) * 0.3, v[0], v[1], Z1 + 0.55 + (q % 2) * 0.15));
+    });
+    [[-82.0, -34.9], [-87.5, -34.6], [-82.0, -23.1], [-87.5, -23.4]].forEach(function (v) {
+      B.K.add(box(THREE, 1.2, 0.45, 0.8, v[0], v[1], Z1 + 0.4));
+    });
+    [[-78.6, -29.1, 4.0], [-90.0, -28.4, 3.4], [-84.0, -24.6, 3.0], [-85.4, -33.6, 3.0]].forEach(function (w) {
+      B.M.add(strut(THREE, w[0], w[1], Z4 + 0.2, w[0], w[1], Z4 + 0.4 + w[2], 0.05, 4, 0.02));
+    });
+    [[-81.4, -31.8], [-88.6, -26.6]].forEach(function (v) {
+      B.S.add(box(THREE, 1.4, 1.0, 0.8, v[0], v[1], Z4 + 0.85));
+    });
     /* two SATCOM radomes on the roof, diagonally                          */
     [[-80.2, -25.9], [-87.4, -32.3]].forEach(function (d) {
       B.S.add(cylZ(THREE, 1.1, 1.3, 1.0, 8, d[0], d[1], Z4 + 0.25));
@@ -1430,7 +1498,7 @@ var HeroFordCVN = (function () {
        35.3 m in the bow view                                              */
     [Z0 + 32.0, Z0 + 35.3].forEach(function (zp) {
       B.S.add(place(THREE, new THREE.CylinderGeometry(2.1, 2.1, 0.35, 8).rotateX(PI / 2), MX, MY, zp));
-      ringRail([[MX - 1.45, MY - 1.45], [MX + 1.45, MY - 1.45], [MX + 1.45, MY + 1.45], [MX - 1.45, MY + 1.45]], zp + 1.0);
+      ringRail([[MX - 1.35, MY - 1.35], [MX + 1.35, MY - 1.35], [MX + 1.35, MY + 1.35], [MX - 1.35, MY + 1.35]], zp + 1.0);
     });
     /* the top yard is braced down to the mast as well                     */
     for (s = -1; s <= 1; s += 2)

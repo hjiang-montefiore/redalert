@@ -1,0 +1,298 @@
+{
+  "key": "cruiser_n",
+  "team": "nato",
+  "name": "Ticonderoga-class guided missile cruiser (CG-52 on, Mk 41 VLS baseline), as in service 2000s-2020s",
+  "category": "ship",
+  "published": {
+    "len": 172.8,
+    "beam": 16.8,
+    "draught": 9.5,
+    "source": "en.wikipedia 'Ticonderoga-class cruiser': 567 ft (172.8 m) overall, 55 ft (16.8 m) beam, 31 ft (9.5 m) draught to the bottom of the sonar dome"
+  },
+  "len": 172.9,
+  "nodes": [
+    "turret"
+  ],
+  "engine_contract": {
+    "row": "cruiser_n (js/facts.js, js/combat.js), built by HeroTiconderogaCG.build in js/hero/us_ticonderoga_cg.js; the same builder draws nato_e90_cruiser and nato_e80_cruiser (mk26)",
+    "current_nodes": "one 'turret' group: the forward 5-inch Mk 45, origin on its ring centre, barrel along +X; the after mount stamped static, trained aft; one mesh per material",
+    "len_rule": "UNIT_MODELS[key].len = 172.9; measured X extent 172.91 (the builder's LOA 172.8 plus the stem plating)"
+  },
+  "references": [
+    {
+      "name": "[D1] USN 1994 profile drawing of CG-47 class (VLS)",
+      "source": "Wikimedia Commons, US Navy, public domain; not cached here: Commons returned 429 to this batch's fetches (2026-11-26); kept as 'quarter' (no outline gated) until a builder caches it and sets crop, scale and origin",
+      "view": "quarter",
+      "exact": false,
+      "note": "The stations and heights in js/hero/us_ticonderoga_cg.js: the SPY faces at 16.5 m, the Mk 15 leaders at the after end of the forward deckhouse, the mounts' stations."
+    },
+    {
+      "name": "[p1] CG-47 from her port bow (DN-SC-84-00167)",
+      "source": "Wikimedia Commons, US Navy, public domain; not cached here: Commons returned 429 to this batch's fetches (2026-11-26); kept as 'quarter' (no outline gated) until a builder caches it and sets crop, scale and origin",
+      "view": "quarter",
+      "exact": false,
+      "note": "The tall flush forward block, its broad 45-degree forward corners carrying the SPY-1 faces."
+    },
+    {
+      "name": "[p2] USS Hue City (CG-66) alongside USS Sylvania, overhead",
+      "source": "Wikimedia Commons, US Navy, public domain; not cached here: Commons returned 429 to this batch's fetches (2026-11-26); kept as 'quarter' (no outline gated) until a builder caches it and sets crop, scale and origin",
+      "view": "quarter",
+      "exact": false,
+      "note": "The plan: both 61-cell fields, the uptake groups, the hangar roof and the flight deck."
+    },
+    {
+      "name": "[p3] CG-51, CG-52 and CG-62 bow-quarter photographs",
+      "source": "Wikimedia Commons, US Navy, public domain; not cached here: Commons returned 429 to this batch's fetches (2026-11-26); kept as 'quarter' (no outline gated) until a builder caches it and sets crop, scale and origin",
+      "view": "quarter",
+      "exact": false,
+      "note": "The forward SPY face height (15 to 16 m), the Phalanx tubs, the SATCOM domes."
+    }
+  ],
+  "must_show": [
+    "a long narrow hull (172.8 x 16.8 m), flared bow, transom stern, the SQS-53 dome under the forefoot at x 65.4; the transom closed from astern (x -86.4); two shafts on V struts, five-blade screws at x -78.7, y +-3.4 and twin rudders at x -82.6",
+    "the forward 5-inch Mk 45 Mod 1 at x 55.4 (node turret) and the after mount on the fantail at x -73.0 trained aft",
+    "two 61-cell Mk 41 fields, 9.0 x 6.6 m each, long axis along x, at x 41.0 on the forecastle and x -56.6 on the after deck (cruiser_n, nato_e90_cruiser); the twin-arm Mk 26 at x 41.0 and -56.2 for nato_e80_cruiser",
+    "the tall flush forward deckhouse x 20.0 .. 35.6 to the pilot house roof z 21.6, walls leaning in, its two broad forward corners carrying the forward SPY-1 octagons centred at z 15.6; the faces haze grey (#7b8288) in a darker frame ring (#5f666c), not radome white",
+    "the after deckhouse: the hangar block, the narrower tower on it (x -28.9 .. -16.2) with the two after SPY-1 octagons on its after corners centred at z 18.4",
+    "two uptake groups of three round stacks with sooted caps: forward x 9.8 .. 15.0 (tops z 23.9 .. 25.0), after x -22.6 .. -18.3 (tops z 23.6 .. 24.5)",
+    "the big four-legged lattice mast in the waist (x -8.4 .. -1.8 at its foot) with the head platform and radome at z 33.4, the long yard at z 31.0 and the lower yard at the 0.79 ring, the SPS-49 on its bracket out of the after face at z 25.6, its reflector open mesh (half see-through)",
+    "the pole mast at x 19.4 close abaft the forward block, braced to its roof, with its platform at z 29.0, two yards and the SPS-55 at the head (z 35); the SPQ-9 radome on its lattice tower at x 22.2 .. 24.4 (platform z 24.6); the four SPG-62 illuminators (two on the pilot house roof, two among the after uptakes)",
+    "two Phalanx (Block 1B, FLIR on the side) on raised tubs at the after end of the forward deckhouse, x 5.6, y +-4.2",
+    "two Harpoon quads at the stern, the flight deck x -51.5 .. -29.3 with the team ring, two SATCOM domes on the after house (1990s on)",
+    "a boat in davits each side of the waist at x -12.0 (RHIBs for cruiser_n and nato_e90_cruiser, 26-ft whaleboats for nato_e80_cruiser), life rafts in rows on the hangar roof at x -28.2 .. -17.8, y +-5.72, lifelines along every exposed deck edge, two anchors in hawses on the bows at x 74.4"
+  ],
+  "landmarks": [
+    {
+      "name": "forward 5-inch ring centre",
+      "ref": 0,
+      "expect_m": [
+        55.4,
+        0.0,
+        null
+      ],
+      "tol_m": 0.6,
+      "model_at": {
+        "node": "turret",
+        "index": 0
+      },
+      "note": "[D1] station of the forward mount, the file's X_GUN"
+    },
+    {
+      "name": "forward Mk 41 field centre",
+      "ref": 0,
+      "expect_m": [
+        41.0,
+        0.0,
+        null
+      ],
+      "tol_m": 0.4,
+      "model_at": {
+        "path": "vls",
+        "in_m": [
+          33,
+          -6,
+          0,
+          49,
+          6,
+          15
+        ],
+        "point": [
+          "mid",
+          "mid",
+          null
+        ]
+      },
+      "note": "[D1, p2] the forward 61-cell field"
+    },
+    {
+      "name": "after Mk 41 field centre",
+      "ref": 0,
+      "expect_m": [
+        -56.6,
+        0.0,
+        null
+      ],
+      "tol_m": 0.4,
+      "model_at": {
+        "path": "vls",
+        "in_m": [
+          -64,
+          -6,
+          0,
+          -49,
+          6,
+          15
+        ],
+        "point": [
+          "mid",
+          "mid",
+          null
+        ]
+      },
+      "note": "[D1, p2] the after 61-cell field"
+    },
+    {
+      "name": "starboard forward SPY-1 face centre height",
+      "ref": 1,
+      "expect_m": [
+        null,
+        null,
+        15.6
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "path": "spy",
+        "in_m": [
+          30.0,
+          -8.0,
+          12.5,
+          36.5,
+          -1.5,
+          18.5
+        ],
+        "point": [
+          null,
+          null,
+          "mid"
+        ]
+      },
+      "note": "[D1] 16.5 m, [p3] 15 to 16 m; drawn 15.6"
+    },
+    {
+      "name": "port after SPY-1 face centre height",
+      "ref": 0,
+      "expect_m": [
+        null,
+        null,
+        18.4
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "path": "spy",
+        "in_m": [
+          -29.8,
+          0.4,
+          15.5,
+          -24.8,
+          5.2,
+          21.5
+        ],
+        "point": [
+          null,
+          null,
+          "mid"
+        ]
+      },
+      "note": "[D1] the after faces on the tower over the hangar; box kept inboard of the life rafts at y 5.12..6.32"
+    },
+    {
+      "name": "tallest forward uptake top",
+      "ref": 0,
+      "expect_m": [
+        null,
+        null,
+        25.0
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "path": "dark",
+        "in_m": [
+          13.5,
+          -1.7,
+          23.5,
+          16.5,
+          1.3,
+          26.0
+        ],
+        "point": [
+          null,
+          null,
+          "max"
+        ]
+      },
+      "note": "[D1] the forward big uptake at x 15.0"
+    },
+    {
+      "name": "lattice mast head platform",
+      "ref": 0,
+      "expect_m": [
+        -3.1,
+        null,
+        33.4
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "path": "metal",
+        "in_m": [
+          -4.7,
+          -1.45,
+          33.3,
+          -1.5,
+          1.45,
+          33.5
+        ],
+        "whole": true,
+        "point": [
+          "mid",
+          null,
+          "mid"
+        ]
+      },
+      "note": "[D1] the platform under the radome"
+    },
+    {
+      "name": "stem head",
+      "ref": 0,
+      "expect_m": [
+        86.45,
+        null,
+        null
+      ],
+      "tol_m": 0.25,
+      "model_at": {
+        "path": "hull",
+        "point": [
+          "max",
+          null,
+          null
+        ]
+      },
+      "note": "[D1] 172.8 m overall, model x origin at mid-length"
+    },
+    {
+      "name": "forward Mk 41 field after edge",
+      "ref": 0,
+      "expect_m": [
+        36.5,
+        null,
+        null
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "path": "vls",
+        "in_m": [
+          30,
+          -6,
+          0,
+          50,
+          6,
+          15
+        ],
+        "point": [
+          "min",
+          null,
+          null
+        ]
+      },
+      "note": "9.0 x 6.6 m field centred at x 41.0, the same eight-module footprint as the Burke hero's 61-cell field (it was 6.4 x 6.4)"
+    }
+  ],
+  "not_confirmed": [
+    "the outline: no reference cached in this repository (Commons 429), so no outline is gated; the stations are the earlier builder's readings of [D1] and the photographs",
+    "the lower yard's station on the lattice mast (drawn on the forward legs at the 0.79 ring; it had hung 1 m forward of the after legs, clear of every joint)",
+    "the SATCOM dome stations and the exact uptake diameters",
+    "the underwater hull and the sonar dome",
+    "the Mk 41 field footprint and orientation (9.0 x 6.6 m along x, matched to the Burke hero; not checked on the Hue City overhead [p2])",
+    "shaft line, strut, screw diameter (about 4.4 m drawn) and rudder size: no reference, sized off the Burke hero"
+  ]
+}

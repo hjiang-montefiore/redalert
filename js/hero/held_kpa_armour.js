@@ -317,7 +317,7 @@ if (typeof HeroZsu !== "undefined") UNIT_MODELS["kpa_e90_spaag"] = { len: 6.98, 
    Parade in 2015 (Pyongyang)" (every frame viewed); the TRADOC Threat Tactics Reports on North
    Korea (2015, 2018) page by page; and all 4289 ODIN WEG cards (odin.t2com.army.mil): ODIN has
    no card for the Songun-915, the M-1992 armoured car, a radar vehicle or a twin 37 mm SPAAG.
-   UNIT_MODELS["kpa_e00_heavy"], ["hvy_k"]                     Songun-915 (HeroKpaTanks.son left unregistered)
+   UNIT_MODELS["kpa_e00_heavy"], ["hvy_k"]                     Songun-915 (registered from text 2026-11-26)
    UNIT_MODELS["kpa_e00_recon"], ["kpa_e90_recon"], ["recon_k"] M-1992 armoured car
    UNIT_MODELS["radarv_k"]                                       M-1992 radar vehicle
    UNIT_MODELS["kpa_e00_spaag"], ["kpa_e80_spaag"], ["spaag_k"] M-1989 twin 37 mm */

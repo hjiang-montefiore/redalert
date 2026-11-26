@@ -1,0 +1,174 @@
+{
+ "key": "boat_n",
+ "team": "nato",
+ "name": "Mark VI patrol boat (Safe Boats International), US Navy, from 2016",
+ "category": "ship",
+ "published": {
+  "len": 25.85,
+  "beam": 6.25,
+  "source": "Wikipedia infobox / Navy fact file: 84.8 ft x 20.5 ft, draft 4 ft (us_mk6_patrol.js header)"
+ },
+ "len": 25.9,
+ "nodes": [
+  "turret"
+ ],
+ "references": [],
+ "must_show": [
+  "a hard-chine planing hull 25.9 m overall, raked stem to the stem head at x +12.95, flat transom at x -12.65 with the two waterjet nozzles reaching x -12.95 [180207-N-AT895-068 broadside]",
+  "a waist-high bulwark round the whole weather deck, top at z 2.00, the deck recessed at z 1.25 [Kater-mark-VI; broadside]",
+  "the low aft house x -4.75 .. -0.95, roof z 3.40, four ribbon windows a side [broadside]",
+  "the pilothouse x -0.95 .. +8.35, roof z 3.80, three raked windscreen panes with corner panes, foot at x 8.30 [bow-on photographs]",
+  "the mast pylon swept aft off the pilothouse roof, base x -0.2 .. +1.4, the radome ball at z 5.95, and the open T-top frame ahead of it with radar and EO ball, whip tips to z 7.25 [broadside]",
+  "TWO Mk 38 Mod 2 25 mm mounts: the forward one the trained 'turret' node, ring at x +10.25, z 2.20; the aft one at x -7.35, z 2.15 trained aft [broadside]",
+  "six M2 .50 cal on pintle cradles with their ammunition cans: two on the pilothouse roof (x -0.45), two on the foredeck flanking the windscreen (x 8.85), two on the bulwark amidships (x 3.0) [bow-on; broadside]",
+  "guard rails on the foredeck and the side decks, cleats and fairleads on the bulwark cap, the bow roller and anchor at x 12.55; plain haze grey, no hull number [broadside; bow-on]"
+ ],
+ "landmarks": [
+  {
+   "name": "forward Mk 38 ring",
+   "expect_m": [
+    10.25,
+    0.0,
+    2.2
+   ],
+   "tol_m": 0.2,
+   "model_at": {
+    "node": "turret"
+   },
+   "note": "broadside at 35.2 px/m (us_mk6_patrol.js header)"
+  },
+  {
+   "name": "stem head",
+   "expect_m": [
+    12.95,
+    null,
+    null
+   ],
+   "tol_m": 0.15,
+   "model_at": {
+    "in_m": [
+     11,
+     -1,
+     1.0,
+     13.5,
+     1,
+     2.1
+    ],
+    "point": [
+     "max",
+     null,
+     null
+    ]
+   },
+   "note": "published 25.9 m overall"
+  },
+  {
+   "name": "nozzle tips",
+   "expect_m": [
+    -12.95,
+    null,
+    null
+   ],
+   "tol_m": 0.15,
+   "model_at": {
+    "in_m": [
+     -13.5,
+     -2,
+     -0.8,
+     -12.0,
+     2,
+     0.2
+    ],
+    "point": [
+     "min",
+     null,
+     null
+    ]
+   },
+   "note": "the overall length runs to the nozzles"
+  },
+  {
+   "name": "pilothouse roof",
+   "expect_m": [
+    null,
+    null,
+    3.8
+   ],
+   "tol_m": 0.15,
+   "model_at": {
+    "in_m": [
+     3.0,
+     -1.4,
+     3.5,
+     5.4,
+     1.4,
+     3.86
+    ],
+    "whole": true,
+    "point": [
+     null,
+     null,
+     "max"
+    ]
+   },
+   "note": "broadside, heights above the deck"
+  },
+  {
+   "name": "aft house roof",
+   "expect_m": [
+    null,
+    null,
+    3.4
+   ],
+   "tol_m": 0.15,
+   "model_at": {
+    "in_m": [
+     -4.5,
+     -1.9,
+     3.2,
+     -2.8,
+     -0.5,
+     3.45
+    ],
+    "whole": true,
+    "point": [
+     null,
+     null,
+     "max"
+    ]
+   },
+   "note": "broadside"
+  },
+  {
+   "name": "bulwark top amidships",
+   "expect_m": [
+    null,
+    null,
+    2.0
+   ],
+   "tol_m": 0.15,
+   "model_at": {
+    "in_m": [
+     -9,
+     2.6,
+     1.6,
+     -8,
+     3.3,
+     2.06
+    ],
+    "whole": true,
+    "point": [
+     null,
+     null,
+     "max"
+    ]
+   },
+   "note": "broadside: the sheer is level at 2.0"
+  }
+ ],
+ "not_confirmed": [
+  "no reference picture could be fetched in batch 5 (Commons and Wikipedia answered HTTP 429), so the spec carries no outline reference; the stations are the ones us_mk6_patrol.js's header reports reading off the 2018 broadside",
+  "the waterline is placed from the Mk 38 ring heights and the bulwark (the broadside shows the boat planing): heights above the water are good to about 0.3 m",
+  "the M2 cradle and ammunition-can detail follows the standard Navy pintle mount, not a close photograph of this boat"
+ ]
+}

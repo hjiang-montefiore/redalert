@@ -242,6 +242,8 @@ function pageMain() {
       o.castShadow = true; o.receiveShadow = true;
       const list = Array.isArray(o.material) ? o.material : [o.material];
       for (const m of list) {
+        /* both sides cast: a deck or hull with its hidden underside left out still shades the ground (three.js otherwise casts from back faces only) */
+        if (m && m.isMaterial) m.shadowSide = THREE.DoubleSide;
         if (!m || !m.userData || m.userData._srgbDone) continue;
         m.userData._srgbDone = true;
         if (m.color) m.color.convertSRGBToLinear();

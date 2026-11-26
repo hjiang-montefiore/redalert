@@ -58,6 +58,13 @@
         stowage racks on the rear flanks (E, F).
     10. Slat cage on the 2000s MGS and the M1134: upright bars 0.45 m off the flanks, round the nose and across the
         tail, with horizontal-slat aprons over the wheel pairs (D, G, H).
+   Batch 5 (2026-11): the tow shackles hung 0.1 m clear of the nose (a floating part on all four rows): now on clevis
+     lugs at the top of the raked lower plate, as C shows them; the perforated stowage racks are on the MGS too (A and
+     C both show them on the M1128); the M1134 head is three units as photograph D shows it face on (sight housing in
+     the middle, the twin TOW pod on its left, the smoke cluster on its right) in place of one block; the slat cage's
+     standoff brackets run from the hull's shoulder and chine to the cage rails, and the wheel aprons meet the cage;
+     the M2 sits lower (A: top 3.17 m); the rear lift hooks on the flank corners and the driver's hatch hinge (C); the
+     MGS rack is the deep two-band box of C; the M-SHORAD's Hellfire rails are drawn empty; the mottle cut to +-4 %.
    Station table: FLAT and DVH below, measured off A and B with the roof taken to 2.10 m (A and B draw it 2.2 -
      2.28 m; photograph C and the 2.64 m height over the weapon station put it lower); DVH 0.1 m higher on the V.
      Drawn (L x W, measured): M1128 7.26 x 2.77 m (hull 6.95 m, muzzle 0.19 m past the nose as A, tow pintle
@@ -421,12 +428,12 @@ var HeroStryker = (function () {
         }
       }
       for (i = 0; i < 60; i++) {
-        q.fillStyle = (i % 3) ? "rgba(22,24,16,0.06)" : "rgba(214,204,170,0.05)";
+        q.fillStyle = (i % 3) ? "rgba(22,24,16,0.03)" : "rgba(214,204,170,0.02)";
         q.fillRect(R() * 256, R() * 180, 1 + R() * 3, 16 + R() * 50);
       }
       /* bolt heads of the ceramic tile kit: rows of dots every 0.6 m along, 0.35 m up */
-      q.fillStyle = "rgba(16,18,12,0.22)";
-      for (i = 0; i < 26; i++) for (k = 0; k < 5; k++) q.fillRect(i * 10 + 3, 40 + k * 30, 2, 2);
+      q.fillStyle = "rgba(16,18,12,0.50)";
+      for (i = 0; i < 26; i++) for (k = 0; k < 5; k++) q.fillRect(i * 10 + 3, 40 + k * 30, 3, 3);
       /* road dust, densest at the bottom (canvas row 255 is z = 0) */
       gr = q.createLinearGradient(0, 160, 0, 256);
       gr.addColorStop(0, "rgba(150,132,98,0)");
@@ -444,10 +451,11 @@ var HeroStryker = (function () {
     _tex[key] = t;
     return t;
   }
+  /* one flat CARC green: the mottle is held to about +-4 % (3 levels) so it never reads as a pattern (review, C) */
   var PAINT = {
-    now:  { base: "#525a41", blots: ["#4a523b", "#5a6249", "#4e563e"], seed: 2012, dust: 0.30 },
-    iraq: { base: "#545b42", blots: ["#4b533c", "#5e6550", "#62624c"], seed: 2007, dust: 0.62 },
-    a1:   { base: "#535c42", blots: ["#4b543c", "#5b634a", "#4f583f"], seed: 2023, dust: 0.18 }
+    now:  { base: "#525a41", blots: ["#4f573e", "#555d44", "#50583f"], seed: 2012, dust: 0.30 },
+    iraq: { base: "#545b42", blots: ["#51583f", "#575e45", "#565b44"], seed: 2007, dust: 0.62 },
+    a1:   { base: "#535c42", blots: ["#50593f", "#565f45", "#515a40"], seed: 2023, dust: 0.18 }
   };
   var HUB = lin(0x4f573e), RUB = lin(0x1c1c1a);
 
@@ -539,6 +547,7 @@ var HeroStryker = (function () {
 
     /* the bolt-on ceramic tile kit: panels standing proud of the upper flanks, two rows, dark seams between
        (A shows the panel joints; C, E the bolt rows).  Not over the side hatch or the stowage racks. */
+    var rk0 = v.rack0 || 3.75, rk1 = 6.75;
     var COLS = [[1.40, 2.05], [2.08, 2.98], [3.62, 4.40], [4.43, 5.21], [5.24, 6.02], [6.05, 6.70]];
     for (s = -1; s <= 1; s += 2) {
       for (i = 0; i < COLS.length; i++) {
@@ -546,7 +555,8 @@ var HeroStryker = (function () {
         if (s > 0 && i === 1) continue;                                  /* the port side access hatch, below */
         onFlank(B.dark, H, s, COLS[i][0] - 0.02, COLS[i][1] + 0.02, 0.02, Lh - 0.03, -0.005, 0.014);
         onFlank(B.paint, H, s, COLS[i][0], COLS[i][1], 0.04, Lh * 0.48, -0.005, 0.03);
-        if (!(v.racks && i >= 2)) onFlank(B.paint, H, s, COLS[i][0], COLS[i][1], Lh * 0.52, Lh - 0.05, -0.005, 0.03);
+        if (!(v.racks && COLS[i][1] > rk0 + 0.05)) onFlank(B.paint, H, s, COLS[i][0], COLS[i][1], Lh * 0.52, Lh - 0.05, -0.005, 0.03);
+        else if (COLS[i][0] < rk0 - 0.25) onFlank(B.paint, H, s, COLS[i][0], rk0 - 0.03, Lh * 0.52, Lh - 0.05, -0.005, 0.03);
       }
     }
     /* the port side access hatch abaft the driver (A): raised panel with a dark seam, two handles */
@@ -557,13 +567,39 @@ var HeroStryker = (function () {
     onFlank(B.dark, H, 1, 3.42, 3.48, 0.14, 0.24, 0.04, 0.08);
 
     /* stowage racks along the upper rear flanks: a perforated rail plate on standoffs (A: two rows of eight holes) */
-    if (v.racks) {
+    if (v.racks && v.rackbox) {
+      /* the M1128's stowage rack (C): a deep box on the upper rear flank, its face 0.25 m off the shoulder, 0.48 m
+         tall, the face in two perforated bands - nine 0.15 m holes in the upper band (a post at its middle), fourteen
+         0.12 m holes in the lower - with a ledge between them and a lip under the floor */
+      var rr = rowAt(H, 5.0), yf = rr[9] + 0.25, rz0 = 1.58, rz1 = 2.06, ra = X(rk1), rb = X(rk0), ry;
+      for (s = -1; s <= 1; s += 2) {
+        ry = s * yf;
+        box(B.paint, ra, rb, ry - s * 0.03, ry, rz0, rz1);                                   /* the face */
+        box(B.paint, ra, rb, s * (rr[9] - 0.10), ry, rz1 - 0.03, rz1);                       /* the top rail */
+        box(B.paint, ra, rb, s * (rr[7] - 0.06), ry, rz0, rz0 + 0.03);                       /* the floor */
+        box(B.paint, ra - 0.02, rb + 0.02, ry - s * 0.01, ry + s * 0.025, rz0 - 0.03, rz0 + 0.02);   /* the lip */
+        box(B.paint, ra, rb, ry - s * 0.01, ry + s * 0.03, 1.80, 1.83);                       /* the ledge */
+        box(B.paint, ra, ra + 0.04, s * (rr[9] - 0.10), ry, rz0, rz1);                         /* end plates */
+        box(B.paint, rb - 0.04, rb, s * (rr[9] - 0.10), ry, rz0, rz1);
+        box(B.paint, (ra + rb) / 2 - 0.03, (ra + rb) / 2 + 0.03, ry - s * 0.01, ry + s * 0.02, 1.83, rz1);
+        for (k = 0; k < 9; k++) {
+          var hu = ra + 0.18 + k * (rb - ra - 0.36) / 8;
+          if (Math.abs(hu - (ra + rb) / 2) < 0.10) hu += (hu < (ra + rb) / 2 ? -0.08 : 0.08);
+          cylY(B.dark, hu, ry - s * 0.005, ry + s * 0.006, 1.945, 0.075, 12);
+        }
+        if (s > 0) {                                     /* C: the small box with its latch at the rack's front end */
+          box(B.paint, rb - 0.26, rb - 0.02, ry - 0.02, ry + 0.06, 1.86, 2.02);
+          box(B.dark, rb - 0.22, rb - 0.06, ry + 0.06, ry + 0.07, 1.90, 1.98);
+        }
+        for (k = 0; k < 14; k++) cylY(B.dark, ra + 0.15 + k * (rb - ra - 0.30) / 13, ry - s * 0.005, ry + s * 0.006, 1.70, 0.06, 10);
+      }
+    } else if (v.racks) {
       for (s = -1; s <= 1; s += 2) {
         var Lr = flank(H, 5.0, s).len;
-        onFlank(B.paint, H, s, 3.75, 6.75, Lr * 0.55, Lr - 0.04, 0.03, 0.07);
-        onFlank(B.dark, H, s, 3.75, 6.75, Lr * 0.52, Lr * 0.55, -0.005, 0.07);
+        onFlank(B.paint, H, s, rk0, rk1, Lr * 0.55, Lr - 0.04, 0.03, 0.07);
+        onFlank(B.dark, H, s, rk0, rk1, Lr * 0.52, Lr * 0.55, -0.005, 0.07);
         for (k = 0; k < 16; k++) {
-          var hx = 3.92 + k * 0.18 + (k >= 8 ? 0.12 : 0);
+          var hx = rk0 + 0.17 + k * (rk1 - rk0 - 0.46) / 15 + (k >= 8 ? 0.12 : 0);
           var p0 = flankPt(H, s, hx, Lr * 0.70, 0.07), p1 = flankPt(H, s, hx, Lr * 0.70, 0.075);
           cyl(B.dark, p0, p1, 0.035, 0.035, 6);
         }
@@ -585,15 +621,19 @@ var HeroStryker = (function () {
     }
 
     /* front: the nose, tow shackles, headlamp clusters in their brush guards (A, C, E) */
-    var n0 = rowAt(H, 0.0), n1 = rowAt(H, 0.55);
+    /* z of the lower nose plate at station xn, |y| = ay (the loft runs straight from the keel line to the belly edge) */
+    function noseZ(xn, ay) { var r = rowAt(H, xn); return r[1] + (r[2] - r[1]) * Math.min(1, ay / r[3]); }
     for (s = -1; s <= 1; s += 2) {
-      var sy = s * 0.62, zs = n0[2] - 0.28;
-      box(B.dark, X(0.30) - 0.05, X(0.30) + 0.05, sy - 0.07, sy + 0.07, zs - 0.02, zs + 0.12);
-      var sx = X(0.18);
-      cyl(B.lamp, [sx + 0.05, sy - 0.10, zs - 0.10], [sx + 0.05, sy + 0.10, zs - 0.10], 0.035, 0.035, 8);  /* shackle pin */
-      bar(B.paint, [sx, sy - 0.08, zs - 0.10], [sx + 0.16, sy - 0.06, zs - 0.30], 0.045);
-      bar(B.paint, [sx, sy + 0.08, zs - 0.10], [sx + 0.16, sy + 0.06, zs - 0.30], 0.045);
-      bar(B.paint, [sx + 0.16, sy - 0.07, zs - 0.30], [sx + 0.16, sy + 0.07, zs - 0.30], 0.045);
+      /* the two tow shackles hang from clevis lugs bolted to the top of the raked lower plate, the loops clear of it
+         (C: the pale shackles under the nose plate number, their tops about level with the tyre tops) */
+      var sy = s * 0.62, zp = noseZ(0.18, 0.62) - 0.03, xp = X(0.20);
+      box(B.dark, X(0.32), X(0.13), sy - 0.075, sy + 0.075, zp - 0.07, noseZ(0.13, 0.62) + 0.03);
+      box(B.paint, X(0.30), X(0.15), sy - 0.10, sy - 0.075, zp - 0.05, zp + 0.05);
+      box(B.paint, X(0.30), X(0.15), sy + 0.075, sy + 0.10, zp - 0.05, zp + 0.05);
+      cyl(B.lamp, [xp, sy - 0.11, zp], [xp, sy + 0.11, zp], 0.03, 0.03, 8);                   /* shackle pin */
+      bar(B.lamp, [xp, sy - 0.085, zp], [xp + 0.10, sy - 0.06, zp - 0.21], 0.04);
+      bar(B.lamp, [xp, sy + 0.085, zp], [xp + 0.10, sy + 0.06, zp - 0.21], 0.04);
+      bar(B.lamp, [xp + 0.10, sy - 0.075, zp - 0.21], [xp + 0.10, sy + 0.075, zp - 0.21], 0.045);
       /* the lamp cluster on the glacis corner: housing, lamps, the tubular guard over it */
       var lx = X(0.32), lz = rowAt(H, 0.32)[10], ly = s * 0.82;
       box(B.paint, lx - 0.14, lx + 0.10, ly - 0.14, ly + 0.14, lz - 0.04, lz + 0.14);
@@ -635,6 +675,31 @@ var HeroStryker = (function () {
       cylZ(B.dark, aX, aY, aZ, aZ + 0.12, 0.06, 8);
       cyl(B.dark, [aX, aY, aZ + 0.12], [aX, aY, aZ + 1.55], 0.012, 0.006, 5);
     }
+    /* port flank fittings drawn in A (and the step in C): the D-shaped fitting with its small box on top abaft the
+       side hatch, the hand rail along the front flank under the glacis, the step box under the chine between the
+       second and third axles (flat hull; C shows it under the side hatch) */
+    var cz = rowAt(H, 3.9)[6], fl = flank(H, 3.9, 1).len, wz = function (z) { return (z - cz) * fl / (rowAt(H, 3.9)[8] - cz); };
+    onFlank(B.paint, H, 1, 3.80, 4.06, wz(1.41), wz(1.78), 0.02, 0.05);
+    onFlank(B.dark, H, 1, 3.84, 4.02, wz(1.45), wz(1.70), 0.04, 0.06);
+    onFlank(B.dark, H, 1, 3.86, 4.00, wz(1.79), wz(1.85), 0.0, 0.06);
+    var hr0 = flankPt(H, 1, 1.18, 0.17, 0.07), hr1 = flankPt(H, 1, 2.22, 0.17, 0.07);
+    bar(B.dark, hr0, hr1, 0.025);
+    bar(B.dark, flankPt(H, 1, 1.20, 0.17, -0.01), flankPt(H, 1, 1.20, 0.17, 0.08), 0.025);
+    bar(B.dark, flankPt(H, 1, 2.20, 0.17, -0.01), flankPt(H, 1, 2.20, 0.17, 0.08), 0.025);
+    if (H === FLAT) {
+      box(B.paint, X(3.62), X(3.38), 0.86, 1.30, 1.00, 1.29);
+      box(B.dark, X(3.60), X(3.40), 1.30, 1.31, 1.04, 1.12);
+    }
+    /* the rear lift hooks: a hook-shaped eye standing on each upper rear corner of the flank, opening aft (C), and
+       the hinge block behind the driver's hatch (C: the hatch arm) */
+    for (s = -1; s <= 1; s += 2) {
+      var hk = X(6.90), hz0 = roofZ(H, 6.80) - 0.03, hy = rowAt(H, 6.80)[11];
+      plateY(B.dark, [[hk, hz0], [hk + 0.22, hz0], [hk + 0.22, hz0 + 0.06], [hk + 0.20, hz0 + 0.14], [hk + 0.14, hz0 + 0.19],
+                      [hk + 0.06, hz0 + 0.18], [hk + 0.02, hz0 + 0.13], [hk + 0.07, hz0 + 0.12], [hk + 0.10, hz0 + 0.14],
+                      [hk + 0.14, hz0 + 0.13], [hk + 0.15, hz0 + 0.08], [hk + 0.10, hz0 + 0.06], [hk, hz0 + 0.06]],
+             s * (hy - 0.03), s * (hy + 0.02));
+    }
+    box(B.dark, X(dx) - 0.40, X(dx) - 0.28, 0.40, 0.70, dz - 0.02, dz + 0.10);
     /* tow pintle under the ramp */
     box(B.dark, xr - 0.12, xr + 0.02, -0.10, 0.10, t0[2] - 0.12, t0[2] + 0.02);
     return zr;
@@ -651,6 +716,8 @@ var HeroStryker = (function () {
       for (k = 0; k <= n; k++) {
         t = k / n; x = p[0] + (q[0] - p[0]) * t; y = p[1] + (q[1] - p[1]) * t;
         box(B.paint, x - 0.012, x + 0.012, y - 0.012, y + 0.012, zA, zB);
+        /* D: a heavier frame post about every 0.9 m between the light bars */
+        if (k % 7 === 0) box(B.paint, x - 0.03, x + 0.03, y - 0.03, y + 0.03, zA - 0.02, zB + 0.02);
       }
       rail([p[0], p[1], zA], [q[0], q[1], zA]); rail([p[0], p[1], zB], [q[0], q[1], zB]);
       rail([p[0], p[1], (zA + zB) / 2], [q[0], q[1], (zA + zB) / 2]);
@@ -659,15 +726,20 @@ var HeroStryker = (function () {
       bars([xc, s * yo], [xa, s * yo], z0, z1, 0.13);                     /* the flank */
       bars([xf, s * yf], [xc, s * yo], z0 - 0.10, z1 - 0.12, 0.13);        /* the front corner */
       /* standoff brackets to the hull */
+      /* standoff brackets: from the shoulder and the chine of the hull out to the cage, each with a short upright
+         to the cage's top or bottom rail */
       for (k = 0; k < 5; k++) {
-        x = X(1.2 + k * 1.4);
-        bar(B.paint, [x, s * 1.30, z1 - 0.08], [x, s * yo, z1 - 0.08], 0.04);
-        bar(B.paint, [x, s * 1.36, z0 + 0.10], [x, s * yo, z0 + 0.10], 0.04);
+        var xb = 1.2 + k * 1.4, rb = rowAt(H, xb), zt = Math.min(z1 - 0.08, rb[8]);
+        x = X(xb);
+        bar(B.paint, [x, s * (rb[9] - 0.04), zt], [x, s * yo, z1 - 0.08], 0.04);
+        bar(B.paint, [x, s * yo, z1 - 0.10], [x, s * yo, z1], 0.04);
+        bar(B.paint, [x, s * (rb[7] - 0.05), rb[6]], [x, s * yo, rb[6]], 0.04);
+        bar(B.paint, [x, s * yo, rb[6] + 0.02], [x, s * yo, z0], 0.04);
       }
       /* the aprons over the wheel pairs: horizontal slats */
       var pr = [[1.05, 3.35], [3.70, 5.95]], j;
       for (j = 0; j < 2; j++) {
-        var xa0 = X(pr[j][0]), xa1 = X(pr[j][1]), ya = s * (yo - 0.06);
+        var xa0 = X(pr[j][0]), xa1 = X(pr[j][1]), ya = s * (yo - 0.02);
         for (k = 0; k < 4; k++) rail([xa0, ya, 0.86 + k * 0.10], [xa1, ya, 0.86 + k * 0.10]);
         for (k = 0; k <= 4; k++) { x = xa0 + (xa1 - xa0) * k / 4; box(B.paint, x - 0.02, x + 0.02, ya - 0.02, ya + 0.02, 0.82, z0 + 0.02); }
       }
@@ -694,8 +766,8 @@ var HeroStryker = (function () {
     /* the commander's sight block on the rear roof and the rear antenna mast (A, B) */
     box(B.paint, -0.85, -0.40, -0.55, -0.20, 0.90, 1.03);
     box(B.glass, -0.40, -0.39, -0.50, -0.25, 0.94, 1.00);
-    cylZ(B.dark, -1.55, 0.55, 0.90, 1.40, 0.05, 8);
-    cylZ(B.dark, -1.55, -0.55, 0.90, 1.05, 0.04, 8);
+    cylZ(B.dark, -1.45, 0.55, 0.86, 1.40, 0.05, 8);
+    cylZ(B.dark, -1.45, -0.55, 0.86, 1.05, 0.04, 8);
     /* seams round the loader doors on the housing flanks */
     for (var s = -1; s <= 1; s += 2) {
       box(B.dark, -1.30, -0.30, s * 0.745 - 0.006, s * 0.745 + 0.006, 0.30, 0.32);
@@ -709,15 +781,19 @@ var HeroStryker = (function () {
         cyl(B.dark, [1.06, yy, zz], [1.06 + 0.20 * ce, yy, zz + 0.20 * se], 0.04, 0.04, 8);
       }
     }
+    /* A: the round trunnion boss on each cradle cheek and the panel on the housing's port flank */
+    for (s = -1; s <= 1; s += 2) cylY(B.paint, 0.09, s * 0.73, s * 0.78, 0.55, 0.10, 14);
+    box(B.paint, -0.82, -0.51, 0.74, 0.76, 0.61, 0.75);
+    box(B.dark, -0.79, -0.54, 0.755, 0.765, 0.64, 0.72);
     /* the gunner's sight head on the cradle, front right */
-    box(B.paint, 0.95, 1.30, -0.40, -0.16, 0.82, 1.02);
+    box(B.paint, 0.95, 1.30, -0.40, -0.16, 0.76, 1.02);
     box(B.glass, 1.30, 1.31, -0.36, -0.20, 0.86, 0.98);
     /* the commander's hatch (left) with the M2 on its mount ahead of it (A, B) */
     cylZ(B.paint, 0.05, 0.42, 0.86, 0.96, 0.30, 14);
-    box(B.dark, 0.32, 0.40, 0.36, 0.48, 0.96, 1.18);
-    box(B.dark, 0.18, 0.62, 0.36, 0.48, 1.12, 1.24);
-    cylX(B.dark, 0.62, 1.70, 0.42, 1.18, 0.024, 8);
-    box(B.dark, 0.30, 0.50, 0.49, 0.60, 1.06, 1.20);
+    box(B.dark, 0.32, 0.40, 0.36, 0.48, 0.96, 1.06);                      /* A: the M2 sits low, top at 3.17 m */
+    box(B.dark, 0.18, 0.62, 0.36, 0.48, 1.00, 1.12);
+    cylX(B.dark, 0.62, 1.70, 0.42, 1.06, 0.024, 8);
+    box(B.dark, 0.30, 0.50, 0.47, 0.60, 0.96, 1.08);
     /* the 105 mm M68A2: mantlet, tube, fume extractor near the cradle, muzzle brake past the nose */
     var mx = 1.62, mz = X(-0.19) - X(4.55);
     box(B.paint, 1.58, 1.74, -0.24, 0.24, gz - 0.18, gz + 0.18);
@@ -726,6 +802,9 @@ var HeroStryker = (function () {
     cyl(B.dark, [1.82, 0, gz], [1.85, 0, gz], 0.085, 0.115, 14);
     cyl(B.dark, [2.70, 0, gz], [2.76, 0, gz], 0.115, 0.075, 14);
     cylX(B.dark, mz - 0.36, mz, 0, gz, 0.10, 12);
+    /* A: the collars where the tube steps down ahead of the fume extractor and 0.5 m behind the muzzle */
+    cylX(B.dark, 2.76, 2.86, 0, gz, 0.095, 12);
+    cylX(B.dark, mz - 0.92, mz - 0.84, 0, gz, 0.088, 12);
     for (s = -1; s <= 1; s += 2) box(B.dark, mz - 0.30, mz - 0.06, s * 0.098, s * 0.106, gz - 0.035, gz + 0.035);
     /* the M240C coax to the right of the gun */
     cylX(B.dark, 1.62, 1.95, -0.30, gz - 0.06, 0.02, 6);
@@ -739,25 +818,31 @@ var HeroStryker = (function () {
     box(B.paint, -0.30, 0.30, -0.36, 0.36, 0.10, 0.24);
     box(B.paint, -0.21, 0.21, -0.22, 0.22, 0.24, 0.58);
     box(B.dark, 0.20, 0.215, -0.16, 0.16, 0.28, 0.54);
-    /* the head: one block, top sloping down to the front (A) */
-    profY(B.paint, [[-0.53, 0.56], [0.70, 0.56], [0.76, 0.68], [0.76, 0.88], [0.44, 1.10], [-0.53, 1.10]], -0.82, 0.82);
-    box(B.dark, -0.55, 0.78, -0.24, -0.22, 0.58, 1.08);
-    box(B.dark, -0.55, 0.78, 0.22, 0.24, 0.58, 0.88);
-    /* the sight: day / thermal windows facing forward */
-    box(B.dark, 0.76, 0.78, -0.20, 0.20, 0.64, 0.88);
-    cylX(B.glass, 0.77, 0.80, 0.08, 0.76, 0.075, 12);
-    cylX(B.glass, 0.77, 0.80, -0.09, 0.76, 0.055, 10);
-    /* the twin TOW tubes, side by side in the left pod */
+    /* the head (D: trained to port, seen face on): three units side by side on one cross beam - the sight housing
+       in the middle, with the big day / thermal window over a small one; the twin TOW pod on
+       its left, two launch tube mouths side by side in its face; the smoke cluster on its right end */
+    box(B.dark, -0.34, 0.20, -0.40, 0.40, 0.54, 0.62);                                 /* the cross beam */
+    profY(B.paint, [[-0.32, 0.58], [0.34, 0.58], [0.38, 0.64], [0.38, 1.04], [0.28, 1.12], [-0.32, 1.12]], -0.27, 0.27);
+    box(B.dark, 0.38, 0.40, -0.21, 0.21, 0.64, 1.04);
+    cylX(B.glass, 0.39, 0.42, 0.0, 0.88, 0.105, 14);
+    cylX(B.dark, 0.39, 0.415, 0.0, 0.88, 0.125, 14);
+    cylX(B.glass, 0.39, 0.42, 0.10, 0.70, 0.045, 10);                                 /* D: one, toward the pod */
+    box(B.paint, -0.20, 0.10, -0.29, 0.29, 1.12, 1.16);                                /* the sight's lid */
+    /* the TOW pod, its face flush with the sight's, the tubes running back the pod's length */
+    profY(B.paint, [[-0.62, 0.52], [0.36, 0.52], [0.36, 1.02], [-0.52, 1.02], [-0.62, 0.94]], 0.26, 1.02);   /* D: face 0.5 m */
+    box(B.dark, 0.355, 0.37, 0.28, 1.00, 0.54, 1.00);
     var s, k;
     for (k = 0; k < 2; k++) {
-      var ty = 0.38 + k * 0.28;
-      cylX(B.dark, 0.76, 0.80, ty, 0.76, 0.11, 14);
-      cylX(B.glass, 0.80, 0.81, ty, 0.76, 0.085, 12);
+      var ty = 0.455 + k * 0.38;
+      cylX(B.paint, 0.36, 0.40, ty, 0.77, 0.105, 14);                              /* D: mouths ~0.2 m */
+      cylX(B.glass, 0.395, 0.405, ty, 0.77, 0.085, 12);
+      box(B.dark, -0.40, 0.20, ty - 0.10, ty + 0.10, 1.02, 1.035);                    /* the pod lid hinge strip */
     }
-    /* the smoke grenade cluster on the right end */
-    for (k = 0; k < 4; k++) {
-      var yy = -0.48 - (k % 2) * 0.12, zz = 0.94 + ((k / 2) | 0) * 0.10;
-      cyl(B.dark, [0.50, yy, zz], [0.70, yy - 0.02, zz + 0.07], 0.045, 0.045, 8);
+    /* the smoke grenade cluster on the right end: a bracket and two rows of four tubes, laid forward and up */
+    box(B.paint, -0.16, 0.12, -0.54, -0.26, 0.58, 0.95);                              /* D: 0.27 x 0.37 m */
+    for (k = 0; k < 8; k++) {
+      var yy = -0.33 - (k % 4) * 0.075, zz = 0.86 + ((k / 4) | 0) * 0.09;
+      cyl(B.dark, [-0.02, yy, zz - 0.04], [0.16, yy - 0.03, zz + 0.07], 0.035, 0.035, 8);
     }
     return 0.81;
   }
@@ -790,7 +875,8 @@ var HeroStryker = (function () {
     for (s = -1; s <= 1; s += 2) {
       box(B.paint, -0.12, 0.26, s * 0.66, s * 0.94, 0.70, 1.10);
       cyl(B.paint, [0.08, s * 0.66, 0.54], [0.30, s * 0.76, 0.54], 0.30, 0.30, 18);
-      cyl(B.dark, [0.30, s * 0.76, 0.54], [0.32, s * 0.77, 0.54], 0.25, 0.25, 18);
+      cyl(B.paint, [0.30, s * 0.76, 0.54], [0.33, s * 0.775, 0.54], 0.30, 0.25, 18);        /* painted end cap */
+      cyl(B.dark, [0.33, s * 0.775, 0.54], [0.34, s * 0.78, 0.54], 0.06, 0.06, 10);
     }
     /* the Stinger pod, right: a box with four cells 2 x 2, red caps (E) */
     box(B.paint, -0.46, 0.60, -1.38, -0.94, 0.92, 1.36);
@@ -800,17 +886,15 @@ var HeroStryker = (function () {
       cylX(B.dark, 0.60, 0.615, cy, cz, 0.056, 10);
       cylX(B.lamp, 0.615, 0.62, cy, cz, 0.042, 10);
     }
-    /* the Hellfire launcher, left: a body with two rails one over the other, a missile on each */
+    /* the Hellfire launcher, left: a body with two rails one over the other, drawn empty as E shows them (the
+       header's reading of E; E itself could not be re-fetched in batch 5): each rail on two hangers, a shoe stop */
     box(B.paint, -0.36, 0.36, 0.94, 1.16, 0.80, 1.42);
     for (k = 0; k < 2; k++) {
       var hz = 0.94 + k * 0.32;
-      box(B.dark, -0.62, 0.66, 1.03, 1.09, hz + 0.09, hz + 0.12);
-      cylX(B.dark, -0.80, 0.62, 1.06, hz, 0.089, 12);
-      cyl(B.dark, [0.62, 1.06, hz], [0.86, 1.06, hz], 0.089, 0.02, 12);
-      for (s = 0; s < 4; s++) {
-        var fa = s * Math.PI / 2 + Math.PI / 4;
-        bar(B.dark, [-0.78, 1.06, hz], [-0.68, 1.06 + 0.17 * Math.cos(fa), hz + 0.17 * Math.sin(fa)], 0.012);
-      }
+      box(B.dark, -0.62, 0.66, 1.16, 1.22, hz + 0.06, hz + 0.12);
+      box(B.paint, -0.30, -0.18, 1.15, 1.20, hz + 0.10, hz + 0.16);
+      box(B.paint, 0.18, 0.30, 1.15, 1.20, hz + 0.10, hz + 0.16);
+      box(B.dark, 0.60, 0.66, 1.16, 1.24, hz + 0.02, hz + 0.12);
     }
     return 1.98;
   }
@@ -862,8 +946,8 @@ var HeroStryker = (function () {
 
   /* ---------------------------------------------------------------- build */
   var KIND = {
-    mgs_now:  { name: "stryker_m1128", hull: FLAT, paint: "now",  slat: false, turret: "mgs",  ring: 4.55, racks: false },
-    mgs_iraq: { name: "stryker_m1128_slat", hull: FLAT, paint: "iraq", slat: true, turret: "mgs", ring: 4.55, racks: false },
+    mgs_now:  { name: "stryker_m1128", hull: FLAT, paint: "now",  slat: false, turret: "mgs",  ring: 4.55, racks: true, rackbox: true, rack0: 4.22 },
+    mgs_iraq: { name: "stryker_m1128_slat", hull: FLAT, paint: "iraq", slat: true, turret: "mgs", ring: 4.55, racks: true, rackbox: true, rack0: 4.22 },
     atgm:     { name: "stryker_m1134", hull: FLAT, paint: "iraq", slat: true, turret: "atgm", ring: 5.18, racks: true },
     shorad:   { name: "stryker_a1_m_shorad", hull: DVH, paint: "a1", slat: false, turret: "shorad", ring: 4.55, racks: true, a1: true }
   };

@@ -55,8 +55,9 @@
 
    What makes it an E-3 and not "a 707", at RTS zoom:
      1. The rotodome: a 9.1 m disc, wider than the fuselage is deep, on two
-        struts, its upper face dark inside a pale rim (a team-colour ring sits
-        on the rim). From above it is a disc with a swept wing through it.
+        struts, its two radar halves near-black either side of a pale band
+        across the centre (a team-colour ring sits near the rim; see the
+        rotodome section). From above it is a disc with a swept wing through it.
      2. The wing: swept 35 degrees, four slim pods slung forward of it, a
         large low tailplane and a raked fin with a dorsal fillet.
    and what makes it a JSTARS:
@@ -89,6 +90,15 @@
    steps and core plugs, the flap-track fairings, seam ribbons for the
    panel breaks and hinge lines, the entry door, the windscreen frames,
    aerials, lamps, gear doors, and a grey-scale paint sheet over the coats.
+   Batch 5: the triangle budget (12k for an aircraft; the E-3 rows were 13.2k
+   to 13.5k) is met by cutting what could not be seen - the end caps of the
+   engine pods (hidden behind the fan face and inside the core nozzle), the
+   caps of the nozzle, spinner and plug, a 2 cm cylinder that was the nozzle
+   throat (now a disc), the upper halves of the flap-track fairings (inside
+   the wing) - and by fewer segments where the eye cannot count them (pods
+   16 round, 18 for the CFM56; main tyres 16; body frame seams 20 points):
+   13358 -> 11614 triangles for the E-3G. The rotodome is repainted from
+   photographs (see the rotodome section).
    ========================================================================= */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
@@ -390,8 +400,10 @@ var HeroE3 = (function () {
   var POD_CFM = [[0.00, 0.80], [0.06, 0.92], [0.30, 0.98], [1.00, 1.00], [2.00, 0.98], [2.80, 0.88],
                  [3.30, 0.70], [3.70, 0.50], [4.00, 0.36], [4.20, 0.20]];
   var POD_ESM = [[0.00, 0.10], [0.20, 0.26], [0.60, 0.32], [2.00, 0.32], [2.80, 0.22], [3.30, 0.08]];
-  /* x of the lip, y and h of the axis; seg round the pod */
-  function addPod(xLip, yc, hc, rows, seg) {
+  /* x of the lip, y and h of the axis; seg round the pod; open: no end caps
+     (an engine pod: its intake is closed by the fan face and its tail by
+     the core nozzle of podDetail, so caps there would only be hidden faces) */
+  function addPod(xLip, yc, hc, rows, seg, open) {
     var rings = [], r, i, sh = new Shell(), a, row;
     for (r = 0; r < rows.length; r++) {
       row = [];
@@ -401,7 +413,7 @@ var HeroE3 = (function () {
       }
       rings.push(row);
     }
-    sh.loft(rings, upperSeg(seg), true, true);
+    sh.loft(rings, upperSeg(seg), !open, !open);
     sh.emit({ 0: "top", 1: "bot", 2: "dark" });
   }
   var PODS = [{ y: 10.1, h: 2.15, lead: 4.35 }, { y: 16.0, h: 2.65, lead: 4.80 }];
@@ -413,7 +425,7 @@ var HeroE3 = (function () {
       sLip = wingLE(p.y) - (p.lead - (spec.cfm ? 0.7 : 0));
       for (sd = -1; sd <= 1; sd += 2) {
         xLip = X(sLip);
-        addPod(xLip, sd * p.y, p.h, rows, spec.cfm ? 22 : 20);
+        addPod(xLip, sd * p.y, p.h, rows, spec.cfm ? 18 : 16, true);
         podDetail(xLip, sd * p.y, p.h, rows);
         sec = wingSec(p.y); top = sec.o - 0.05;
         foil(finSecs(sd * p.y, [p.h + (spec.cfm ? 0.80 : 0.50), top],
@@ -433,8 +445,20 @@ var HeroE3 = (function () {
      side view's lens spans 24.0 to 33.1 m) and standing 3.4 m clear of the
      5.58 m crown, its bottom 8.98 m up (the USAF's "11 feet above the
      fuselage"; the drawing reads 8.96); two struts, the front one broad, 1.3 m
-     either side of its centre (the Souda Bay photograph). The upper face is
-     dark inside a pale rim, and a team ring sits on the rim. */
+     either side of its centre (the Souda Bay photograph). A team ring sits on
+     the upper face near the rim.
+     PAINT (batch 5, from two USAF photographs on Commons: "Boeing E-3 Sentry
+     090512-F-7550B-902.jpg", from above, and "E-3G aircrew disembark their
+     aircraft at Prince Sultan Air Base, 1 March 2020.jpg", edge-on from the
+     port quarter): the two radar halves of the lens are near-black over the
+     upper face, the lower face and the rim alike, and a pale structural band
+     about a quarter of the diameter wide (2.3 m) runs straight across the
+     centre, with a row of dark rib ticks along one edge. Before this the
+     model had a dark disc on top inside a pale rim, which no photograph
+     shows. The band is laid athwartships: the dome turns in service, and
+     the edge-on PSAB view (pale in the middle, dark both ends) has it so.
+     It is painted on a small planar sheet of the dome's own ("rdome"), so
+     the band has straight edges whatever the loft's vertices. */
   var DX = 28.5, DR = 4.55, DC = 9.86, DHT = 0.92, DHB = 0.88, DEXP = 2.8, DM = 14, DN = 40;
   function discRing(r, h) {
     var ring = [], i, b;
@@ -460,13 +484,12 @@ var HeroE3 = (function () {
   }
   function addDome() {
     /* the lens is cut into parts on shared rings, so that no two surfaces
-       share a plane: the dark upper face out to r = 3.35 m, a pale band to
-       3.65, the team ring to 4.05 (0.4 m wide), and the rest in the rim colour */
-    var fc = lensF(3.35), f0 = lensF(3.65), f1 = lensF(4.05);
-    lensPart(0, fc, 4, true, false, "dark");
-    lensPart(fc, f0, 1, false, false, "dome");
+       share a plane: the upper face out to r = 3.65 m, the team ring to 4.05
+       (0.4 m wide), and the rest; all but the ring in the dome's own sheet */
+    var f0 = lensF(3.65), f1 = lensF(4.05);
+    lensPart(0, f0, 5, true, false, "rdome");
     lensPart(f0, f1, 2, false, false, "team");
-    lensPart(f1, Math.PI, DM, false, true, "dome");
+    lensPart(f1, Math.PI, DM, false, true, "rdome");
     /* the two struts */
     foil(finSecs(0, [5.3, 6.5, 7.8, 9.5], [26.8, 27.1, 27.3, 27.4], [2.0, 1.5, 1.25, 1.2],
                  [0.20, 0.24, 0.26, 0.26]), "f", { 0: "top", 1: "top", 2: "top" });
@@ -540,10 +563,10 @@ var HeroE3 = (function () {
     g.translate(x, y, z);
     return g;
   }
-  function rod(a, b, r, seg, r2) {        /* r2: the radius at b, if not r */
+  function rod(a, b, r, seg, r2, open) {  /* r2: the radius at b, if not r; open: no end caps */
     var dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2];
     var L = Math.sqrt(dx * dx + dy * dy + dz * dz) || 0.01;
-    var g = new V.CylinderGeometry(r2 === undefined ? r : r2, r, L, seg || 8);
+    var g = new V.CylinderGeometry(r2 === undefined ? r : r2, r, L, seg || 8, 1, !!open);
     _q.setFromUnitVectors(_u.set(0, 1, 0), _v.set(dx / L, dy / L, dz / L));
     _m4.makeRotationFromQuaternion(_q);
     _m4.setPosition((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2);
@@ -573,7 +596,7 @@ var HeroE3 = (function () {
       for (i = -1; i <= 1; i += 2) {
         sx = 22.5 + i * 0.75;
         for (yw = -1; yw <= 1; yw += 2) {
-          G.dark.push(wheelG(0.62, 0.44, X(sx), sd * 3.4 + yw * 0.29, Z(0.62), 20));
+          G.dark.push(wheelG(0.62, 0.44, X(sx), sd * 3.4 + yw * 0.29, Z(0.62), 16));
         }
       }
     }
@@ -821,7 +844,7 @@ var HeroE3 = (function () {
   }
   function fusHoop(s, a0, a1) {
     var r = tab(FUS, s), hm = (r[1] + r[2]) / 2;
-    return DX_.hoop(function (a) { return fusPt(s, a, 0); }, a0, a1, 28,
+    return DX_.hoop(function (a) { return fusPt(s, a, 0); }, a0, a1, 20,
                     function () { return [0, 0, Z(hm)]; }, 0.045, 0.015);
   }
   function fusRun(s0, s1, a, n) {
@@ -862,16 +885,20 @@ var HeroE3 = (function () {
     sh2.loft([ring, fan], function () { return true; }, false, true);
     sh2.emit({ 0: "dark", 1: "dark", 2: "dark" });
     /* the spinner in the fan face */
-    put("metal", rod([xLip - 0.40, yc, Z(hc)], [xLip - 0.12, yc, Z(hc)], 0.17, 12, 0.02));
+    put("metal", rod([xLip - 0.40, yc, Z(hc)], [xLip - 0.12, yc, Z(hc)], 0.17, 12, 0.02, true));
     /* the fan-exhaust step: a band round the pod */
     var st = Lp * 0.62, rr = tab(rows, st)[0];
     put("seam", DX_.hoop(function (a) { return [xLip - st, yc + rr * Math.cos(a), Z(hc) + rr * Math.sin(a)]; },
                          0, 2 * Math.PI, 24, function () { return [xLip - st, yc, Z(hc)]; }, 0.10, 0.012));
     /* the core nozzle and its plug out of the back */
     var xe = xLip - Lp, rc = Math.max(last[1], 0.16) + 0.04;
-    put("metal", rod([xe + 0.05, yc, Z(hc)], [xe - 0.55, yc, Z(hc)], rc, 16, rc * 0.92));
-    put("dark", rod([xe - 0.54, yc, Z(hc)], [xe - 0.56, yc, Z(hc)], rc * 0.85, 16));
-    put("metal", rod([xe - 0.5, yc, Z(hc)], [xe - 1.05, yc, Z(hc)], rc * 0.55, 12, 0.02));
+    put("metal", rod([xe + 0.05, yc, Z(hc)], [xe - 0.55, yc, Z(hc)], rc, 16, rc * 0.92, true));
+    /* the nozzle's dark throat: a disc just inside its mouth (a 2 cm
+       cylinder before; its sides could not be seen) */
+    var thr = new V.CircleGeometry(rc * 0.9, 16);
+    thr.rotateY(Math.PI / 2); thr.translate(xe - 0.53, yc, Z(hc));
+    put("dark", thr);
+    put("metal", rod([xe - 0.5, yc, Z(hc)], [xe - 1.05, yc, Z(hc)], rc * 0.55, 12, 0.02, true));
   }
   function addDetails(spec, G) {
     var sd, i, s;
@@ -907,8 +934,8 @@ var HeroE3 = (function () {
         for (k = 0; k < prof.length; k++) {
           var u = prof[k][0], hw = prof[k][1], dp = prof[k][2], sx = sec.s + u * sec.c;
           var zb = sec.o - (u <= 1 ? foilTh(sec, Math.min(u, 1)) : 0) - 0.02, ring = [], j;
-          for (j = 0; j < 12; j++) {
-            var a = j / 12 * Math.PI * 2, cy = Math.cos(a), sz = Math.sin(a);
+          for (j = 0; j < 8; j++) {          /* 8 round (12 before): the upper half is inside the wing */
+            var a = j / 8 * Math.PI * 2, cy = Math.cos(a), sz = Math.sin(a);
             ring.push([X(sx), sd * y + hw * cy, Z(zb + (sz > 0 ? 0.05 * sz : dp * sz))]);
           }
           rings.push(ring);
@@ -995,6 +1022,43 @@ var HeroE3 = (function () {
     return _sheets[id];
   }
 
+  /* the rotodome's own sheet: a plan of the dome (u along x, v along y,
+     DR either side of its centre), dark radar halves and the pale band */
+  var DBW = 1.15, _domeTex;
+  function domeUV(geo2) {
+    var p = geo2.attributes.position.array, uv = new Float32Array(p.length / 3 * 2), i, x0 = X(DX);
+    for (i = 0; i < p.length / 3; i++) {
+      uv[2 * i] = 0.5 + (p[3 * i] - x0) / (2 * DR + 0.2);
+      uv[2 * i + 1] = 0.5 + p[3 * i + 1] / (2 * DR + 0.2);
+    }
+    geo2.setAttribute("uv", new V.BufferAttribute(uv, 2));
+  }
+  function domeSheet() {
+    if (_domeTex !== undefined) return _domeTex;
+    try {
+      var S = 512, cv = document.createElement("canvas"), g, k, M = S / (2 * DR + 0.2);
+      cv.width = S; cv.height = S; g = cv.getContext("2d");
+      function U(dx) { return S / 2 + dx * M; }
+      g.fillStyle = "#34383b"; g.fillRect(0, 0, S, S);               /* the radar halves */
+      for (k = 0; k < 70; k++) {                                     /* a little sheen and grime */
+        g.fillStyle = k % 2 ? "rgba(255,255,255,0.025)" : "rgba(0,0,0,0.05)";
+        g.beginPath(); g.ellipse((k * 137) % S, (k * 291) % S, 10 + (k * 7) % 30, 4 + (k * 3) % 10, 0, 0, Math.PI * 2); g.fill();
+      }
+      g.fillStyle = "#f4f4f4"; g.fillRect(U(-DBW), 0, U(DBW) - U(-DBW), S);   /* the band */
+      g.strokeStyle = "rgba(30,32,34,0.55)"; g.lineWidth = 1.5;
+      g.beginPath(); g.moveTo(U(-DBW + 0.06), 0); g.lineTo(U(-DBW + 0.06), S);
+      g.moveTo(U(DBW - 0.06), 0); g.lineTo(U(DBW - 0.06), S); g.moveTo(U(0), 0); g.lineTo(U(0), S); g.stroke();
+      g.strokeStyle = "rgba(30,32,34,0.75)"; g.lineWidth = 2;        /* the rib ticks along one edge */
+      for (k = -9; k <= 9; k++) {
+        g.beginPath(); g.moveTo(U(DBW - 0.06), S / 2 + k * 0.45 * M); g.lineTo(U(DBW - 0.42), S / 2 + k * 0.45 * M); g.stroke();
+      }
+      _domeTex = new V.CanvasTexture(cv);
+      _domeTex.wrapS = _domeTex.wrapT = V.ClampToEdgeWrapping;
+      _domeTex.anisotropy = 4;
+    } catch (e) { _domeTex = null; }
+    return _domeTex;
+  }
+
   /* ========================================================= build / mats == */
   var PAINT = {
     white: { top: 0xe4e7e9, bot: 0xb7bdc1, dome: 0xe8eaeb },   /* E-3B/C: white over light grey   */
@@ -1008,6 +1072,9 @@ var HeroE3 = (function () {
       return new V.MeshStandardMaterial({ color: c, roughness: 0.78, metalness: 0.08, side: V.DoubleSide });
     }
     m.top = skin(p.top); m.bot = skin(p.bot); m.dome = skin(p.dome);
+    m.rdome = skin(p.dome);
+    var dt = domeSheet();
+    if (dt) m.rdome.map = dt; else m.rdome.color.set(0x2a2e31);
     var tc = (C && C.team !== undefined) ? C.team : "#3f7fd0";
     m.team = new V.MeshStandardMaterial({ color: new V.Color(tc), roughness: 0.60, metalness: 0.12,
                                           emissive: new V.Color(tc), emissiveIntensity: 0.10,
@@ -1042,7 +1109,8 @@ var HeroE3 = (function () {
       var key = order[i];
       if (!lists[key] || !lists[key].length) continue;
       var geo = merge(lists[key]);
-      if (mats[key].map && LAY) DX_.projUV(geo, LAY);
+      if (key === "rdome") { if (mats[key].map) domeUV(geo); }
+      else if (mats[key].map && LAY) DX_.projUV(geo, LAY);
       parent.add(new V.Mesh(geo, mats[key]));
     }
   }
@@ -1069,7 +1137,7 @@ var HeroE3 = (function () {
     LAY = DX_.layout(X(spec.len / FX) - 0.1, XN + 0.1, 22.3, ZG, Z(spec.fin + 0.2));
     var mats = makeMats(C, spec.paint, paintSheet(spec));
     var root = new V.Group();
-    emit(root, K, mats, ["top", "bot", "dome", "team", "seam", "dark", "metal", "lamp", "glass"]);
+    emit(root, K, mats, ["top", "bot", "dome", "rdome", "team", "seam", "dark", "metal", "lamp", "glass"]);
     var gear = new V.Group();
     gear.name = "gear";
     emit(gear, G, mats, ["metal", "dark", "bot"]);

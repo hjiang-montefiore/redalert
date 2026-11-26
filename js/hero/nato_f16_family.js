@@ -418,9 +418,13 @@ var HeroF16 = (function () {
     /* ---- ROCAF: the Block 20's chaff and flare cartridge rows along the
        fin-root fairing ---- */
     if (P.roc) {
-      /* (the low-visibility roundels the first pass painted here are left
-         off in the detail pass: the review policy allows no national
-         markings) */
+      /* low-visibility roundels on the upper left and lower right wing and
+         on the rear fuselage sides (restored at the owner's request) */
+      var rw = 0.40;
+      roundel(g, pxD(wingLE(3.6) + 0.75), pyTop(3.6), rw * SX, rw * (BT1 - BT0) / (2 * QY));
+      roundel(g, pxD(wingLE(3.6) + 0.75), pyBelly(-3.6), rw * SX, rw * (BB1 - BB0) / (2 * QY));
+      for (b = 0; b < 2; b++)
+        roundel(g, pxD(12.2), pySide(0.22, !b), 0.26 * SX, 0.26 * (BP1 - BP0) / (QZ1 - QZ0));
       if (P.disp) {
         for (b = 0; b < 2; b++) {
           g.fillStyle = "rgba(14,15,16,0.75)";

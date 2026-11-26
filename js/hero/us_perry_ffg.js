@@ -462,11 +462,13 @@ var HeroPerryFFG = (function () {
     return ST_BOW.concat(longHull ? ST_LONG : ST_SHORT);
   }
   function hullMesh(THREE, mtl, longHull) {
-    var ST = stations(longHull), pos = [], uv = [], idx = [], i, j, R = 0;
+    var ST = stations(longHull), pos = [], uv = [], idx = [], lid = [], i, j, R = 0;
     var XA = longHull ? X(422) : X(414), L = XSTEM - XA;
     for (i = 0; i < ST.length; i++) {
       var f = ST[i][0], x0 = X(f), r = ringOf(tbl(VB_F, f));
-      var w = halfB(x0), kz = ST[i][2] * FT, dz = deckZ(x0), dep = dz - kz;
+      /* the hull's top edge is the weather deck's own level (topZ), so the
+         deck meets it edge to edge and the hull needs no lid of its own   */
+      var w = halfB(x0), kz = ST[i][2] * FT, dz = deckZ(x0) + 0.05, dep = dz - kz;
       var rk = ST[i][1] * FT;
       for (j = 0; j < r.length; j++) {
         var z = kz + dep * r[j][1];
@@ -477,8 +479,14 @@ var HeroPerryFFG = (function () {
     }
     /* rings run stern to bow, so (a, d, b) winds outward                 */
     for (i = 0; i < ST.length - 1; i++) {
+      /* ring points 0..4 run across the deck (edge, three crown points,
+         edge): those four quads are a lid hidden under the deck itself.
+         They are kept for the normals (the deck-edge vertices keep the
+         rounded highlight the house look was tuned to) and left out of the
+         drawn index below                                                 */
       for (j = 0; j < R; j++) {
         var a = i * R + j, b = i * R + (j + 1) % R, c = a + R, d = b + R;
+        if (j < 4) { lid.push(a, d, b, a, c, d); continue; }
         idx.push(a, d, b, a, c, d);
       }
     }
@@ -499,7 +507,8 @@ var HeroPerryFFG = (function () {
     var g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
     g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
-    g.setIndex(idx); g.computeVertexNormals();
+    g.setIndex(idx.concat(lid)); g.computeVertexNormals();
+    g.setIndex(idx);
     return new THREE.Mesh(g, mtl);
   }
 
@@ -711,10 +720,10 @@ var HeroPerryFFG = (function () {
     /* the weather deck, flat across (no camber), from the stem head to the
        hangar face; the flight deck aft of it is the pad                   */
     (function () {
-      var FR = [-31.0, -27, -22, -16, -10, -4, 2, 9, 17, 26, 36, 48, 62, 80, 100,
+      var FR = [-31.5, -27, -22, -16, -10, -4, 2, 9, 17, 26, 36, 48, 62, 80, 100,
                 125, 155, 190, 230, 270, 300, 329.5], KY = [-1, -0.55, 0, 0.55, 1];
       for (i = 0; i < FR.length - 1; i++) {
-        var xa = X(FR[i]), xb = X(FR[i + 1]), wa = halfB(xa) - 0.03, wb = halfB(xb) - 0.03;
+        var xa = X(FR[i]), xb = X(FR[i + 1]), wa = halfB(xa), wb = halfB(xb);
         var za = topZ(xa), zb = topZ(xb);
         for (j = 0; j < KY.length - 1; j++) {
           var A0 = [xa, wa * KY[j], za, xa / 5.5, wa * KY[j] / 5.5];
@@ -726,6 +735,22 @@ var HeroPerryFFG = (function () {
       }
     })();
 
+    /* the toe plate: the steel strip along the deck edge at the foot of
+       the lifeline stanchions, stem head to the hangar face: a flat bar
+       0.10 m high and 0.03 m thick, haze grey like the rest of the ship  */
+    (function () {
+      var WF = [-27, -16, -4, 9, 26, 48, 80, 125, 190, 270, 329.5], q, sw;
+      for (sw = -1; sw <= 1; sw += 2) {
+        for (q = 0; q < WF.length - 1; q++) {
+          var xa = X(WF[q]), xb = X(WF[q + 1]);
+          var ya = sw * (halfB(xa) - 0.03), yb = sw * (halfB(xb) - 0.03), za = topZ(xa), zb = topZ(xb);
+          var ln = Math.sqrt((xb - xa) * (xb - xa) + (yb - ya) * (yb - ya));
+          bx("sup", ln + 0.02, 0.03, 0.10, (xa + xb) * 0.5, (ya + yb) * 0.5, (za + zb) * 0.5 + 0.04,
+             0, -Math.atan2(zb - za, ln), Math.atan2(yb - ya, xb - xa));
+        }
+      }
+    })();
+
     /* the flight deck: ONE flat level pad, hangar face to the after edge.
        render3d's deckOf reads her deck level off her after eighth and
        padSpot takes the largest level stretch reaching into her after
@@ -733,11 +758,11 @@ var HeroPerryFFG = (function () {
        hangar. Nothing on it stands proud but the low capstan.             */
     var ZP = Z(30.1) + 0.06, FH = 329.5;
     (function () {
-      var FS = [FH, 345, 360, 375, 390, 400, 410, FSTERN - 0.5];
+      var FS = [FH, 345, 360, 375, 390, 400, 410, FSTERN];
       var LEN = FSTERN - FH;
       for (i = 0; i < FS.length - 1; i++) {
         var xa = X(FS[i]), xb = X(FS[i + 1]);
-        var wa = halfB(xa) - 0.02, wb = halfB(xb) - 0.02;
+        var wa = halfB(xa), wb = halfB(xb);
         var ua = (FS[i] - FH) / LEN, ub = (FS[i + 1] - FH) / LEN;
         var A0 = [xa, -wa, ZP, ua, 0.5 - wa / (45 * FT)], A1 = [xa, wa, ZP, ua, 0.5 + wa / (45 * FT)];
         var B0 = [xb, -wb, ZP, ub, 0.5 - wb / (45 * FT)], B1 = [xb, wb, ZP, ub, 0.5 + wb / (45 * FT)];
@@ -787,7 +812,9 @@ var HeroPerryFFG = (function () {
     dome.scale(3.9, 1.0, 1.05);
     cur.dark.add(place(THREE, dome, X(52), 0, -4.25));
     tube("metal", X(330), 0, -3.0, X(384), 0, Z(8.5), 0.22, 0.22, 8);
-    bar("metal", X(372), 0, Z(8.8), X(372), 0, -1.0, 0.09);
+    /* the shaft bracket: from the shaft (z -2.02 here) up through the
+       keel line (z -1.82 at frame 372) into the hull                       */
+    bar("metal", X(372), 0, -2.12, X(372), 0, -1.55, 0.09);
     (function () {
       var hx = X(386), hz = Z(8.5), q;
       cx("metal", 0.45, 0.3, 1.2, 10, hx - 0.6, 0, hz);
@@ -821,6 +848,35 @@ var HeroPerryFFG = (function () {
       cz("metal", 0.17, 0.19, 0.5, 8, x + 0.38, y, z0);
     }
     for (s = -1; s <= 1; s += 2) { bitts(X(35), s * 3.0); bitts(X(95), s * 5.7); }
+    /* the forecastle's anchor gear as the bow photographs show it: the
+       hawse-pipe lip on the deck over the starboard anchor pocket, the
+       chain-pipe lip abaft the windlass, the two dark chain runs between
+       them over the windlass gypsy, and a bow chock either side forward   */
+    (function () {
+      var hxw = X(16), hyw = -(halfB(hxw) - 0.75), cpx = X(28), wx = X(22), wy = -0.9;
+      cz("metal", 0.34, 0.38, 0.1, 14, hxw, hyw, topZ(hxw) - 0.02);
+      cz("dark", 0.24, 0.24, 0.11, 12, hxw, hyw, topZ(hxw) - 0.02);
+      cz("metal", 0.26, 0.30, 0.1, 12, cpx, wy, topZ(cpx) - 0.02);
+      cz("dark", 0.17, 0.17, 0.11, 10, cpx, wy, topZ(cpx) - 0.02);
+      /* each run is drawn link by link (stud links about 0.3 m long),
+         alternate links turned on edge                                     */
+      function chain(ax, ay, az, bx2, by, bz) {
+        var L = Math.sqrt((bx2 - ax) * (bx2 - ax) + (by - ay) * (by - ay)), n = Math.max(2, Math.round(L / 0.27)), q;
+        var yaw = Math.atan2(by - ay, bx2 - ax), pit = -Math.atan2(bz - az, L);
+        for (q = 0; q < n; q++) {
+          var t = (q + 0.5) / n;
+          bx("dark", 0.34, q % 2 ? 0.06 : 0.2, q % 2 ? 0.2 : 0.06, ax + (bx2 - ax) * t, ay + (by - ay) * t, az + (bz - az) * t,
+             q % 2 ? 0 : 0, pit, yaw);
+        }
+      }
+      chain(hxw, hyw, topZ(hxw) + 0.08, wx + 0.15, wy - 0.15, topZ(wx) + 0.45);
+      chain(wx - 0.15, wy, topZ(wx) + 0.45, cpx, wy, topZ(cpx) + 0.08);
+      for (var sc = -1; sc <= 1; sc += 2) {
+        var chx = X(2), chy = sc * (halfB(chx) - 0.3);
+        bx("metal", 0.9, 0.22, 0.32, chx, chy, topZ(chx) + 0.14, 0, 0, sc * 0.35);
+        bx("dark", 0.5, 0.24, 0.14, chx, chy, topZ(chx) + 0.2, 0, 0, sc * 0.35);
+      }
+    })();
     /* the VERTREP square painted on the forecastle (Carr overhead)        */
     (function () {
       var x0 = X(55), x1 = X(38), z = topZ(X(46)) + 0.03, w = 2.6, t = 0.16;
@@ -1005,11 +1061,13 @@ var HeroPerryFFG = (function () {
     /* the main yard across the top with its antennas, a second lower one   */
     var XM = (X(178.5) + X(169.2)) * 0.5;
     bar("metal", XM + 0.2, -5.6, MT - 0.6, XM + 0.2, 5.6, MT - 0.6, 0.08);
-    bar("metal", XM + 0.2, -4.2, Z(90), XM + 0.2, 4.2, Z(90), 0.06);
+    /* the lower yard crosses at the forward legs, through them         */
+    var u90 = (Z(90) - MB) / (MT - MB), XY2 = X(164) + (X(169.2) - X(164)) * u90;
+    bar("metal", XY2, -4.2, Z(90), XY2, 4.2, Z(90), 0.06);
     for (s = -1; s <= 1; s += 2) {
       bar("metal", XM + 0.2, s * 5.3, MT - 0.6, XM + 0.2, s * 5.3, MT + 0.7, 0.035);
       bar("metal", XM + 0.2, s * 3.9, MT - 0.6, XM + 0.2, s * 3.9, MT - 1.6, 0.03);
-      bar("metal", XM + 0.2, s * 4.0, Z(90), XM + 0.2, s * 4.0, Z(90) + 1.0, 0.03);
+      bar("metal", XY2, s * 4.0, Z(90), XY2, s * 4.0, Z(90) + 1.0, 0.03);
       bar("metal", XM + 0.2, s * 1.9, MT - 0.6, XM, s * 0.9, MT - 1.8, 0.05);
     }
     /* the topmast, the TACAN dome at its head (129 ft) and its whip       */
@@ -1259,7 +1317,8 @@ var HeroPerryFFG = (function () {
     /* whips and the SATCOM antenna on the 02 level (the 1987 plan)       */
     bar("metal", X(150), -4.9, ZR, X(150), -4.9, ZR + 9.5, 0.05);
     bar("metal", X(150), 4.9, ZR, X(150), 4.9, ZR + 9.5, 0.05);
-    bar("metal", X(276), 5.4, roofZ(X(276)), X(276), 5.4, roofZ(X(276)) + 10.0, 0.05);
+    /* this one stands outboard of the pinched upper tier, on the 01 deck */
+    bar("metal", X(276), 5.4, Z01, X(276), 5.4, roofZ(X(276)) + 10.0, 0.05);
     bar("metal", X(316), -5.4, roofZ(X(316)), X(316), -5.4, roofZ(X(316)) + 10.0, 0.05);
     cz("sup", 0.3, 0.35, 0.9, 8, X(156), 3.8, ZR);
     bx("dark", 0.5, 0.8, 0.9, X(156), 3.8, ZR + 1.35);
@@ -1268,6 +1327,8 @@ var HeroPerryFFG = (function () {
     (function () {
       var lx = X(70), lz = topZ(lx) - 0.02;
       cz("dark", 2.2, 2.2, 0.06, 22, lx, 0, lz);
+      /* the dark ring of the magazine hatch on the magazine top           */
+      cur.dark.add(place(THREE, new THREE.TorusGeometry(1.32, 0.045, 4, 28), lx, 0, lz + 0.53));
       cz("sup", 1.55, 1.75, 0.5, 20, lx, 0, lz + 0.02);
       stamp(lx, 0, lz + 0.52, 0, function () {
         cz("sup", 0.85, 1.0, 1.3, 14, 0, 0, 0);

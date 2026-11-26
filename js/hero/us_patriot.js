@@ -200,10 +200,25 @@ var HeroUsPatriot = (function () {
       }
     }
     if (kind === "tan") {
-      /* CARC desert sand: one colour, dust and weathering only */
-      q.fillStyle = "#a99877"; q.fillRect(0, 0, W, H);
-      blots("rgba(150,132,100,0.35)", 10, 40, 110);
-      blots("rgba(196,182,150,0.30)", 8, 30, 90);
+      /* CARC desert sand: one colour, dust and weathering only.  Re-authored
+         2026-11 with HeroKit.authorFor: the old #a99877 showed as a near-white
+         cream (seenAs top #ded6bb); #8c7858 shows as #cfbd92 in sun, the
+         sunlit sand of [P][W][K] */
+      q.fillStyle = "#8c7858"; q.fillRect(0, 0, W, H);
+      blots("rgba(112,96,68,0.35)", 10, 40, 110);
+      blots("rgba(160,142,108,0.30)", 8, 30, 90);
+    } else if (kind === "can") {
+      /* the PAC-3 / MSE canisters' lighter tan [M][E] (was the plain
+         0xb9aa82, seen as #e4dec6): #978866 shows as #d5caa9 */
+      q.fillStyle = "#978866"; q.fillRect(0, 0, W, H);
+      blots("rgba(124,110,82,0.30)", 9, 30, 90);
+      blots("rgba(172,158,124,0.28)", 7, 24, 70);
+    } else if (kind === "green") {
+      /* plain CARC green 383, no pattern: tonal weathering only; #444b30
+         (HeroKit.authorFor) shows as #758053 in sun, the M109A6's green */
+      q.fillStyle = "#444b30"; q.fillRect(0, 0, W, H);
+      blots("rgba(60,66,42,0.40)", 10, 40, 110);
+      blots("rgba(84,92,62,0.28)", 8, 30, 90);
     } else {
       /* NATO three-colour: green 383, brown 383, black, in big soft blots */
       q.fillStyle = "#4f5b3b"; q.fillRect(0, 0, W, H);
@@ -231,7 +246,9 @@ var HeroUsPatriot = (function () {
     var T = {};
     var tex = canvasTex(THREE, paintCanvas(V.paint));
     T.skin = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.88, metalness: 0.05 });
-    if (tex) T.skin.map = tex; else T.skin.color.setHex(V.paint === "tan" ? 0xa99877 : 0x4f5b3b);
+    if (tex) T.skin.map = tex; else T.skin.color.setHex(V.paint === "tan" ? 0x8c7858 : V.paint === "green" ? 0x444b30 : 0x4f5b3b);
+    /* js/hero/us_sam_site.js takes the material tagged "skin" as the site's paint */
+    T.skin.userData.role = "skin";
     T.skin.userData.worldUV = 8.0;
     T.steel = new THREE.MeshStandardMaterial({ color: 0x80868a, roughness: 0.50, metalness: 0.42 });
     T.dark = new THREE.MeshStandardMaterial({ color: 0x25292b, roughness: 0.80, metalness: 0.20 });
@@ -242,7 +259,14 @@ var HeroUsPatriot = (function () {
     /* [U] 2012: a tan M983 towing a green launcher */
     if (V.tanTractor) T.tan = new THREE.MeshStandardMaterial({ color: 0xa1956f, roughness: 0.88, metalness: 0.04 });
     /* [M][E]: PAC-3 packs and MSE canisters come in tan */
-    if (V.tanCans) T.can = new THREE.MeshStandardMaterial({ color: 0xb9aa82, roughness: 0.86, metalness: 0.04 });
+    if (V.tanCans) {
+      /* a paint sheet of their own (the gate's textured share: the canisters are a third of the area);
+         js/hero/us_sam_site.js sorts a mapped material as the skin, so build() adds the turret
+         first and the trailer's skin is the last mapped material it meets */
+      var ct = canvasTex(THREE, paintCanvas("can"));
+      T.can = new THREE.MeshStandardMaterial({ color: ct ? 0xffffff : 0xb9aa82, roughness: 0.86, metalness: 0.04 });
+      if (ct) { T.can.map = ct; T.can.userData.worldUV = 8.0; }
+    }
     return T;
   }
 
@@ -410,8 +434,13 @@ var HeroUsPatriot = (function () {
       K.bb(T.dark, X(16.42), X(16.45), s * 1.18, s * 1.19, 1.10, 1.85);
       K.bb(T.dark, X(16.05), X(16.20), s * 1.18, s * 1.21, 1.70, 1.74);       /* handle */
       K.bb(T.dark, X(15.62), X(16.30), s * 1.10, s * 1.30, 0.70, 0.75);       /* step */
-      K.bb(T.dark, X(16.70), X(16.80), s * 1.18, s * 1.46, 2.28, 2.32);       /* mirror arm */
-      K.bb(T.dark, X(16.74), X(16.80), s * 1.40, s * 1.50, 1.92, 2.48);        /* mirror */
+      /* its two hangers up to the cab floor [U] (the step stood 0.30 m clear) */
+      K.bb(T.dark, X(15.66), X(15.70), s * 1.12, s * 1.16, 0.74, 1.06);
+      K.bb(T.dark, X(16.22), X(16.26), s * 1.12, s * 1.16, 0.74, 1.06);
+      /* mirror arm from the cab side behind the raked screen (it stood off
+         in front of the glass), the mirror at its tip [U][P] */
+      K.bb(T.dark, X(16.50), X(16.58), s * 1.18, s * 1.46, 2.28, 2.32);       /* mirror arm */
+      K.bb(T.dark, X(16.52), X(16.58), s * 1.40, s * 1.50, 1.92, 2.48);        /* mirror */
       K.bb(T.dark, X(16.78), X(16.86), s * 0.86, s * 1.14, 1.32, 1.56);       /* lamp pod */
       K.disc(T.glass, 0.09, X(16.865), s * 1.00, 1.44);
     }
@@ -596,6 +625,29 @@ var HeroUsPatriot = (function () {
         cells.push([SB1 + 0.05, yc, zc, SB0]);
       }
     }
+    /* the joints between the canisters (or packs): dark seams along the
+       stack top between the columns and down the outer sides between the
+       layers [E][M][S] - each canister is its own box, not one block */
+    for (i = 1; i < nY; i++) {
+      var yb = -0.92 + i * cw;
+      K.bb(T.dark, SB0, SB1, yb - 0.016, yb + 0.016, SZ1 - 0.03, SZ1 + 0.012);
+    }
+    if (k === "pac3") {
+      /* each PAC-3 pack is four canisters bundled 2 x 2 [M]: the joint down
+         the middle of every pack, on the top and the outer sides */
+      for (i = 0; i < nY; i++) {
+        var ym = -0.92 + (i + 0.5) * cw;
+        K.bb(T.dark, SB0, SB1, ym - 0.012, ym + 0.012, SZ1 - 0.03, SZ1 + 0.010);
+      }
+      for (j = 0; j < nZ; j++) {
+        var zm = SZ0 + (j + 0.5) * ch;
+        for (s = -1; s <= 1; s += 2) K.bb(T.dark, SB0, SB1, s * 0.90, s * 0.930, zm - 0.012, zm + 0.012);
+      }
+    }
+    for (j = 1; j < nZ; j++) {
+      var zb = SZ0 + j * ch;
+      for (s = -1; s <= 1; s += 2) K.bb(T.dark, SB0, SB1, s * 0.90, s * 0.932, zb - 0.016, zb + 0.016);
+    }
     /* hold-down straps over the top */
     for (i = 0; i < 2; i++) K.bb(M, 1.4 + i * 2.4, 1.48 + i * 2.4, -0.94, 0.94, SZ1, SZ1 + 0.04);
     return cells;
@@ -661,8 +713,25 @@ var HeroUsPatriot = (function () {
     var root = new THREE.Group();
     root.name = "patriot_launcher";
 
+    /* the launcher first: js/hero/us_sam_site.js takes the LAST mapped
+       material it meets as the skin, and the tan canisters carry a map */
+    var K, tur = new THREE.Group();
+    tur.name = "turret";
+    tur.position.set(X(XTT), 0, ZD);
+    root.add(tur);
+    K = new Baker(THREE); base(K, T); K.flush(tur);
+    var pe = new THREE.Group();
+    pe.name = "podelev";
+    pe.position.set(HX, 0, HZ);
+    K = new Baker(THREE);
+    var cells = pod(K, T, V, V.tanCans ? T.can : T.skin);
+    K.flush(pe);
+    pe.userData.el = EL;
+    pe.userData.cells = cells;
+    tur.add(pe);
+
     /* the trailer: direct meshes of the root (the SAM site copies them) */
-    var K = new Baker(THREE);
+    K = new Baker(THREE);
     trailer(K, T);
     K.flush(root);
 
@@ -686,22 +755,6 @@ var HeroUsPatriot = (function () {
     K.bb(T.dark, X(1.48), X(1.74), 1.33, 1.39, 3.40, 3.45);
     K.flush(dep);
     root.add(dep);
-
-    /* the launcher: LMA base on the turntable, trained as the turret */
-    var tur = new THREE.Group();
-    tur.name = "turret";
-    tur.position.set(X(XTT), 0, ZD);
-    root.add(tur);
-    K = new Baker(THREE); base(K, T); K.flush(tur);
-    var pe = new THREE.Group();
-    pe.name = "podelev";
-    pe.position.set(HX, 0, HZ);
-    K = new Baker(THREE);
-    var cells = pod(K, T, V, V.tanCans ? T.can : T.skin);
-    K.flush(pe);
-    pe.userData.el = EL;
-    pe.userData.cells = cells;
-    tur.add(pe);
 
     for (i = 0; i < AXT.length; i++) root.add(wheelGroup(THREE, T, X(AXT[i]), RT, HT, YT, YT));
     for (i = 0; i < AXL.length; i++) root.add(wheelGroup(THREE, T, X(AXL[i]), RT, HT, YL, YL));
@@ -749,17 +802,24 @@ var HeroUsPatriot = (function () {
 })();
 
 /* The same M983 and M860 serve every row; what changes is the load and the
-   paint.  len is the measured X extent over both poses (the set-up pads
-   0.30 m behind the tail to the bumper face). */
+   paint.  len is the measured X extent of the travel pose, tail to bumper
+   face (16.90 m): render3d sizes the unit by what draws (visibleBox), and
+   the hidden set-up pose's pads 0.30 m behind the tail do not count (the
+   old 17.19 m was both poses together).  Paint, 2026-11 (batch 5, plain
+   paint, no camouflage): nato_e00_sam plain CARC green 383 (the green of
+   [Q][M], without the pattern) with its tan packs; sam_n plain CARC tan
+   over tractor, trailer and frame ([P][W][K]: the US desert scheme) with the
+   MSE canisters in their lighter tan [E].  e80 keeps the three-colour (other
+   files build its "camo" sheet). */
 (function () {
   var VARS = {
     nato_e80_sam: { gen: "pac2", paint: "camo" },
     nato_e90_sam: { gen: "pac2", paint: "tan" },
-    nato_e00_sam: { gen: "pac3", paint: "camo", tanCans: true },
-    sam_n:        { gen: "mse",  paint: "camo", tanCans: true, tanTractor: true }
+    nato_e00_sam: { gen: "pac3", paint: "green", tanCans: true },
+    sam_n:        { gen: "mse",  paint: "tan", tanCans: true }
   };
   HeroUsPatriot.rows = VARS;
   Object.keys(VARS).forEach(function (k) {
-    UNIT_MODELS[k] = { len: 17.19, build: function (THREE, M, C) { return HeroUsPatriot.pack(THREE, HeroUsPatriot.build(THREE, C, VARS[k])); } };
+    UNIT_MODELS[k] = { len: 16.90, build: function (THREE, M, C) { return HeroUsPatriot.pack(THREE, HeroUsPatriot.build(THREE, C, VARS[k])); } };
   });
 })();

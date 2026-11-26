@@ -424,6 +424,10 @@ var HeroRedoPlaRocGround = (function () {
     NOSE: 3.05, REAR: -2.93, BOT: 0.42, SPON: 0.80, ROOF: 1.47, DECK: 1.76, HW: 1.31, LW: 0.86,
     TX: 0.25, GZ: 0.45, MUZ: 5.83
   };
+  /* a bolt head of the level I armour standing out of a face at P along its normal n (A1) */
+  function m8Bolt(bin, P, n) {
+    cyl(bin, [P[0] - n[0] * 0.008, P[1] - n[1] * 0.008, P[2] - n[2] * 0.008], [P[0] + n[0] * 0.016, P[1] + n[1] * 0.016, P[2] + n[2] * 0.016], 0.021, 0.017, 3);
+  }
   function m8Hull(B) {
     var s, k, x, y, F = M8;
     /* the lower hull between the tracks: the lower nose plate up to the glacis, the rear plate (D1) */
@@ -432,14 +436,14 @@ var HeroRedoPlaRocGround = (function () {
     prismY(B.paint, [[F.NOSE, 1.06], [2.94, F.SPON], [-2.74, F.SPON], [-2.88, F.ROOF], [1.60, F.ROOF]], -F.HW, F.HW);
     /* the raised engine deck (D1: from x -1.80 up to 1.76, back to the rear plate's top) */
     prismY(B.paint, [[-1.80, F.ROOF], [-1.97, F.DECK], [F.REAR, F.DECK], [-2.88, F.ROOF]], -F.HW + 0.04, F.HW - 0.04);
-    /* the belly plate's lip, the sponson floor */
-    box(B.dark, -2.60, 2.66, -F.LW - 0.01, F.LW + 0.01, F.BOT - 0.02, F.BOT + 0.02);
     for (s = -1; s <= 1; s += 2) {
       /* the panel seams of the hull side (D1: six butts) and the bolt rows of the level I armour (A1) */
       [2.26, 1.04, 0.49, -0.05, -0.60, -1.14].forEach(function (xs) { sideBox(B.dark, s, F.HW, 0.012, xs - 0.012, xs + 0.012, F.SPON + 0.04, F.ROOF - 0.03); });
       sideBox(B.dark, s, F.HW, 0.01, -2.70, 2.90, 1.13, 1.145);
       for (x = -2.62; x < 2.85; x += 0.27) {
-        box(B.dark, x - 0.016, x + 0.016, s > 0 ? F.HW : -F.HW - 0.02, s > 0 ? F.HW + 0.02 : -F.HW, F.ROOF - 0.086, F.ROOF - 0.054);
+        /* the top row runs 0.07 m under the hull's top edge, down the glacis' slope forward of x 1.60 */
+        var zt = (x > 1.60 ? F.ROOF - (x - 1.60) * (F.ROOF - 1.06) / (F.NOSE - 1.60) : F.ROOF) - 0.07;
+        box(B.dark, x - 0.016, x + 0.016, s > 0 ? F.HW : -F.HW - 0.02, s > 0 ? F.HW + 0.02 : -F.HW, zt - 0.016, zt + 0.016);
         box(B.dark, x + 0.119, x + 0.151, s > 0 ? F.HW : -F.HW - 0.02, s > 0 ? F.HW + 0.02 : -F.HW, F.SPON + 0.044, F.SPON + 0.076);
       }
       /* the track guard's edge along the sponson foot and the front fender plate over the idler (A1) */
@@ -453,9 +457,9 @@ var HeroRedoPlaRocGround = (function () {
       for (k = -1; k <= 1; k += 2) bar(B.dark, [hx + 0.10, hy + k * 0.13, hz - 0.02], [hx + 0.22, hy + k * 0.12, hz + 0.08], 0.012);
       /* towing eyes on the nose and at the rear (D1) */
       cylY(B.dark, F.NOSE - 0.05, s * 0.55 - 0.05, s * 0.55 + 0.05, 0.98, 0.07, 10);
-      cylY(B.dark, -2.80, s * 0.62 - 0.05, s * 0.62 + 0.05, 0.62, 0.07, 10);
+      cylY(B.dark, -2.70, s * 0.62 - 0.05, s * 0.62 + 0.05, 0.62, 0.07, 10);
       /* rear lamps, the engine deck's grab rail */
-      box(B.glass, -2.95, -2.91, s * 1.12 - 0.07, s * 1.12 + 0.07, 1.48, 1.58);
+      box(B.glass, -2.93, -2.88, s * 1.12 - 0.07, s * 1.12 + 0.07, 1.48, 1.58);
       bar(B.dark, [-2.10, s * 1.20, F.DECK + 0.10], [-2.80, s * 1.20, F.DECK + 0.10], 0.012);
       bar(B.dark, [-2.10, s * 1.20, F.DECK], [-2.10, s * 1.20, F.DECK + 0.10], 0.012);
       bar(B.dark, [-2.80, s * 1.20, F.DECK], [-2.80, s * 1.20, F.DECK + 0.10], 0.012);
@@ -463,20 +467,38 @@ var HeroRedoPlaRocGround = (function () {
       box(B.dark, -1.75, -0.55, s * 1.16 - 0.05, s * 1.16 + 0.05, F.ROOF, F.ROOF + 0.04);
       box(B.paint, -0.50, -0.20, s * 1.16 - 0.07, s * 1.16 + 0.07, F.ROOF, F.ROOF + 0.05);
     }
-    /* the driver's hatch and periscopes on the glacis' top, left of centre (D1 side: x 2.2-1.6) */
-    box(B.paint, 1.70, 2.20, 0.10, 0.70, 1.38, 1.47);
-    cylZ(B.paint, 1.98, 0.40, 1.44, 1.52, 0.26, 16);
-    for (k = 0; k < 3; k++) box(B.glass, 2.20, 2.24, 0.15 + k * 0.20, 0.30 + k * 0.20, 1.40, 1.46);
+    /* the driver's hatch and periscopes on the glacis' top, ON THE CENTRE LINE (D1 front view: the hatch housing
+       under the gun, 0.66 m wide; A1: the periscope block below the gun; D1 side: x 2.2-1.6) */
+    box(B.paint, 1.70, 2.20, -0.30, 0.30, 1.28, 1.47);
+    cylZ(B.dark, 1.98, 0, 1.44, 1.49, 0.29, 16);
+    cylZ(B.paint, 1.98, 0, 1.44, 1.52, 0.26, 16);
+    for (k = 0; k < 3; k++) box(B.glass, 2.20, 2.24, -0.275 + k * 0.20, -0.125 + k * 0.20, 1.38, 1.45);
+    /* A1: the bolt heads of the level I armour over the glacis (two rows across it), along the sponson roof
+       beside the turret and round the engine deck's edge */
+    var gn = unit([(F.ROOF - 1.06) / (F.NOSE - 1.60), 0, 1]);
+    [2.27, 2.80].forEach(function (xg) {
+      var zg = F.ROOF - (xg - 1.60) * (F.ROOF - 1.06) / (F.NOSE - 1.60);
+      for (y = -1.20; y <= 1.21; y += 0.20) m8Bolt(B.dark, [xg, y, zg], gn);
+    });
+    for (s = -1; s <= 1; s += 2) {
+      for (x = -1.70; x < 1.56; x += 0.27) m8Bolt(B.dark, [x, s * 1.26, F.ROOF], [0, 0, 1]);
+      for (x = -2.10; x > -2.90; x -= 0.20) m8Bolt(B.dark, [x, s * 1.20, F.DECK], [0, 0, 1]);
+    }
+    for (y = -1.10; y <= 1.11; y += 0.20) m8Bolt(B.dark, [-2.89, y, F.DECK], [0, 0, 1]);
     /* the nose's bolted front plate and its light guards (A1) */
     for (y = -1.15; y <= 1.16; y += 0.23) cylX(B.dark, F.NOSE - 0.04, F.NOSE + 0.01, y, 0.98, 0.02, 0.02, 4);
     /* the engine deck: louvred grille panels, the access doors, the exhaust grille on the rear plate (D1, A1) */
     for (k = 0; k < 9; k++) box(B.dark, -2.85 + k * 0.10, -2.81 + k * 0.10, -0.95, -0.15, F.DECK, F.DECK + 0.02);
     box(B.dark, -2.85, -2.05, 0.15, 0.95, F.DECK, F.DECK + 0.012);
     box(B.paint, -2.80, -2.10, 0.20, 0.90, F.DECK + 0.012, F.DECK + 0.03);
-    for (k = 0; k < 6; k++) box(B.dark, -2.95, -2.90, -0.80, 0.80, 1.20 + k * 0.06, 1.23 + k * 0.06);
+    for (k = 0; k < 6; k++) {
+      /* the upper rear plate leans out from x -2.74 at the sponson line (z 0.80) to -2.88 at the roof (z 1.47) */
+      x = -2.74 - 0.14 * ((1.215 + k * 0.06) - F.SPON) / (F.ROOF - F.SPON);
+      box(B.dark, x - 0.04, x + 0.01, -0.80, 0.80, 1.20 + k * 0.06, 1.23 + k * 0.06);
+    }
     /* the tow pintle and the rear plate's stowage box */
-    box(B.dark, -3.05, -2.80, -0.12, 0.12, 0.70, 0.86);
-    box(B.paint, -3.02, -2.86, -1.25, -0.65, 0.90, 1.20);
+    box(B.dark, -3.05, -2.68, -0.12, 0.12, 0.70, 0.86);
+    box(B.paint, -3.02, -2.74, -1.25, -0.65, 0.90, 1.20);
   }
   function m8Gear(B) {
     var s, y, F = M8;
@@ -499,7 +521,10 @@ var HeroRedoPlaRocGround = (function () {
     }
   }
   function m8Wheel(W) {
-    var BODY = rgb(M8.P.base, 1.1), RIM = rgb(M8.P.base, 1.25), TYRE = [0.12, 0.125, 0.115], s, y, h, i, a, R = M8.RW;
+    /* vertex colours are LINEAR: the paint's sRGB hex taken to linear, so the wheels show the hull's green (A1),
+       not the pale grey-green the raw sRGB numbers gave */
+    function lin(c) { return c.map(function (v) { return Math.pow(v, 2.2); }); }
+    var BODY = lin(rgb(M8.P.base, 0.92)), RIM = lin(rgb(M8.P.base, 1.30)), TYRE = [0.022, 0.023, 0.020], s, y, h, i, a, R = M8.RW;
     for (s = -1; s <= 1; s += 2) {
       y = s * M8.TY;
       for (h = -1; h <= 1; h += 2) {
@@ -524,38 +549,54 @@ var HeroRedoPlaRocGround = (function () {
     var s, k, i, a, F = M8, GZ = F.GZ, TOP = 0.84;
     loftN(B.paint, [m8Plan(0.0, 0.95, 0.50, 1.04, -1.33, 0.88), m8Plan(0.21, 1.56, 0.62, 1.19, -1.40, 0.98),
                     m8Plan(0.68, 1.52, 0.58, 1.10, -1.52, 0.94), m8Plan(TOP, 1.30, 0.48, 0.80, -1.50, 0.78)]);
+    /* A1: bolt heads round the turret roof's edge, 0.07 m in from it */
+    var RP = m8Plan(TOP, 1.30, 0.48, 0.80, -1.50, 0.78), n0;
+    for (k = 0; k < RP.length; k++) {
+      var p0 = RP[k], p1 = RP[(k + 1) % RP.length], ex = p1[0] - p0[0], ey = p1[1] - p0[1], el = Math.sqrt(ex * ex + ey * ey);
+      var nx = ey / el, ny = -ex / el;
+      if (nx * (p0[0] - 0.0) + ny * p0[1] > 0) { nx = -nx; ny = -ny; }
+      /* A1: the top edges of the bolted side plates stand a little proud of the roof, a low lip round it
+         (not across the front face, where the mantlet is) */
+      if (k > 0) slab(B.paint, [p0[0] + ex * 0.5 + nx * 0.02, p0[1] + ey * 0.5 + ny * 0.02, TOP + 0.025], [ex / el, ey / el, 0], [nx, ny, 0], [0, 0, 1], el * 0.5, 0.018, 0.035);
+      n0 = Math.max(1, Math.round((el - 0.20) / 0.20));
+      for (i = 0; i <= n0; i++) {
+        var tt = (0.10 + i * (el - 0.20) / n0) / el;
+        m8Bolt(B.dark, [p0[0] + ex * tt + nx * 0.07, p0[1] + ey * tt + ny * 0.07, TOP], [0, 0, 1]);
+      }
+    }
     /* the ring's skirt under the turret */
     cylZ(B.dark, 0, 0, -0.03, 0.02, 1.00, 24);
     /* the flat front face and the mantlet, the gun with its collar and pepperpot muzzle brake (A1, D1) */
     box(B.paint, 1.50, 1.70, -0.30, 0.30, GZ - 0.24, GZ + 0.22);
-    cylX(B.paint, 1.70, 1.95, 0, GZ, 0.15, 0.12, 16);
-    cylX(B.dark, 1.95, 4.00, 0, GZ, 0.085, 0.080, 16);
-    cylX(B.dark, 3.95, 4.08, 0, GZ, 0.10, 0.10, 16);
-    cylX(B.dark, 4.08, F.MUZ - 0.42, 0, GZ, 0.075, 0.070, 16);
-    cylX(B.dark, F.MUZ - 0.42, F.MUZ, 0, GZ, 0.105, 0.105, 16);
-    for (k = 0; k < 4; k++) for (i = 0; i < 8; i++) {
-      a = i / 8 * TAU;
-      slab(B.glass, [F.MUZ - 0.355 + k * 0.09, Math.cos(a) * 0.104, GZ + Math.sin(a) * 0.104], [1, 0, 0], [0, -Math.sin(a), Math.cos(a)], [0, Math.cos(a), Math.sin(a)], 0.022, 0.018, 0.004);
+    /* D1 side view: the mantlet's collar to world x 2.15, the thick rear tube (thermal sleeve) to 3.85 with its
+       joint at 3.17, the thin chase to 5.74, the pepperpot brake 5.74..6.08 (A1: a clamp ring on the chase,
+       rows of round ports round the brake) */
+    cylX(B.paint, 1.70, 1.92, 0, GZ, 0.15, 0.125, 16);
+    cylX(B.dark, 1.90, 3.60, 0, GZ, 0.105, 0.100, 16);
+    cylX(B.dark, 2.89, 2.95, 0, GZ, 0.112, 0.112, 16);
+    cylX(B.dark, 3.58, 3.64, 0, GZ, 0.100, 0.082, 16);
+    cylX(B.dark, 3.62, F.MUZ - 0.34, 0, GZ, 0.080, 0.075, 16);
+    cylX(B.dark, F.MUZ - 0.36, F.MUZ, 0, GZ, 0.095, 0.095, 16);
+    for (k = 0; k < 5; k++) for (i = 0; i < 8; i++) {
+      a = (i + (k % 2) * 0.5) / 8 * TAU;
+      slab(B.glass, [F.MUZ - 0.30 + k * 0.06, Math.cos(a) * 0.094, GZ + Math.sin(a) * 0.094], [1, 0, 0], [0, -Math.sin(a), Math.cos(a)], [0, Math.cos(a), Math.sin(a)], 0.016, 0.016, 0.004);
     }
     cylX(B.glass, F.MUZ - 0.01, F.MUZ + 0.005, 0, GZ, 0.06, 0.06, 12);
     /* the coaxial MG port and the gunner's sight head on the roof (D1 front: the box right of the gun) */
-    cylX(B.dark, 1.62, 1.78, 0.36, GZ - 0.05, 0.03, 0.03, 8);
+    cylX(B.dark, 1.48, 1.74, 0.36, GZ - 0.05, 0.03, 0.03, 8);
     box(B.paint, 0.85, 1.25, -0.62, -0.30, TOP, TOP + 0.20);
     box(B.glass, 1.25, 1.27, -0.58, -0.34, TOP + 0.05, TOP + 0.16);
     for (s = -1; s <= 1; s += 2) {
-      /* the smoke grenade clusters on each front cheek, eight tubes (D1 front, A1) */
+      /* the smoke grenade clusters on each front cheek: eight tubes in two columns of four, the outer column
+         set a half tube higher, each grenade's pale nose cap showing (A1; D1 front) */
       for (k = 0; k < 8; k++) {
-        var cy = s * (0.82 + (k % 3) * 0.10), cz = 0.30 + Math.floor(k / 3) * 0.12 + (k % 3 === 1 ? 0.06 : 0);
-        cyl(B.dark, [1.18, cy, cz], [1.42, cy, cz + 0.06], 0.045, 0.045, 8);
+        var cy = s * (0.86 + (k % 2) * 0.11), cz = 0.28 + Math.floor(k / 2) * 0.10 + (k % 2) * 0.05;
+        cyl(B.dark, [1.18, cy, cz], [1.46, cy, cz + 0.06], 0.045, 0.045, 8);
+        cyl(B.metal, [1.455, cy, cz + 0.059], [1.475, cy, cz + 0.063], 0.036, 0.030, 8);
       }
       box(B.paint, 1.05, 1.20, s * 0.78 - 0.02, s * 1.05 + 0.02, 0.22, 0.70);
-      /* bolt rows on the turret sides (A1), the lifting eyes, the team strips */
-      for (k = 0; k < 12; k++) {
-        var bx = 1.20 - k * 0.22;
-        cylY(B.dark, bx, s * 1.12, s * 1.16, 0.55, 0.02, 4);
-        cylY(B.dark, bx - 0.11, s * 1.17, s * 1.20, 0.25, 0.02, 4);
-      }
-      cylY(B.dark, 1.35, s * 0.55 - 0.02, s * 0.55 + 0.02, TOP + 0.06, 0.06, 10);
+      /* the lifting eyes, the team strips (the side bolts: after this loop) */
+      cylY(B.dark, 1.12, s * 0.55 - 0.02, s * 0.55 + 0.02, TOP + 0.05, 0.06, 10);
       cylY(B.dark, -1.30, s * 0.70 - 0.02, s * 0.70 + 0.02, TOP + 0.06, 0.06, 10);
       sideBox(B.team, s, 1.11, 0.02, -1.10, -0.40, 0.62, 0.70);
       /* the stowage rack round the bustle */
@@ -563,12 +604,33 @@ var HeroRedoPlaRocGround = (function () {
       bar(B.dark, [-1.48, s * 0.95, 0.20], [-1.85, s * 0.95, 0.20], 0.015);
       bar(B.dark, [-1.85, s * 0.95, 0.20], [-1.85, s * 0.95, 0.45], 0.015);
     }
+    /* A1: the level I armour's bolt heads in three rows over every side face of the turret - the cheeks, the
+       sides, the bustle's corners and its back - laid on the loft between its 0.21 and 0.68 levels */
+    var LA = m8Plan(0.21, 1.56, 0.62, 1.19, -1.40, 0.98), LB = m8Plan(0.68, 1.52, 0.58, 1.10, -1.52, 0.94);
+    [0.30, 0.45, 0.58].forEach(function (zb, row) {
+      var f = (zb - 0.21) / 0.47, e, j, q0, q1, dx, dy, dl, nx, ny, nb, t;
+      for (e = 1; e < 8; e++) {
+        j = (e + 1) % 8;
+        q0 = [LA[e][0] + (LB[e][0] - LA[e][0]) * f, LA[e][1] + (LB[e][1] - LA[e][1]) * f];
+        q1 = [LA[j][0] + (LB[j][0] - LA[j][0]) * f, LA[j][1] + (LB[j][1] - LA[j][1]) * f];
+        dx = q1[0] - q0[0]; dy = q1[1] - q0[1]; dl = Math.sqrt(dx * dx + dy * dy);
+        nx = dy / dl; ny = -dx / dl;
+        if (nx * q0[0] + ny * q0[1] < 0) { nx = -nx; ny = -ny; }
+        nb = Math.max(1, Math.round((dl - 0.16) / 0.22));
+        for (i = 0; i <= nb; i++) {
+          t = (0.08 + (i + (row % 2) * 0.5) * (dl - 0.16) / nb) / dl;
+          if (t > 1 - 0.08 / dl) continue;
+          m8Bolt(B.dark, [q0[0] + dx * t, q0[1] + dy * t, zb], [nx, ny, 0]);
+        }
+      }
+    });
     bar(B.dark, [-1.85, -0.95, 0.45], [-1.85, 0.95, 0.45], 0.015);
     bar(B.dark, [-1.85, -0.95, 0.20], [-1.85, 0.95, 0.20], 0.015);
     box(B.dark, -1.84, -1.50, -0.92, 0.92, 0.18, 0.21);
     box(B.paint, -1.80, -1.52, -0.80, -0.10, 0.21, 0.42);
     /* the commander's cupola on the right, its periscopes and hatch; the .50 cal on its tall pintle (D1 front) */
     var cx = -0.45, cyy = -0.75;
+    cylZ(B.dark, cx, cyy, TOP - 0.02, TOP + 0.03, 0.39, 18);
     cylZ(B.paint, cx, cyy, TOP - 0.02, TOP + 0.10, 0.36, 18);
     for (k = 0; k < 7; k++) { a = k / 7 * TAU; slab(B.glass, [cx + Math.cos(a) * 0.36, cyy + Math.sin(a) * 0.36, TOP + 0.06], [Math.cos(a), Math.sin(a), 0], [-Math.sin(a), Math.cos(a), 0], [0, 0, 1], 0.012, 0.06, 0.03); }
     cylZ(B.paint, cx, cyy, TOP + 0.10, TOP + 0.17, 0.28, 16);
@@ -578,6 +640,7 @@ var HeroRedoPlaRocGround = (function () {
     cylX(B.dark, cx - 0.35, cx - 0.20, cyy - 0.30, TOP + 0.56, 0.04, 0.04, 8);
     box(B.dark, cx - 0.12, cx + 0.05, cyy - 0.45, cyy - 0.36, TOP + 0.44, TOP + 0.56);
     /* the loader's hatch on the left; two whips at the left rear on their bases (D1 front: one by the centre) */
+    cylZ(B.dark, -0.35, 0.45, TOP - 0.02, TOP + 0.03, 0.33, 16);
     cylZ(B.paint, -0.35, 0.45, TOP - 0.02, TOP + 0.06, 0.30, 16);
     box(B.dark, -0.42, -0.28, 0.20, 0.70, TOP + 0.06, TOP + 0.08);
     [[-1.05, 0.07], [-1.15, 0.71]].forEach(function (q) {

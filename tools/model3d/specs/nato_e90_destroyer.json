@@ -1,0 +1,306 @@
+{
+  "key": "nato_e90_destroyer",
+  "team": "nato",
+  "name": "USS Arleigh Burke (DDG-51), Arleigh Burke-class Flight I guided missile destroyer, as built 1991",
+  "category": "ship",
+  "published": {
+    "len": 153.9,
+    "beam": 20.1,
+    "draught": 6.3,
+    "source": "en.wikipedia 'Arleigh Burke-class destroyer': Flight I 505 ft (153.9 m) overall, 66 ft (20.1 m) beam, 20.7 ft (6.3 m) draught, 9.3 m to the bottom of the sonar dome"
+  },
+  "len": 153.9,
+  "nodes": [
+    "turret"
+  ],
+  "engine_contract": {
+    "row": "nato_e90_destroyer (js/eras.js), built by HeroBurkeFlights.build in js/hero/us_burke_ddg.js (flight 1); the same builder draws nato_e00_destroyer and destroyer_n",
+    "current_nodes": "one 'turret' group: the 5-inch Mk 45 on the forecastle, origin on its ring centre, barrel along +X; every static part merged into one mesh per material (hull, deck, sup, pad, vls, rad, dark, metal, glass, team)",
+    "len_rule": "UNIT_MODELS[key].len = 153.9 = the measured X extent (render3d scales by it)"
+  },
+  "references": [
+    {
+      "name": "[P1] USN coloured profile 'Arleigh Burke (DDG 51 - Flight I)'",
+      "source": "Wikimedia Commons, US Navy, public domain; not cached here: Commons returned 429 to this batch's fetches (2026-11-26); kept as 'quarter' (no outline gated) until a builder caches it and sets crop, scale and origin",
+      "view": "quarter",
+      "exact": false,
+      "note": "The scale drawing the hull and every height in js/hero/us_burke_ddg.js were measured from by the earlier builder: 8.19 px/m, 153.9 m between the transom and the stem head. The landmark stations below are that builder's readings, carried over from the file's header and code."
+    },
+    {
+      "name": "[P2] USN rendered profile 'Arleigh Burke (Flight IIA)'",
+      "source": "Wikimedia Commons, US Navy, public domain; not cached here: Commons returned 429 to this batch's fetches (2026-11-26); kept as 'quarter' (no outline gated) until a builder caches it and sets crop, scale and origin",
+      "view": "quarter",
+      "exact": false,
+      "note": "The IIA hangar block, the stacks and the after faces a deck higher (for the sister rows)."
+    },
+    {
+      "name": "[p1] DDG-51 from her port quarter off New England, 22 June 1991 (Bath Iron Works)",
+      "source": "Wikimedia Commons, public domain; not cached here: Commons returned 429 to this batch's fetches (2026-11-26); kept as 'quarter' (no outline gated) until a builder caches it and sets crop, scale and origin",
+      "view": "quarter",
+      "exact": false,
+      "note": "The stepped-down flight deck, the Harpoon quads crossing the deck, the black upper mast."
+    },
+    {
+      "name": "[p2] 'USS Arleigh Burke (DDG-51) underway during sea trials in 1991.jpg', bow on",
+      "source": "Wikimedia Commons, US Navy, public domain; not cached here: Commons returned 429 to this batch's fetches (2026-11-26); kept as 'quarter' (no outline gated) until a builder caches it and sets crop, scale and origin",
+      "view": "quarter",
+      "exact": false,
+      "note": "The flare and knuckle, the stem anchor, the forward Phalanx on the deckhouse front, the two forward SPY-1D faces."
+    },
+    {
+      "name": "[p3] DDG-51 port beam, Norfolk, 18 September 1999",
+      "source": "Wikimedia Commons, US Navy, public domain; not cached here: Commons returned 429 to this batch's fetches (2026-11-26); kept as 'quarter' (no outline gated) until a builder caches it and sets crop, scale and origin",
+      "view": "quarter",
+      "exact": false,
+      "note": "Stations of the stacks, the mast and the after house."
+    }
+  ],
+  "must_show": [
+    "a wide hull flaring out from the waterline to the deck edge, with a hard knuckle along the forward third (x 25 .. 76), beam 20.1 m at the deck edge amidships",
+    "a raked stem, about 10 m of rake from the waterline to the stem head at x 76.95; the SQS-53 dome under the forefoot",
+    "the flight deck a deck lower than the main deck (z 4.25 against 6.45), stepped down abaft x -51.0, with the team ring on it and no hangar",
+    "one raked, chamfered superstructure block, every wall leaning in and every corner cut: the 01 level from x -28.8, the SPY block x 10.6 .. 29.4 to the pilot house roof z 17.4",
+    "four SPY-1D octagons, all on the forward block's four chamfered corners, centres at z 14.25 (Flight I: the after pair at the same height as the forward pair), haze grey a shade over the house (#7b8288) in a darker frame ring (#5f666c), not radome white",
+    "the raked plated tripod mast from x 19.2 at its foot to x 12.7 at z 37.3, two big yards, painted black from the lower yard up (Flight I)",
+    "two trapezoid stacks, every face leaning in, open sooted tops with louvre bars: the forward one at x 5.85 (top z 20.2), the after one at x -10.6 (top z 20.05)",
+    "the 29-cell Mk 41 field on the forecastle at x 39.5 (4.5 x 6.6 m, four modules) and the 61-cell field on the main deck at x -38.9 (9.0 x 6.6 m, eight modules), each with its strikedown crane",
+    "the 5-inch/54 Mk 45 Mod 1 in its rounded house on the forecastle at x 48.0 (node turret)",
+    "two Phalanx white domes: forward on the 02-level ledge in front of the SPY block at x 30.6, aft at the after end of the after house at x -26.6 in its railed tub",
+    "the two Harpoon quads crossing the deck abaft the after house at x -32.6 (starboard) and -30.4 (port)",
+    "two RHIBs in davits in the starboard recess of the after house's 01 level (x -28 .. -12), life-raft cradles to port",
+    "lifelines along every exposed deck edge, the solid bulwark round the stem head (x 68.5 .. 76.6), bitts at x 58, 36 and -20 each side, the jackstaff at x 76.2"
+  ],
+  "landmarks": [
+    {
+      "name": "5-inch ring centre",
+      "ref": 0,
+      "expect_m": [
+        48.0,
+        0.0,
+        null
+      ],
+      "tol_m": 0.6,
+      "model_at": {
+        "node": "turret",
+        "index": 0
+      },
+      "note": "[P1] station of the gun, from the file's X_GUN"
+    },
+    {
+      "name": "forward Mk 41 field centre",
+      "ref": 0,
+      "expect_m": [
+        39.5,
+        0.0,
+        null
+      ],
+      "tol_m": 0.4,
+      "model_at": {
+        "path": "vls",
+        "in_m": [
+          30,
+          -6,
+          0,
+          46,
+          6,
+          15
+        ],
+        "point": [
+          "mid",
+          "mid",
+          null
+        ]
+      },
+      "note": "[P1] the 29-cell field, 4.5 x 6.6 m"
+    },
+    {
+      "name": "after Mk 41 field centre",
+      "ref": 0,
+      "expect_m": [
+        -38.9,
+        0.0,
+        null
+      ],
+      "tol_m": 0.4,
+      "model_at": {
+        "path": "vls",
+        "in_m": [
+          -46,
+          -6,
+          0,
+          -30,
+          6,
+          15
+        ],
+        "point": [
+          "mid",
+          "mid",
+          null
+        ]
+      },
+      "note": "[P1] the 61-cell field on the main deck before the step: eight modules, 9.0 x 6.6 m (twice the four-module forward field's 4.5 x 6.6)"
+    },
+    {
+      "name": "forward stack top",
+      "ref": 0,
+      "expect_m": [
+        null,
+        null,
+        20.2
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "path": "dark",
+        "in_m": [
+          0.5,
+          -3.5,
+          18.5,
+          11.2,
+          3.5,
+          21.5
+        ],
+        "point": [
+          null,
+          null,
+          "max"
+        ]
+      },
+      "note": "[P1] casing to z 18.85, sooted top 1.35 m over it"
+    },
+    {
+      "name": "after stack top",
+      "ref": 0,
+      "expect_m": [
+        null,
+        null,
+        20.05
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "path": "dark",
+        "in_m": [
+          -16.0,
+          -3.5,
+          18.5,
+          -5.2,
+          3.5,
+          21.5
+        ],
+        "point": [
+          null,
+          null,
+          "max"
+        ]
+      },
+      "note": "[P1] casing to z 18.7, sooted top 1.35 m over it"
+    },
+    {
+      "name": "starboard forward SPY-1D face centre height",
+      "ref": 3,
+      "expect_m": [
+        null,
+        null,
+        14.25
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "path": "spy",
+        "in_m": [
+          24.0,
+          -8.5,
+          11.5,
+          30.5,
+          -2.0,
+          17.0
+        ],
+        "point": [
+          null,
+          null,
+          "mid"
+        ]
+      },
+      "note": "[P1, p2] face centre at the 02/03 level"
+    },
+    {
+      "name": "stem head",
+      "ref": 0,
+      "expect_m": [
+        76.95,
+        null,
+        null
+      ],
+      "tol_m": 0.2,
+      "model_at": {
+        "path": "hull",
+        "point": [
+          "max",
+          null,
+          null
+        ]
+      },
+      "note": "[P1] stem head station; model x origin at mid-length"
+    },
+    {
+      "name": "flight deck surface",
+      "ref": 2,
+      "expect_m": [
+        null,
+        null,
+        4.41
+      ],
+      "tol_m": 0.15,
+      "model_at": {
+        "path": "pad",
+        "in_m": [
+          -76,
+          -7,
+          3,
+          -52,
+          7,
+          5
+        ],
+        "point": [
+          null,
+          null,
+          "max"
+        ]
+      },
+      "note": "[P1, p1] the flight deck a deck below the main deck: the builder's zfd 4.25 is the deck at the side, the walking surface 0.16 over it (4.41)"
+    },
+    {
+      "name": "after Mk 41 field after edge",
+      "ref": 0,
+      "expect_m": [
+        -43.4,
+        null,
+        null
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "path": "vls",
+        "in_m": [
+          -50,
+          -6,
+          0,
+          -30,
+          6,
+          15
+        ],
+        "point": [
+          "min",
+          null,
+          null
+        ]
+      },
+      "note": "9.0 m field centred at x -38.9; the field was 7.2 m long (edge -42.5) before the batch-5 review"
+    }
+  ],
+  "not_confirmed": [
+    "the outline: no reference cached in this repository (Commons 429), so no outline is gated; every station is the earlier builder's reading of [P1]",
+    "the exact face size of SPY-1D (drawn as octagons 3.96 m across flats)",
+    "the louvre-bar pattern in the open stack tops (five bars across, drawn from the profile's dark top)",
+    "the underwater hull and the sonar dome's shape",
+    "the RHIB davit gear and the exact recess depth",
+    "the 61-cell field's footprint (9.0 x 6.6 m from two four-module fields' worth; a Mk 41 module is roughly 3.4 x 2.6 m by memory, which would give about 10.4 x 6.8) and its long axis (drawn along x)"
+  ]
+}
