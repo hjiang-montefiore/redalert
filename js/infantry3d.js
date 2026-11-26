@@ -377,13 +377,15 @@ var Infantry3D = (function () {
       cloth: new THREE.MeshStandardMaterial({
         color: tex ? 0xffffff : CP.c, map: tex || null, roughness: 0.94, metalness: 0.02 }),
       gear:  mat(THREE, CP.gear, 0.93, 0.03),
-      strap: mat(THREE, CP.gear, 0.95, 0.02),
       skin:  mat(THREE, 0xa9835f, 0.92, 0.0),
       gun:   mat(THREE, 0x25282b, 0.55, 0.42),
       wood:  mat(THREE, 0x6a4a2c, 0.80, 0.05),
       glass: new THREE.MeshStandardMaterial({ color: 0x1a2a30, roughness: 0.25, metalness: 0.55 }),
       team:  mat(THREE, (C && C.team) || 0x3f7fd0, 0.70, 0.10),
     };
+    /* straps were their own material at roughness 0.95 against the gear's
+       0.93, same colour: one material, so they merge with the gear */
+    K.strap = K.gear;
 
     var hipZ = 0.955, shZ = 1.435;
     var hw = 0.163 + V.dw, hd = 0.098 + V.dd;   /* torso half width / depth */
@@ -631,7 +633,103 @@ var Infantry3D = (function () {
     if (Math.abs(bb.min.z) > 1e-4)
       for (var q = 0; q < g.children.length; q++) g.children[q].position.z -= bb.min.z;
 
+    packFigure(THREE, g);
     return g;
+  }
+
+  /* ------------------------------------------------------------ packing */
+
+  /* Every part above is its own Mesh, which made a figure cost 43-54 draw
+     calls for ~1.2k triangles, and render3d neither merges nor instances, so
+     a squad cost hundreds. The only parts the engine moves are the two legs
+     (render3d's walk cycle swings the thigh named leg.L / leg.R about its hip
+     and folds userData.shin about the knee), so those keep their own meshes
+     and transforms; everything else is baked into one mesh per material,
+     with its world transform, normals and UVs, so the picture is the same.
+     The figure then costs: 2 x (thigh, shin, boot) + one per material used
+     by the rest (cloth, gear, skin, gun, team, and wood / glass where the
+     row has them) = 11-13.
+
+     hero_kit.js merges as it draws (its pens write triangles straight into
+     per-material buffers) and loads after this file, so there is nothing
+     there to call on finished meshes: this is the small hand-written merge. */
+  function mergeParts(THREE, parts) {
+    var nv = 0, ni = 0, p, i;
+    for (p = 0; p < parts.length; p++) {
+      var q0 = parts[p].geo, n0 = q0.attributes.position.count;
+      nv += n0; ni += q0.index ? q0.index.count : n0;
+    }
+    var pos = new Float32Array(nv * 3), nor = new Float32Array(nv * 3), uv = new Float32Array(nv * 2);
+    var idx = nv > 65535 ? new Uint32Array(ni) : new Uint16Array(ni);
+    var v = new THREE.Vector3(), nm = new THREE.Matrix3(), o = 0, k = 0;
+    for (p = 0; p < parts.length; p++) {
+      var q = parts[p].geo, m = parts[p].m, P = q.attributes.position,
+          N = q.attributes.normal, U = q.attributes.uv, n = P.count, I = q.index;
+      nm.getNormalMatrix(m);
+      var flip = m.determinant() < 0;
+      for (i = 0; i < n; i++) {
+        v.fromBufferAttribute(P, i).applyMatrix4(m);
+        pos[(o + i) * 3] = v.x; pos[(o + i) * 3 + 1] = v.y; pos[(o + i) * 3 + 2] = v.z;
+        if (N) {
+          v.fromBufferAttribute(N, i).applyMatrix3(nm).normalize();
+          nor[(o + i) * 3] = v.x; nor[(o + i) * 3 + 1] = v.y; nor[(o + i) * 3 + 2] = v.z;
+        }
+        /* a part with no UVs samples texel (0, 0) everywhere, as it did alone */
+        if (U) { uv[(o + i) * 2] = U.getX(i); uv[(o + i) * 2 + 1] = U.getY(i); }
+      }
+      var cnt = I ? I.count : n;
+      for (i = 0; i + 2 < cnt; i += 3) {
+        var a = I ? I.getX(i) : i, b = I ? I.getX(i + 1) : i + 1, c = I ? I.getX(i + 2) : i + 2;
+        idx[k++] = o + a;
+        idx[k++] = o + (flip ? c : b);
+        idx[k++] = o + (flip ? b : c);
+      }
+      o += n;
+    }
+    var g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    g.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
+    g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+    g.setIndex(new THREE.BufferAttribute(k < ni ? idx.slice(0, k) : idx, 1));
+    g.computeBoundingBox(); g.computeBoundingSphere();
+    return g;
+  }
+
+  /* bake every mesh under `root` (excluding `skip`) into one mesh per
+     material, in root's own space, and hang the results on `host` */
+  function bakeInto(THREE, root, list, host) {
+    root.updateMatrixWorld(true);
+    var inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
+    var order = [], by = {};
+    for (var c = 0; c < list.length; c++) {
+      list[c].traverse(function (o) {
+        if (!o.isMesh) return;
+        var id = o.material.uuid;
+        if (!by[id]) { by[id] = { mat: o.material, parts: [] }; order.push(id); }
+        by[id].parts.push({ geo: o.geometry, m: new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld) });
+      });
+    }
+    for (var r = 0; r < list.length; r++) if (list[r].parent) list[r].parent.remove(list[r]);
+    for (var j = 0; j < order.length; j++) {
+      var B = by[order[j]];
+      host.add(new THREE.Mesh(mergeParts(THREE, B.parts), B.mat));
+      for (var d = 0; d < B.parts.length; d++) B.parts[d].geo.dispose();
+    }
+  }
+
+  function packFigure(THREE, g) {
+    var rest = [], legs = [];
+    for (var i = 0; i < g.children.length; i++) {
+      var ch = g.children[i];
+      if (ch.name === "leg.L" || ch.name === "leg.R") legs.push(ch); else rest.push(ch);
+    }
+    /* each leg: the thigh and the shin stay as they are (they swing), and
+       whatever hangs on the shin (boot, knee pad) becomes one mesh on it */
+    for (var l = 0; l < legs.length; l++) {
+      var sh = legs[l].userData.shin;
+      if (sh && sh.children.length > 1) bakeInto(THREE, sh, sh.children.slice(), sh);
+    }
+    bakeInto(THREE, g, rest, g);
   }
 
   /* A hand-finished mesh already in UNIT_MODELS wins unless it is marked
