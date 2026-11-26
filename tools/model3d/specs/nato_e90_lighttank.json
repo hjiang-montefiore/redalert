@@ -1,0 +1,96 @@
+{
+ "key": "nato_e90_lighttank",
+ "team": "nato",
+ "name": "M8 Armored Gun System (XM8 AGS), level I armour, 105 mm XM35",
+ "category": "veh",
+ "published": {
+  "len": 9.13,
+  "hull_len": 6.10,
+  "width": 2.69,
+  "height": 2.55,
+  "source": "US Army dimensioned drawing 'M8 AGS dimensions.png' (Wikimedia Commons): hull 240 in (610 cm), gun overhang 121.4 in (308 cm), width 106 in (269 cm) over the lamp housings / 100 in (254 cm) over the tracks, height 100.6 in (255 cm) to the cupola, 69.8 in (177 cm) to the engine deck, ground clearance 16 in (41 cm), road wheel base 142.2 in (361 cm), track 15 in (38 cm). The gated len is the model's X extent: hull rear (tow pintle, x -3.05) to the muzzle (x +6.08)."
+ },
+ "len": 9.13,
+ "nodes": ["turret", "roadwheel"],
+ "engine_contract": {
+  "row": "js/hero/redo_pla_roc_ground.js registers UNIT_MODELS.nato_e90_lighttank = { len 9.13, build HeroRedoPlaRocGround.buildM8 }",
+  "current_nodes": "one 'turret' group (origin on the ring at the hull roof, x +0.25 y 0 z 1.47; gun along +X) and six 'roadwheel' groups (one per station, both sides, origin on the axle at z 0.38, axle along Y)"
+ },
+ "references": [
+  {
+   "name": "[D1] US Army dimensioned drawing, side view",
+   "image": "ref/nato_e90_lighttank/d1_dimensions.png",
+   "source": "Wikimedia Commons 'M8 AGS dimensions.png', 1399 x 451 (US Army, public domain); cached in the scratchpad q_redo_prg_ref",
+   "view": "side",
+   "crop": [420, 30, 1240, 300],
+   "flip": true,
+   "px_per_m": 87.1,
+   "origin_px": [962.5, 297],
+   "mask": "dark",
+   "mask_opts": { "threshold": 160, "fill": true, "close_px": 2 },
+   "window_m": [-3.10, 0.02, 6.15, 2.62],
+   "ignore_m": [[5.95, 0.0, 6.20, 0.88], [2.98, 0.0, 3.12, 0.40]],
+   "align_m": 0.06,
+   "exact": false,
+   "note": "THE MEASURING DRAWING. Nose LEFT in the picture (flipped). 87.1 px a metre from the published 240 in hull (nose px 697, rear px 1228); ground line y 297; mid hull px 962.5 is model x 0. The dimension leader lines at the muzzle (px 430) and the nose (px 697) reach into the window and are left out by ignore_m; the whips are above the window."
+  },
+  {
+   "name": "[D1f] US Army dimensioned drawing, front view",
+   "image": "ref/nato_e90_lighttank/d1_dimensions.png",
+   "source": "as D1",
+   "view": "quarter",
+   "crop": [140, 30, 420, 310],
+   "exact": false,
+   "note": "For the reviewer, 85.5 px a metre from the 106 in width: the turret's sides leaning in to a narrow roof, the gun high on the centre line in a small flat front face, the smoke clusters on both cheeks, the cupola and .50 cal on the vehicle's RIGHT, the two whips at the left rear, the driver's hatch housing on the centre line under the gun, the lamp housings at the glacis corners."
+  },
+  {
+   "name": "[A1] M8 AGS level I armour, 1994, port front quarter",
+   "image": "ref/nato_e90_lighttank/a1_front_left.jpg",
+   "source": "Wikimedia Commons 'M8 Armored Gun System level 1 armor 1994.jpg' (US Army), 1400 x 903, saved here at 1024 x 660",
+   "view": "quarter",
+   "exact": false,
+   "note": "For the reviewer: the bolt heads all over the level I armour (hull sides, glacis, turret faces), the smoke grenade clusters (two columns of four, pale nose caps), the long 105 mm with a step half way and the pepperpot muzzle brake, the .50 cal on its curved pintle, two whips, the headlamp housings with guard rings, the front fenders, six road wheels in the hull's green with dark rubber. The camouflage-free single green is what the model paints; any markings are not drawn."
+  }
+ ],
+ "must_show": [
+  "six road wheels a side at x +1.85, +1.12, +0.39, -0.27, -1.02, -1.76 (radius 0.31, centres z 0.38), no return rollers, front idler at x +2.76 z 0.60, REAR drive sprocket at x -2.46 z 0.62 [D1 side]",
+  "the low hull: belly at z 0.42, the full-width upper hull over the tracks from the sponson line z 0.80 to the roof z 1.47, the shallow glacis from the roof at x +1.60 down to the nose at x +3.05, z 1.06 [D1 side]",
+  "the raised engine deck at the rear, z 1.76 from x -1.97 to the rear plate at x -2.93, its back plate leaning out over the track [D1 side, A1]",
+  "the wide low turret set forward on the ring at x +0.25: roof z 2.31, front face at x ~+1.80, the autoloader bustle running back to x ~-1.27, the sides leaning in to a narrower roof, the cheeks undercut [D1 side and front, A1]",
+  "the 105 mm XM35 on the centre line at z 1.92: thick rear tube from the mantlet (x 2.15) to x 3.85 with a joint at 3.17, the thinner chase to x 5.74, the pepperpot muzzle brake x 5.74..6.08 [D1 side, A1]",
+  "smoke grenade clusters on both front cheeks (y +-0.86..0.97, z 1.75..2.10), two columns of four tubes [A1, D1 front]",
+  "the commander's cupola on the RIGHT rear of the roof (x -0.20, y -0.75) with the .50 cal on its tall pintle, the loader's hatch on the left (x -0.10, y +0.45), two whips at the left rear (x -0.80 / -0.90) [D1 front, A1]",
+  "the driver's hatch housing on the centre line at the top of the glacis, x 1.70..2.20, with three periscopes facing forward [D1 front, A1]",
+  "the bolt heads of the level I armour: rows along both hull sides (z 1.40 under the top edge, following the glacis forward of x 1.60, and z 0.86 over the tracks), two rows across the glacis at x 2.27 and 2.80, three rows round the turret's faces at z 1.77 / 1.92 / 2.05, a ring round the turret roof 0.07 m in from its edge [A1]",
+  "the headlamp housings with guard rings on the glacis corners (x 2.55, y +-1.02), the front fenders over the idlers, tow eyes front and rear, the tow pintle on the rear plate [A1, D1]",
+  "plain paint: one coat of US green (#4d5638), no camouflage, numbers or markings; team colour in two small strips on the turret sides (x -0.85..-0.15, z 2.09..2.17)"
+ ],
+ "landmarks": [
+  { "name": "front road wheel hub", "ref": 0, "expect_m": [1.85, 0.35], "tol_m": 0.08, "model_at": { "node": "roadwheel", "index": 0 },
+    "note": "[D1] the first hub at px (801, 266)" },
+  { "name": "last road wheel hub", "ref": 0, "expect_m": [-1.76, 0.35], "tol_m": 0.08, "model_at": { "node": "roadwheel", "index": 5 },
+    "note": "[D1] the last hub at px (1116, 266): 142.2 in from the first" },
+  { "name": "muzzle", "ref": 0, "expect_m": [6.08, null], "tol_m": 0.08, "model_at": { "point": ["max", null] },
+    "note": "[D1] the brake's face at px 432; published overhang 121.4 in from the nose (3.05 + 3.08 = 6.13; read 6.09)" },
+  { "name": "hull rear", "ref": 0, "expect_m": [-3.05, null], "tol_m": 0.08, "model_at": { "in_m": [-3.2, -1.4, 0.4, -2.5, 1.4, 1.9], "point": ["min", null] },
+    "note": "[D1] the rear plate's top at px 1228 (the published 240 in hull ends here)" },
+  { "name": "engine deck", "ref": 0, "expect_m": [-2.50, 1.76], "tol_m": 0.06, "model_at": { "edge": "upper", "in_m": [-2.95, -1.12, 1.5, -2.0, 1.12, 2.0] },
+    "note": "[D1] published 69.8 in = 1.77 m; the deck line at px y 143 (the model's edge here is the engine access door, 0.03 m proud; the box keeps out the grab rails at y +-1.20)" },
+  { "name": "turret roof", "ref": 0, "expect_m": [0.95, 2.31], "tol_m": 0.06, "model_at": { "edge": "upper", "in_m": [-0.4, -0.7, 2.0, 1.6, 0.7, 2.45] },
+    "note": "[D1] the roof line at px y 96 between the cupola and the front" },
+  { "name": "gun chase top", "ref": 0, "expect_m": [4.50, 2.00], "tol_m": 0.05, "model_at": { "edge": "upper", "in_m": [4.40, -0.3, 1.6, 4.60, 0.3, 2.3] },
+    "note": "[D1] the chase's top line at px y 122 (axis z 1.92, radius 0.08)" },
+  { "name": "nose", "ref": 0, "expect_m": [3.05, null], "tol_m": 0.06, "model_at": { "in_m": [2.6, -1.4, 0.5, 3.3, 1.4, 1.2], "point": ["max", null] },
+    "note": "[D1] the nose at px 697 (STA 88.875)" }
+ ],
+ "not_confirmed": [
+  "the turret's plan between the side and front views: lofted through four levels measured off D1, no top view found",
+  "the hull's plan at the nose: D1 front shows a straight full-width front",
+  "the engine deck's grille and door pattern (no top view)",
+  "the autoloader's ammunition resupply door on the bustle: its place was not seen in any reference, not drawn",
+  "the commander's cupola periscope count (7 drawn) and the gunner's sight head's size",
+  "the turret roof lip: A1 shows the side plates' top edges standing proud of the roof; its height (0.06 m) is by eye",
+  "the D1 front view's two round-cornered boxes beyond the hull sides at z 1.2..1.6 (the 'reducible to 92 in' width): not identified (mirrors or lamp housings), not drawn",
+  "level II / III add-on armour and the crew: not drawn"
+ ]
+}
