@@ -97,6 +97,17 @@
        radome and Crowsnest pod sizes; the stabiliser side.
      - Sea Hawk: the main gear track (3.6 m); the Sky under-colour line.
 
+   BATCH 4 (floating parts, gate scan): own parts seated - the Merlin's and Sea King's
+   rescue-hoist arms, the Merlin's door handles and spine beacon, the Lynx's tail rotor shaft
+   (into the hub) and tail lamp (onto the fin), the E-7's belly blades (on the belly line);
+   reused builds' fittings seated by nudge() in this file (gb_misc2.js HC4 door handles and
+   walkway steps, early_helos.js Whirlwind / S-58 boom hanger covers, door fittings and tail
+   lamp, fr_helos.js NH90 sponson lamps), the NH90's zero-area triangles dropped and its flat
+   blades given the blade coat. Detail: the Merlin's nose mirrors ([ME2], [ME3]); the
+   Whirlwind's nose grille, cooling slots and door frame as parts, port side ([WW1]); the Wessex intake
+   guard and starboard grab handle ([WX1]); the Phantom FG.1 keeps us_f4_phantom.js's own
+   sheet, tinted (retint()). Spec: tools/model3d/specs/asw_helo_b.json.
+
    PAINT: plain, no national markings, numbers or titles. This file's own coats are a canvas sheet
    (panel joints, rivet rows, faded panels and grime streaks) multiplied by each coat's colour and
    box-projected; a reused build keeps its own sheet unless its row's scheme differs (then its
@@ -485,9 +496,96 @@ var HeroEuNavalAir = (function () {
       par.remove(m);
     });
   }
+  /* a reused build's textured skin recoloured in place: target and the map's own base colour as
+     authored hex (the source's colour before HeroKit.authorFor) */
+  function retint(V, root, pick, target, base) {
+    function lin(c) { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+    function srgb(v) { v = Math.max(0, Math.min(1, v)); return Math.round(255 * (v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055)); }
+    var B = (typeof HeroKit !== "undefined" && HeroKit.authorFor) ? HeroKit.authorFor(base) : base;
+    var made = {};
+    allMeshes(root, pick).forEach(function (m) {
+      var src = m.material, key = src.uuid;
+      if (!made[key]) {
+        var c = src.clone(), h = 0, k;
+        if (src.map) {
+          for (k = 16; k >= 0; k -= 8) h |= srgb(lin((target >> k) & 255) / Math.max(1e-4, lin((B >> k) & 255))) << k;
+        } else h = target;
+        c.color = new V.Color(h);
+        made[key] = c;
+      }
+      m.material = made[key];
+    });
+  }
   function byName(re) { return function (m) { return re.test(m.name || ""); }; }
   function hasMap(m) { return !!(m.material && m.material.map); }
   function findNode(root, name) { var f = null; root.traverse(function (o) { if (!f && o.name === name) f = o; }); return f; }
+  /* batch 4 (floating parts): a reused build's fitting that stands clear of
+     the skin it belongs on is moved onto it here, the source file left as
+     it is. Each fix is a box in the ROOT's frame [x0, y0, z0, x1, y1, z1]
+     and a shift [dx, dy, dz]: every triangle lying wholly inside the box is
+     shifted. A fitting the source has since put right is no longer in its
+     box, so the fix does nothing. Each fix states the triangles it expects
+     to catch (measured in review, scratchpad b4_rev_naval_air/moved.py); a
+     different count, none included, is reported with console.warn, so a
+     source change cannot re-shift a part or move a new one silently.
+     INTERIM: the fixes belong in the source files, and this goes then. */
+  function nudge(V, root, fixes, tag) {
+    var hits = fixes.map(function () { return 0; });
+    root.updateMatrixWorld(true);
+    var inv = new V.Matrix4().copy(root.matrixWorld).invert(), P = new V.Vector3();
+    allMeshes(root, function () { return true; }).forEach(function (m) {
+      var M = new V.Matrix4().multiplyMatrices(inv, m.matrixWorld), Mi = new V.Matrix4().copy(M).invert();
+      var g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry, p = g.attributes.position, hit = false, t, k, f;
+      for (f = 0; f < fixes.length; f++) {
+        var b = fixes[f][0], d = fixes[f][1];
+        for (t = 0; t + 2 < p.count; t += 3) {
+          var all = true, Q = [];
+          for (k = 0; k < 3 && all; k++) {
+            P.fromBufferAttribute(p, t + k).applyMatrix4(M);
+            if (P.x < b[0] || P.x > b[3] || P.y < b[1] || P.y > b[4] || P.z < b[2] || P.z > b[5]) all = false;
+            Q.push(P.clone());
+          }
+          if (!all) continue;
+          for (k = 0; k < 3; k++) {
+            Q[k].x += d[0]; Q[k].y += d[1]; Q[k].z += d[2];
+            Q[k].applyMatrix4(Mi);
+            p.setXYZ(t + k, Q[k].x, Q[k].y, Q[k].z);
+          }
+          hit = true; hits[f]++;
+        }
+      }
+      if (hit) { p.needsUpdate = true; m.geometry = g; }
+    });
+    fixes.forEach(function (fx, f) {
+      if (fx[2] !== undefined && hits[f] !== fx[2] && typeof console !== "undefined")
+        console.warn("[eu_naval_air] nudge " + (tag || root.name) + " fix " + f + ": caught " + hits[f] + " triangles, expected " + fx[2] +
+                     " - the source build has changed; check the fix");
+    });
+    return root;
+  }
+  /* zero-area triangles (a collapsed loft ring, a zero-length extrusion in a
+     reused build) are dropped: they draw nothing */
+  function dropDegenerate(V, root) {
+    root.updateMatrixWorld(true);
+    allMeshes(root, function () { return true; }).forEach(function (m) {
+      var g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry, p = g.attributes.position, keep = [], t;
+      var e = m.matrixWorld.elements, sc = Math.sqrt(e[0] * e[0] + e[1] * e[1] + e[2] * e[2]) || 1;
+      var a = new V.Vector3(), b = new V.Vector3(), c = new V.Vector3();
+      for (t = 0; t + 2 < p.count; t += 3) {
+        a.fromBufferAttribute(p, t); b.fromBufferAttribute(p, t + 1); c.fromBufferAttribute(p, t + 2);
+        if (b.sub(a).cross(c.sub(a)).length() * sc * sc >= 4e-6) keep.push(t);
+      }
+      if (keep.length * 3 === p.count) return;
+      var ng = new V.BufferGeometry();
+      Object.keys(g.attributes).forEach(function (n) {
+        var A = g.attributes[n], s = A.itemSize, out = new Float32Array(keep.length * 3 * s), i, j;
+        for (i = 0; i < keep.length; i++) for (j = 0; j < 3 * s; j++) out[i * 3 * s + j] = A.array[keep[i] * s + j];
+        ng.setAttribute(n, new V.BufferAttribute(out, s));
+      });
+      m.geometry = ng;
+    });
+    return root;
+  }
   /* an empty named point (refuelling attach points) */
   function point(V, root, name, x, y, z) {
     var o = new V.Object3D();
@@ -620,6 +718,14 @@ var HeroEuNavalAir = (function () {
     function Z(h) { return SK.GROUND + h; }
     /* the repaint: the whole airframe one grey (no national markings) */
     repaint(V, g, byName(/^airframe$/), function () { return "top"; }, T);
+    /* batch 4: three HC4 fittings that stand clear of the skin, seated (see nudge): the starboard
+       cargo door's handle (drawn 0.47 m inside the hull, on the door rail's line), the walkway
+       steps (0.18 m under the stub sponsons' front, now under their bottom face) and the port
+       crew door's handle (2 cm off the skin) */
+    nudge(V, g, [[[0.87, -0.54, -0.08, 1.03, -0.48, -0.02], [0, -0.491, 0], 12],
+                 [[1.54, 1.06, -1.25, 1.96, 1.33, -1.19], [-0.30, 0, 0.185], 12],
+                 [[1.54, -1.33, -1.25, 1.96, -1.06, -1.19], [-0.30, 0, 0.185], 12],
+                 [[1.92, 1.00, -0.13, 2.08, 1.06, -0.07], [0, -0.03, 0], 12]], "seaking (HC4)");
     /* the HC4's fixed legs and single wheels give way to the HAS gear */
     var und = findNode(g, "undercarriage");
     if (und && und.parent) und.parent.remove(und);
@@ -661,7 +767,7 @@ var HeroEuNavalAir = (function () {
       G.metal.push(K.bar([SK.MW.x + 0.05, s * 1.74, Z(0.86)], [SK.MW.x + 0.20, s * 1.74, Z(0.66)], 0.025, 4));
       G.metal.push(K.bar([SK.MW.x + 0.20, s * 1.74, Z(0.66)], [SK.MW.x + 0.05, s * 1.74, Z(0.46)], 0.025, 4));
     }
-    B.metal.push(K.bar([1.90, -1.00, Z(3.35)], [1.90, -1.42, Z(3.35)], 0.06, 8));
+    B.metal.push(K.bar([1.90, -0.75, Z(3.35)], [1.90, -1.42, Z(3.35)], 0.06, 8));          /* batch 4: the arm's root now in the cabin side */
     B.dark.push(K.tube([1.90, -1.46, Z(3.45)], [1.90, -1.46, Z(3.15)], 0.10, 0.10, 10));
     B.dark.push(K.box(0.24, 0.015, 0.14, -8.6, 0, Z(1.95)));
     B.dark.push(K.box(0.24, 0.015, 0.14, -1.6, 0, Z(0.55)));
@@ -938,15 +1044,87 @@ var HeroEuNavalAir = (function () {
      its own variant there: the turbine nose, the RN grey of [WX1]. The
      Whirlwind builder takes none; it is called whole and its skin
      repainted with this file's sheet in the RN grey of [WW1]. */
-  var WESSEX_HAS1 = { key: "wessex_has1", base: "#41484c", seed: 5821, turbine: true };
+  var WESSEX_HAS1 = { key: "wessex_has1", base: "#41484c", seed: 5822, turbine: true };   /* batch 4: seed 5821 -> 5822, the weathering layout of the sheet only */
   function wessexHAS1(THREE, M, C) {
     var g = HeroS58.build(THREE, M, C, WESSEX_HAS1);
+    /* batch 4: the boom's drive-shaft hanger covers stood 5-10 cm off the boom's sides (placed
+       on its widest half width, higher up where it is narrower) and the white tail lamp 4 cm
+       aft of the fairing: seated (see nudge) */
+    var WXF = [[-4.70, 0.41, 0.33, -4.56, 0.45, 0.40, 0.102], [-5.70, 0.35, 0.17, -5.56, 0.39, 0.24, 0.071],
+               [-6.70, 0.29, 0.02, -6.56, 0.33, 0.09, 0.046]], wf = [];
+    WXF.forEach(function (q) {
+      wf.push([[q[0], q[1], q[2], q[3], q[4], q[5]], [0, -q[6], 0], 12]);
+      wf.push([[q[0], -q[4], q[2], q[3], -q[1], q[5]], [0, q[6], 0], 12]);
+    });
+    wf.push([[-10.28, -0.05, 0.52, -10.19, 0.05, 0.61], [0.045, 0, 0], 64]);
+    nudge(THREE, g, wf, "wessex_has1 (HeroS58)");
+    /* detail (batch 4): the wire-mesh guard over the engine air intake on the nose top ([WX1]:
+       a cross-hatched grille across the intake's face), on the source's intake (x 3.62, y +-0.40,
+       h 1.66 to 1.96, the opening h 1.70 to 1.92; HeroS58's own Z(h) = h - 2.00) */
+    var K = Kit(THREE), T = mats(THREE, C, { top: "#41484c" }), D = [], i;
+    for (i = -3; i <= 3; i++) D.push(K.bar([3.636, i * 0.10, 1.71 - 2.00], [3.636, i * 0.10, 1.95 - 2.00], 0.011, 4));
+    [1.76, 1.83, 1.90].forEach(function (h) { D.push(K.bar([3.636, -0.38, h - 2.00], [3.636, 0.38, h - 2.00], 0.011, 4)); });
+    /* the grab handle beside the nose access door's aft edge, under the cockpit door, starboard
+       ([WX1]: a vertical bar standing off the skin on two feet) */
+    D.push(K.bar([2.15, -0.885, -0.28], [2.15, -0.815, 0.18], 0.018, 5),
+           K.bar([2.15, -0.862, -0.28], [2.15, -0.885, -0.28], 0.015, 4), K.bar([2.15, -0.792, 0.18], [2.15, -0.815, 0.18], 0.015, 4));
+    /* the doghouse's cooling louvres behind the mast stand as raised ribs ([XT602], a port
+       broadside of an HC.2 of the same airframe: the corrugated fairing behind the head), on
+       the source sheet's nine painted slots (x -0.75 to -1.87, |y| < 0.40); the roof's height
+       there probed on the build at y 0, 0.3 and 0.5 */
+    var RF = [[-0.4, 1.585, 1.536, 1.310], [-0.8, 1.536, 1.479, 1.184], [-1.2, 1.458, 1.393, 1.092],
+              [-1.6, 1.332, 1.271, 0.986], [-2.0, 1.207, 1.150, 0.880]], R = [];
+    function roof(x, c) {
+      for (var j = 0; j < RF.length - 1; j++) if (x <= RF[j][0] && x >= RF[j + 1][0]) {
+        var t = (RF[j][0] - x) / (RF[j][0] - RF[j + 1][0]);
+        return RF[j][c] + (RF[j + 1][c] - RF[j][c]) * t;
+      }
+      return RF[RF.length - 1][c];
+    }
+    for (i = 0; i < 9; i++) {
+      var xr = -0.725 - i * 0.14, z0 = roof(xr, 1), z3 = roof(xr, 2), z4 = (roof(xr, 2) + roof(xr, 3)) / 2;
+      R.push(K.bar([xr, -0.38, z4 + 0.004], [xr, -0.30, z3 + 0.006], 0.016, 4), K.bar([xr, -0.30, z3 + 0.006], [xr, 0, z0 + 0.008], 0.016, 4),
+             K.bar([xr, 0, z0 + 0.008], [xr, 0.30, z3 + 0.006], 0.016, 4), K.bar([xr, 0.30, z3 + 0.006], [xr, 0.38, z4 + 0.004], 0.016, 4));
+    }
+    /* the row of small dark covers along the boom's upper port side ([XT602]: about a dozen
+       from x -4.3 to -7.9, about 0.16 m long; the source draws four, at -4.6, -5.6, -6.6 and
+       -7.4): the others added on the same line, the skin's y probed on the build */
+    [[-4.30, 0.365, 0.366], [-4.85, 0.325, 0.313], [-5.125, 0.281, 0.305], [-5.40, 0.237, 0.294], [-5.95, 0.152, 0.273],
+     [-6.225, 0.111, 0.264], [-6.775, 0.029, 0.243], [-7.05, -0.013, 0.232], [-7.60, -0.095, 0.227], [-7.875, -0.136, 0.228]]
+      .forEach(function (q) { D.push(K.box(0.14, 0.02, 0.06, q[0], q[2] + 0.009, q[1])); });
+    addParts(THREE, K, g, { metal: D, top: R }, T);
     g.name = "wessex_has1";
     return g;
   }
   function whirlwindHAS7(THREE, M, C) {
     var g = HeroWhirlwind.build(THREE, M, C), T = mats(THREE, C, { top: "#41484c" });
     repaint(THREE, g, byName(/^airframe$/), function () { return "top"; }, T);
+    /* batch 4: the boom's first drive-shaft hanger covers (x -4.6) and the door rail's end
+       fittings (x 1.06) stood 3-4 cm off the skin: seated on it (see nudge) */
+    nudge(THREE, g, [[[-4.70, 0.38, 0.56, -4.58, 0.42, 0.63], [0, -0.042, 0], 12], [[-4.70, -0.42, 0.56, -4.58, -0.38, 0.63], [0, 0.042, 0], 12],
+                     [[1.04, 0.86, 0.53, 1.08, 0.90, 0.67], [0, -0.03, 0], 16], [[1.04, -0.90, 0.53, 1.08, -0.86, 0.67], [0, 0.03, 0], 16]],
+          "whirlwind_has7 (HeroWhirlwind)");
+    /* detail (batch 4): the repaint above covers the source sheet's painted engine-bay
+       slots and door lines, so they are drawn as parts, from [WW1] (a PORT broadside, nose
+       left, 71 px/m on the hub-to-nose 3.03 m): the big louvred cooling grille low on the nose side
+       (x 1.03 to 1.55, h 1.13 to 1.90), the four cooling slots high on the clamshell doors
+       (x 2.05 to 1.84, h 1.62 to 2.00, the source sheet's own stations) and the cabin
+       door's frame (the source's DOOR, x 0.45 to -0.40, h 0.42 to 1.95). Sides flat at
+       |y| 0.865 there (probed on the build). PORT SIDE ONLY: no starboard photograph was
+       fetched (Commons answered 429), so nothing is mirrored to starboard. */
+    var K = Kit(THREE), D = [], s, i;
+    function Zw(h) { return h - 1.81; }
+    for (s = 1; s <= 1; s += 2) {
+      D.push(K.box(0.52, 0.02, 0.77, 1.29, s * 0.868, Zw(1.515)));
+      for (i = 0; i < 7; i++) D.push(K.box(0.50, 0.03, 0.025, 1.29, s * 0.878, Zw(1.18 + i * 0.112), s * 0.5, 0, 0));
+      for (i = 0; i < 4; i++) {
+        var xs = 2.05 - i * 0.07, ys = 0.806 + (2.05 - xs) * 0.195 - 0.004;
+        D.push(K.box(0.03, 0.02, 0.38, xs, s * ys, Zw(1.81)));
+      }
+      D.push(K.box(0.89, 0.02, 0.04, 0.025, s * 0.868, Zw(1.95)), K.box(0.89, 0.02, 0.04, 0.025, s * 0.868, Zw(0.42)),
+             K.box(0.04, 0.02, 1.57, 0.45, s * 0.868, Zw(1.185)), K.box(0.04, 0.02, 1.57, -0.40, s * 0.868, Zw(1.185)));
+    }
+    addParts(THREE, K, g, { dark: D }, T);
     g.name = "whirlwind_has7";
     return g;
   }
@@ -1023,8 +1201,15 @@ var HeroEuNavalAir = (function () {
   function phantomFG1(THREE, M, C) {
     var V = THREE, K = Kit(V), g = HeroF4.f4b(THREE, M, C), s;
     var T = mats(V, C, { top: "#363c42", low: "#c8ccc8" });
-    repaint(V, g, byName(/^(skin|skin_fold|fin)$/), function () { return "top"; }, T);
-    repaint(V, g, byName(/^skin_belly$/), function () { return "low"; }, T);
+    /* batch 4: the source's own skin sheet (its access doors, walkways, seams, control-surface
+       gaps and soot, drawn off the F-4 photographs) is kept and TINTED to the FG.1's scheme
+       instead of being replaced by this file's plainer sheet: the map is the F-4B's plain light
+       gull grey (authored HeroKit.authorFor(0xc3c7c6)) over white (authorFor(0xecece8)), so each
+       skin material is cloned with the colour that turns that base into this file's coat
+       (render3d.js reads colours and maps as sRGB and multiplies them in linear light). A skin
+       without a map (the F-4B's white fin) takes the coat colour itself. */
+    retint(V, g, byName(/^(skin|skin_fold|fin)$/), 0x363c42, 0xc3c7c6);
+    retint(V, g, byName(/^skin_belly$/), 0xc8ccc8, 0xecece8);
     var B = { top: [], low: [], dark: [], metal: [], hot: [] };
     for (s = -1; s <= 1; s += 2) {
       /* the Spey intake: the F-4B's loft (half widths 0.34-0.46, depth
@@ -1138,7 +1323,8 @@ var HeroEuNavalAir = (function () {
     B.top.push(K.finXZ([[-6.25, Z(1.87)], [-7.33, Z(2.78)], [-8.08, Z(2.78)], [-7.50, Z(1.62)], [-6.9, Z(1.56)]], 0, 0.13));
     B.top.push(K.wing([[-0.16, -7.84, -8.59, Z(2.44), 0.10], [-1.776, -7.92, -8.32, Z(2.44), 0.08]], 8));
     B.team.push(K.box(0.30, 0.6, 0.03, -8.12, -1.2, Z(2.47)));
-    B.metal.push(K.tube([LX.TR.x, 0.12, Z(LX.TR.h)], [LX.TR.x, LX.TR.y - 0.08, Z(LX.TR.h)], 0.09, 0.08, 10));
+    /* the tail rotor's output shaft runs out of the gearbox into the hub (batch 4: it stopped 8 cm short) */
+    B.metal.push(K.tube([LX.TR.x, 0.12, Z(LX.TR.h)], [LX.TR.x, LX.TR.y + 0.04, Z(LX.TR.h)], 0.09, 0.08, 10));
     B.top.push(K.sph(0.22, LX.TR.x + 0.05, 0.02, Z(LX.TR.h), 1.4, 0.8, 1, 14, 8));
     /* aerials, the deck-lock harpoon under the belly, lights, steps */
     B.dark.push(K.bar([-1.8, 0, Z(2.69)], [-2.2, 0, Z(3.05)], 0.012, 5));
@@ -1193,7 +1379,7 @@ var HeroEuNavalAir = (function () {
     B.dark.push(K.box(0.18, 0.015, 0.10, -3.80, 0, Z(2.17)));
     B.dark.push(K.box(0.18, 0.015, 0.10, -5.40, 0, Z(1.47)));
     var lamps = lampMesh(V, [[-1.30, 1.30, Z(0.80), 0.045, "red"], [-1.30, -1.30, Z(0.80), 0.045, "green"],
-                             [-8.12, 0, Z(2.62), 0.04, "white"], [-1.95, 0, Z(2.70), 0.07, "red", 0.6], [-0.50, 0, Z(0.45), 0.07, "red", 0.6]]);
+                             [-8.07, 0, Z(2.72), 0.04, "white"], [-1.95, 0, Z(2.70), 0.07, "red", 0.6], [-0.50, 0, Z(0.45), 0.07, "red", 0.6]]);
     var g = new V.Group();
     g.name = "lynx_" + VR.key;
     K.emit(g, B, T);
@@ -1321,7 +1507,7 @@ var HeroEuNavalAir = (function () {
       winFrame(K, B.dark, 5.55, s * 1.05, Z(1.95), 0.30, 0.38, 0.04, s);
       winFrame(K, B.dark, 5.15, s * 1.15, Z(1.95), 0.30, 0.38, 0.04, s);
       [2.0, -0.6, -2.2].forEach(function (x) { winFrame(K, B.dark, x, s * 1.33, Z(2.60), 0.42, 0.52, 0.04, s); });
-      B.metal.push(K.box(0.14, 0.03, 0.04, 2.62, s * 1.36, Z(2.30)));
+      B.metal.push(K.box(0.14, 0.03, 0.04, 2.62, s * 1.335, Z(2.30)));
       B.dark.push(K.box(0.20, 0.03, 0.08, 4.30, s * 1.30, Z(1.10)));
       B.dark.push(K.box(0.20, 0.03, 0.08, 4.30, s * 1.30, Z(1.55)));
       B.metal.push(K.bar([6.70, s * 0.32, Z(1.95)], [7.25, s * 0.32, Z(1.92)], 0.014, 5));
@@ -1333,12 +1519,18 @@ var HeroEuNavalAir = (function () {
       G.metal.push(K.bar([ME.NW.x, s * 0.10, Z(0.50)], [ME.NW.x, s * ME.NW.y, Z(ME.NW.R)], 0.03, 5));
     }
     B.dark.push(K.box(0.04, 1.30, 0.04, -4.30, 0, Z(1.02)));
-    B.metal.push(K.bar([3.15, -1.30, Z(3.80)], [3.15, -1.72, Z(3.80)], 0.06, 8));
+    /* batch 4: the pilots' mirrors on stalks out of the nose sides, ahead of the windscreen's
+       lower corners ([ME2] head-on, [ME3]); stalk roots inside the skin */
+    for (s = -1; s <= 1; s += 2) {
+      B.dark.push(K.bar([5.60, s * 0.98, Z(2.55)], [6.00, s * 1.55, Z(2.75)], 0.022, 5));
+      B.dark.push(K.box(0.05, 0.16, 0.20, 6.01, s * 1.60, Z(2.78)));
+    }
+    B.metal.push(K.bar([3.15, -0.95, Z(3.80)], [3.15, -1.72, Z(3.80)], 0.06, 8));          /* the hoist's arm out of the roof side (batch 4: its root stood clear) */
     B.dark.push(K.tube([3.15, -1.76, Z(3.88)], [3.15, -1.76, Z(3.58)], 0.10, 0.10, 10));
     B.dark.push(K.box(0.26, 0.015, 0.14, 3.6, 0, Z(0.69)));
     B.dark.push(K.box(0.22, 0.015, 0.12, -7.6, 0, Z(3.53)));
     var lamps = lampMesh(V, [[-2.40, 2.19, Z(1.15), 0.05, "red"], [-2.40, -2.19, Z(1.15), 0.05, "green"],
-                             [-12.55, 0, Z(4.85), 0.045, "white"], [-4.6, 0, Z(3.84), 0.08, "red", 0.6], [-0.3, 0, Z(0.70), 0.08, "red", 0.6]]);
+                             [-12.55, 0, Z(4.85), 0.045, "white"], [-4.6, 0, Z(3.79), 0.08, "red", 0.6], [-0.3, 0, Z(0.70), 0.08, "red", 0.6]]);
     var g = new V.Group();
     g.name = "merlin_" + VR.key;
     K.emit(g, B, T);
@@ -1373,6 +1565,27 @@ var HeroEuNavalAir = (function () {
     var V = THREE, K = Kit(V), g = HeroNH90.e00(THREE, M, C);
     var T = mats(V, C, { top: "#6c7479", radome: "#5d6468" });
     repaint(V, g, byName(/^airframe$/), function () { return "top"; }, T);
+    /* batch 4: the source's rotor blades are flat and untextured (16 m2 of one face): they take
+       this file's blade coat, which carries the sheet; the position lamps on the sponson tops
+       stood 6 cm over them and are seated (see nudge); its zero-area triangles are dropped */
+    repaint(V, g, byName(/^blades$/), function () { return "blade"; }, T);
+    /* the per-triangle box projection flips between planes on the thin blades (faint light and
+       dark triangles): the blade coat is laid on by one projection, the blades' own plane (the
+       two longest extents of the mesh) */
+    allMeshes(g, byName(/^blades_blade$/)).forEach(function (m) {
+      var q = m.geometry, P = q.attributes.position, uv = new Float32Array(P.count * 2), i;
+      q.computeBoundingBox();
+      var e = [q.boundingBox.max.x - q.boundingBox.min.x, q.boundingBox.max.y - q.boundingBox.min.y, q.boundingBox.max.z - q.boundingBox.min.z];
+      var thin = e.indexOf(Math.min(e[0], e[1], e[2])), ax = [0, 1, 2].filter(function (k) { return k !== thin; });
+      for (i = 0; i < P.count; i++) {
+        var v = [P.getX(i), P.getY(i), P.getZ(i)];
+        uv[2 * i] = v[ax[0]] / 4.0; uv[2 * i + 1] = v[ax[1]] / 4.0;
+      }
+      q.setAttribute("uv", new V.BufferAttribute(uv, 2));
+    });
+    nudge(V, g, [[[-1.17, 1.66, -0.88, -1.03, 1.74, -0.80], [0, 0, -0.115], 80], [[-1.17, -1.74, -0.88, -1.03, -1.66, -0.80], [0, 0, -0.115], 80]],
+          "nh90_nfh (HeroNH90.e00)");
+    dropDegenerate(V, g);
     function Z(h) { return h - 2.0; }
     var B = { radome: [], dark: [], glass: [], metal: [] };
     B.radome.push(K.tube([2.7, 0, Z(0.33)], [2.7, 0, Z(0.12)], 0.78, 0.74, 32));
@@ -1674,7 +1887,9 @@ var HeroEuNavalAir = (function () {
     });
     /* blade aerials on the spine and belly ([E1], [E2]) */
     for (i = 0; i < 6; i++) g.add(K.box(THREE, T.ink, 0.30, 0.05, 0.38, X(9.5 + i * 1.3), 0, Z(5.98 + 0.18)));
-    for (i = 0; i < 6; i++) g.add(K.box(THREE, T.ink, 0.30, 0.05, 0.36, X(13.5 + i * 2.6), 0, Z(1.70 - 0.16)));
+    /* batch 4: each belly blade stands on the belly where it is (the last, at d 26.5 m, hung 0.47 m
+       under the upswept tail cone) */
+    for (i = 0; i < 6; i++) g.add(K.box(THREE, T.ink, 0.30, 0.05, 0.36, X(13.5 + i * 2.6), 0, Z(K.secAt(13.5 + i * 2.6, S.SEC)[3] - 0.16)));
     g.add(K.egg(THREE, T.low, 5.0, 2.0, 0.40, X(18.0), 0, Z(1.78), 16, 8));
     /* gear (737-700 published) */
     var gear = new THREE.Group(), N = S.nose, nz = Z(N.R);
