@@ -80,10 +80,14 @@
    aerial and fitted to the 31.8 m waterline beam. Each level runs full from
    the transom chamfer to xb0, then fines to its stem:
         z      yMid  xb0   stem       z      yMid  xb0   stem
-      -8.1     9.0  -10    96.0      5.0    16.0   45   119.8
-      -7.0    12.6   -5   107.0     11.0    16.2   60   123.5  (knuckle)
-      -4.0    15.0    5   114.5     15.0    16.7   88   126.6
-       0.0    15.9   10   118.3     18.9    17.4  100   128.4  (gallery dk)
+      -8.1     9.0  -10    96.0      5.0    16.25  45   119.8
+      -7.0    12.6   -5   107.0     11.0    16.75  60   123.5  (knuckle)
+      -4.0    15.0    5   114.5     15.0    17.1   88   126.6
+       0.0    15.9   10   118.3     18.9    17.6  100   128.4  (gallery dk)
+   Above the waterline the topsides flare 4-5 degrees out to the knuckle
+   and 5-7 above it (batch 5): the bow photograph shows the side opening
+   out under the gallery, but the amidships flare is NOT measured - the
+   drawing is a profile and reads only the 31.8 m waterline beam.
    Keel flat from x -52 to +96, rising aft to z -1.0 at the transom and
    forward into the stem. The underwater body was trimmed until it
    measured 39,900 m3 by signed volume: 40,900 t against the published
@@ -117,8 +121,16 @@
    is merged into one mesh per material; the island Phalanx ("ciws") and
    the "wellgate" have their own small mesh sets. Nothing is named
    "turret": the rows have no trained mount. The team
-   colour is exactly C.team: a band round the island and a flash across
-   each end of the deck.
+   colour is exactly C.team: a band round the island, a coaming round
+   the main block's roof and a flash across each end of the deck.
+
+   Batch 5: caps nobody can see are left off (the loft's lid under the
+   flight deck, the deck plate's underside over the hull and the gallery
+   bands, tier bottoms on the deck); the gallery band carries a sloped
+   knee under it; the topsides flare (see the station table); a whip, a
+   locker and two hull ports that stood off their structure are seated;
+   the SPN-43 dish slats run edge to edge on a yoke; platform rails stand
+   on stanchions.
 
    ASCII only -- a stray byte in a hex literal has broken this project.
 ============================================================================ */
@@ -151,6 +163,7 @@ var HeroWaspLHD = (function () {
     [-117.5,  20.0], [-122.5,  15.0],
     [-122.5, -15.5], [-118.0, -20.0], [ 126.1, -20.0]
   ];
+  var DECK_AFT = -122.5;            /* the plate's after edge                 */
   /* deck-edge lifts outboard of the deck: x range, side, outboard reach    */
   var LIFTS = [
     { x0: -55.0, x1: -39.5, s:  1, w: 10.5 },
@@ -199,13 +212,15 @@ var HeroWaspLHD = (function () {
     }
     return this;
   };
-  Batch.addGroups = function (geo, batches) {
+  /* skip(i): a filter on the first vertex index of each triangle         */
+  Batch.addGroups = function (geo, batches, skip) {
     var g = geo.index ? geo.toNonIndexed() : geo;
     var P = g.getAttribute("position"), N = g.getAttribute("normal"), U = g.getAttribute("uv");
     var groups = g.groups.length ? g.groups : [{ start: 0, count: P.count, materialIndex: 0 }];
     groups.forEach(function (gr) {
       var B = batches[gr.materialIndex] || batches[0];
       for (var i = gr.start; i < gr.start + gr.count; i++) {
+        if (skip && (i - gr.start) % 3 === 0 && skip(P, i)) { i += 2; continue; }
         B.p.push(P.getX(i), P.getY(i), P.getZ(i));
         B.n.push(N.getX(i), N.getY(i), N.getZ(i));
         if (U) B.u.push(U.getX(i), U.getY(i)); else B.u.push(0, 0);
@@ -263,7 +278,10 @@ var HeroWaspLHD = (function () {
   }
   /* a closed frustum on a convex plan, bottom outline at zb, the same outline
      scaled about its centroid at zt; UVs in metres / 16                    */
-  function frustum(THREE, pts, zb, zt, sBot, sTop) {
+  function frustum(THREE, pts, zb, zt, sBot, sTop, caps) {
+    /* caps: which end caps to draw, "tb" (the default), "t", "b" or "" -
+       a cap that lies against the deck or another block is never seen    */
+    if (caps === undefined) caps = "tb";
     pts = ccw(pts);
     var n = pts.length, cx = 0, cy = 0, i;
     for (i = 0; i < n; i++) { cx += pts[i][0]; cy += pts[i][1]; }
@@ -288,10 +306,12 @@ var HeroWaspLHD = (function () {
       tri(b0, t1, t0, [u0, zb * K], [u1, zt * K], [u0, zt * K]);
     }
     for (i = 1; i < n - 1; i++) {
-      tri([T[0][0], T[0][1], zt], [T[i][0], T[i][1], zt], [T[i + 1][0], T[i + 1][1], zt],
-          [T[0][0] * K, T[0][1] * K], [T[i][0] * K, T[i][1] * K], [T[i + 1][0] * K, T[i + 1][1] * K]);
-      tri([B[0][0], B[0][1], zb], [B[i + 1][0], B[i + 1][1], zb], [B[i][0], B[i][1], zb],
-          [B[0][0] * K, B[0][1] * K], [B[i + 1][0] * K, B[i + 1][1] * K], [B[i][0] * K, B[i][1] * K]);
+      if (caps.indexOf("t") >= 0)
+        tri([T[0][0], T[0][1], zt], [T[i][0], T[i][1], zt], [T[i + 1][0], T[i + 1][1], zt],
+            [T[0][0] * K, T[0][1] * K], [T[i][0] * K, T[i][1] * K], [T[i + 1][0] * K, T[i + 1][1] * K]);
+      if (caps.indexOf("b") >= 0)
+        tri([B[0][0], B[0][1], zb], [B[i + 1][0], B[i + 1][1], zb], [B[i][0], B[i][1], zb],
+            [B[0][0] * K, B[0][1] * K], [B[i + 1][0] * K, B[i + 1][1] * K], [B[i][0] * K, B[i][1] * K]);
     }
     var g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
@@ -299,7 +319,39 @@ var HeroWaspLHD = (function () {
     g.computeVertexNormals();
     return g;
   }
-  function plate(THREE, pts, z0, z1) { return frustum(THREE, pts, z0, z1, 1, 1); }
+  function plate(THREE, pts, z0, z1, caps) { return frustum(THREE, pts, z0, z1, 1, 1, caps); }
+  /* a prism along X lofted from profile a (at x0) to profile b (at x1),
+     each a closed list of [y, z]; end caps on request; the sides listed
+     in skip (side i runs from point i to i + 1) are left out where they
+     lie inside the hull or under the deck; UVs metres / 16              */
+  function prismX(THREE, x0, x1, a, b, capA, capB, skip) {
+    var pos = [], uv = [], n = a.length, K = 1 / 16, i, cy = 0, cz = 0;
+    for (i = 0; i < n; i++) { cy += a[i][0] + b[i][0]; cz += a[i][1] + b[i][1]; }
+    cy /= 2 * n; cz /= 2 * n;
+    function tri(p, q, r) {
+      var ux = q[0] - p[0], uy = q[1] - p[1], uz = q[2] - p[2], vx = r[0] - p[0], vy = r[1] - p[1], vz = r[2] - p[2];
+      var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+      var mx = (p[0] + q[0] + r[0]) / 3 - (x0 + x1) / 2, my = (p[1] + q[1] + r[1]) / 3 - cy, mz = (p[2] + q[2] + r[2]) / 3 - cz;
+      if (nx * nx + ny * ny + nz * nz < 1e-10) return;
+      if (nx * mx + ny * my + nz * mz < 0) { var t = q; q = r; r = t; }
+      [p, q, r].forEach(function (v) { pos.push(v[0], v[1], v[2]); uv.push((v[0] + v[1]) * K, v[2] * K); });
+    }
+    for (i = 0; i < n; i++) {
+      if (skip && skip.indexOf(i) >= 0) continue;
+      var j = (i + 1) % n;
+      var p0 = [x0, a[i][0], a[i][1]], p1 = [x0, a[j][0], a[j][1]], q0 = [x1, b[i][0], b[i][1]], q1 = [x1, b[j][0], b[j][1]];
+      tri(p0, q0, q1); tri(p0, q1, p1);
+    }
+    for (i = 1; i < n - 1; i++) {
+      if (capA) tri([x0, a[0][0], a[0][1]], [x0, a[i][0], a[i][1]], [x0, a[i + 1][0], a[i + 1][1]]);
+      if (capB) tri([x1, b[0][0], b[0][1]], [x1, b[i][0], b[i][1]], [x1, b[i + 1][0], b[i + 1][1]]);
+    }
+    var g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+    g.computeVertexNormals();
+    return g;
+  }
   function rect(x0, x1, y0, y1) { return [[x0, y0], [x1, y0], [x1, y1], [x0, y1]]; }
   function scalePts(pts, s) {
     var cx = 0, cy = 0, i, n = pts.length, out = [];
@@ -535,10 +587,10 @@ var HeroWaspLHD = (function () {
     [ -7.0,    12.6,  -5, 107.0, 1.6, 0.90 ],
     [ -4.0,    15.0,   5, 114.5, 1.7, 0.85 ],
     [  0.0,    15.9,  10, 118.3, 1.8, 0.78 ],
-    [  5.0,    16.0,  45, 119.8, 2.2, 0.55 ],
-    [  KN,     16.2,  60, 123.5, 2.4, 0.50 ],
-    [ 15.0,    16.7,  88, 126.6, 2.8, 0.33 ],
-    [ FD_BOT,  17.4, 100, 128.4, 3.0, 0.25 ]
+    [  5.0,    16.25, 45, 119.8, 2.2, 0.55 ],
+    [  KN,     16.75, 60, 123.5, 2.4, 0.50 ],
+    [ 15.0,    17.1,  88, 126.6, 2.8, 0.33 ],
+    [ FD_BOT,  17.6, 100, 128.4, 3.0, 0.25 ]
   ];
   /* keel height along the length: rising aft to the transom's lower edge,
      forward into the forefoot; past it the stem is the section's foot      */
@@ -614,6 +666,11 @@ var HeroWaspLHD = (function () {
       var ar = nx * nx + ny * ny + nz * nz;
       if (ar < 4e-6) return;
       var mx = (a[0] + b[0] + c[0]) / 3 - ref[0], my = (a[1] + b[1] + c[1]) / 3 - ref[1], mz = (a[2] + b[2] + c[2]) / 3 - ref[2];
+      /* a face that leans clearly to one side is wound by its side alone:
+         on the flared bow the single station ref point turned some upper
+         faces inward, and they were culled (sky through the bow, review b5) */
+      var cyF = (a[1] + b[1] + c[1]) / 3;
+      if (ka >= 0 && Math.abs(ny) > 0.2 * Math.sqrt(ar) && Math.abs(cyF) > 0.5) { mx = 0; my = cyF; mz = 0; }
       if (nx * mx + ny * my + nz * mz < 0) { var t = b; b = c; c = t; var tk = kb; kb = kc; kc = tk; nx = -nx; ny = -ny; nz = -nz; }
       ar = Math.sqrt(ar);
       faces.push({ p: [a, b, c], k: [ka, kb, kc], n: [nx, ny, nz], u: [nx / ar, ny / ar, nz / ar] });
@@ -658,6 +715,11 @@ var HeroWaspLHD = (function () {
       f.k.forEach(function (k) { (around[k] || (around[k] = [])).push(fi); });
     });
     faces.forEach(function (f) {
+      /* the loft's lid at the gallery deck lies under the flight-deck
+         plate from its after edge forward: never seen there, not drawn.
+         Aft of the plate it is the stern gallery's floor, and stays.      */
+      if (f.p[0][2] > FD_BOT - 1e-3 && f.p[1][2] > FD_BOT - 1e-3 && f.p[2][2] > FD_BOT - 1e-3 &&
+          Math.min(f.p[0][0], f.p[1][0], f.p[2][0]) > DECK_AFT + 0.3) return;
       var o = (f.p[0][2] + f.p[1][2] + f.p[2][2]) / 3 >= 0 ? OUT.top : OUT.bot;
       for (var c = 0; c < 3; c++) {
         var q = f.p[c], sx = 0, sy = 0, sz = 0;
@@ -777,7 +839,7 @@ var HeroWaspLHD = (function () {
     function ringRail(pts, z, h) {
       for (var q = 0; q < pts.length; q++) {
         var p0 = pts[q], p1 = pts[(q + 1) % pts.length];
-        rail(p0[0], p0[1], p1[0], p1[1], z, h || 1.0, false);
+        rail(p0[0], p0[1], p1[0], p1[1], z, h || 1.0);
       }
     }
 
@@ -793,21 +855,88 @@ var HeroWaspLHD = (function () {
     shp.closePath();
     var dg = new THREE.ExtrudeGeometry(shp, { depth: FD_TH, bevelEnabled: false, curveSegments: 1 });
     dg.translate(0, 0, FD_BOT);
-    Batch.addGroups(dg, [B.D, B.S]);
+    /* its underside is drawn only where it is seen: over the hull it lies
+       on the loft, and under the deck edge the gallery bands and the bow
+       lip close it; the strips left open are added below               */
+    Batch.addGroups(dg, [B.D, B.S], function (P, q) {
+      return P.getZ(q) < FD_BOT + 1e-3 && P.getZ(q + 1) < FD_BOT + 1e-3 && P.getZ(q + 2) < FD_BOT + 1e-3;
+    });
+    /* the deck's half-breadth on one side at station x, off the outline  */
+    function deckY(x, side) {
+      var best = 0;
+      for (var q = 0; q < DECK.length; q++) {
+        var a = DECK[q], b = DECK[(q + 1) % DECK.length];
+        if (side * a[1] <= 0 || side * b[1] <= 0) continue;
+        var lo = Math.min(a[0], b[0]), hi = Math.max(a[0], b[0]);
+        if (x < lo - 1e-6 || x > hi + 1e-6 || hi - lo < 1e-6) continue;
+        best = Math.max(best, side * (a[1] + (b[1] - a[1]) * (x - a[0]) / (b[0] - a[0])));
+      }
+      return best;
+    }
+    /* an open strip of deck underside from the hull side out to the edge  */
+    function under(x0, x1, side, zU, edgeY, full) {
+      var nS = Math.max(1, Math.ceil((x1 - x0) / 3)), q, pos = [], uv = [];
+      zU = zU === undefined ? FD_BOT : zU;
+      edgeY = edgeY || deckY;
+      for (q = 0; q < nS; q++) {
+        var xa = lerp(x0, x1, q / nS), xb = lerp(x0, x1, (q + 1) / nS);
+        var ia = full ? 0 : side * Math.max(0, hullY(xa, zU) - 0.5), ib = full ? 0 : side * Math.max(0, hullY(xb, zU) - 0.5);
+        var oa = side * edgeY(xa, side), ob = side * edgeY(xb, side);
+        var quad4 = [[xa, ia], [xb, ib], [xb, ob], [xa, oa]];
+        var tris = side > 0 ? [0, 2, 1, 0, 3, 2] : [0, 1, 2, 0, 2, 3];
+        tris.forEach(function (t) { pos.push(quad4[t][0], quad4[t][1], zU); uv.push(quad4[t][0] / 16, quad4[t][1] / 16); });
+      }
+      var ug = new THREE.BufferGeometry();
+      ug.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+      ug.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+      ug.computeVertexNormals();
+      B.S.add(ug);
+    }
+    for (s = -1; s <= 1; s += 2) under(DECK_AFT, -110.0, s);
+    LIFTS.forEach(function (L) { under(L.x0, L.x1, L.s); });
 
     /* the bow lip: the deck's forward end is a deep square box, its face
        leaning a little, that the narrow stem flares up into               */
     var lip = [[128.5, -17.6], [128.5, 17.6], [126.1, 20.0], [100.0, 20.0], [100.0, -20.0], [126.1, -20.0]];
-    B.S.add(frustum(THREE, lip, FD_TOP - 4.3, FD_BOT, 0.975, 1.0));
+    B.S.add(frustum(THREE, lip, FD_TOP - 4.3, FD_BOT, 0.975, 1.0, ""));
+    /* its underside, closed right across: the stem narrows under it, and
+       a strip from the hull side out let the sky through (review b5)    */
+    (function () {
+      var lb = scalePts(lip, 0.975), lx0 = 1e9, lx1 = -1e9;
+      lb.forEach(function (p) { lx0 = Math.min(lx0, p[0]); lx1 = Math.max(lx1, p[0]); });
+      var lipY = function (x, side) {
+        var best = 0;
+        for (var q = 0; q < lb.length; q++) {
+          var a = lb[q], b = lb[(q + 1) % lb.length];
+          if (side * a[1] <= 0 || side * b[1] <= 0) continue;
+          var lo = Math.min(a[0], b[0]), hi = Math.max(a[0], b[0]);
+          if (x < lo - 1e-6 || x > hi + 1e-6 || hi - lo < 1e-6) continue;
+          best = Math.max(best, side * (a[1] + (b[1] - a[1]) * (x - a[0]) / (b[0] - a[0])));
+        }
+        return best;
+      };
+      for (var sd = -1; sd <= 1; sd += 2) {
+        under(lx0, lx1, sd, FD_TOP - 4.3, lipY, true);
+      }
+    })();
     /* scuttles in its face, the row the bow photograph shows              */
     for (i = -3; i <= 3; i++) B.K.add(cylZ(THREE, 0.32, 0.32, 0.1, 8, 0, 0, 0).rotateY(PI / 2).translate(128.45, i * 4.6, FD_TOP - 2.6));
 
     /* gallery band under the deck edge: the deck overhangs the hull by
        2.6 m and the gallery deck under it reads as one deep band in every
        broadside; not under the lifts, where the hangar opens             */
-    function band(x0, x1, side) {
-      var yi = side * (hullY((x0 + x1) / 2, FD_BOT) - 0.4), yo = side * (DHW - 0.1);
-      B.S.add(plate(THREE, rect(x0, x1, Math.min(yi, yo), Math.max(yi, yo)), FD_BOT - 2.1, FD_BOT + 0.01));
+    /* The band's outer face stands 2.1 m deep; its underside runs back up
+       into the hull's flare as a knee, so the overhang reads as carried
+       on the hull, not as a shelf. Its top lies under the deck plate.    */
+    function bandProf(x) {
+      var zb = FD_BOT - 2.1, zk = zb - 1.6;
+      var yo = DHW - 0.1, yi = hullY(x, zk) - 0.3;
+      return [[yo, FD_BOT + 0.01], [yo, zb], [yi, zk], [Math.min(yi, hullY(x, FD_BOT) - 0.4), FD_BOT + 0.01]];
+    }
+    function band(x0, x1, side, endA, endB) {
+      var pa = bandProf(x0).map(function (v) { return [side * v[0], v[1]]; });
+      var pb = bandProf(x1).map(function (v) { return [side * v[0], v[1]]; });
+      B.S.add(prismX(THREE, x0, x1, pa, pb, endA, endB, [2, 3]));
     }
     function bandRun(x0, x1, side) {
       var cuts = [x0];
@@ -815,7 +944,7 @@ var HeroWaspLHD = (function () {
       cuts.push(x1);
       for (var q = 0; q + 1 < cuts.length; q += 2) {
         var a = cuts[q], b = cuts[q + 1];
-        for (var x = a; x < b - 0.5; x += 12) band(x, Math.min(b, x + 12), side);
+        for (var x = a; x < b - 0.5; x += 12) band(x, Math.min(b, x + 12), side, x === a, x + 12 >= b);
       }
     }
     bandRun(-110.0, 100.0, 1);
@@ -1046,7 +1175,7 @@ var HeroWaspLHD = (function () {
       B.S.add(plate(THREE, rect(x0, x1, Math.min(yi, yo), Math.max(yi, yo)), ZS - 0.6, ZS));
       var yh = side * (hullY((x0 + x1) / 2, ZS - 4.5) - 0.2);
       var knee = [[x0 + 0.6, yh], [x1 - 0.6, yh], [x1 - 0.3, yo - side * 0.8], [x0 + 0.3, yo - side * 0.8]];
-      B.S.add(frustum(THREE, knee, ZS - 4.5, ZS - 0.6, 1.0, 1.0));
+      B.S.add(frustum(THREE, knee, ZS - 4.5, ZS - 0.6, 1.0, 1.0, "b"));
       rail(x0, yo, x1, yo, ZS, 1.0);
       rail(x0, yo, x0, side * DHW, ZS, 1.0);
       rail(x1, yo, x1, side * DHW, ZS, 1.0);
@@ -1086,30 +1215,45 @@ var HeroWaspLHD = (function () {
        the aerial and the drawing together.                                */
     var Z0 = FD_TOP, YO = -20.4;
     var MAIN = [[18.5, YO], [18.5, -8.6], [16.8, -7.0], [-38.0, -7.0], [-38.0, YO]];
-    B.S.add(frustum(THREE, MAIN, Z0, Z0 + 8.0, 1.0, 0.996));
-    B.T.add(frustum(THREE, MAIN, Z0 + 7.1, Z0 + 7.9, 1.004, 1.0));
-    B.S.add(plate(THREE, scalePts(MAIN, 1.004), Z0 + 7.95, Z0 + 8.15));
+    /* caps that lie on the deck or under the next tier are left off      */
+    B.S.add(frustum(THREE, MAIN, Z0, Z0 + 8.0, 1.0, 0.996, ""));
+    B.T.add(frustum(THREE, MAIN, Z0 + 7.1, Z0 + 7.9, 1.004, 1.0, ""));
+    B.S.add(plate(THREE, scalePts(MAIN, 1.004), Z0 + 7.95, Z0 + 8.15, ""));
+    /* the team colour as a coaming round the main block's roof, so it
+       reads from the game camera, a plated roof inside it               */
+    B.T.add(frustum(THREE, scalePts(MAIN, 1.004), Z0 + 8.15, Z0 + 8.4, 1.0, 1.0, "t"));
+    B.S.add(frustum(THREE, scalePts(MAIN, 1.004), Z0 + 8.4, Z0 + 8.5, 0.985, 0.985, "t"));
     /* the low after deckhouse carrying the big dome                        */
     var AFTH = [[-38.0, YO], [-38.0, -8.2], [-47.5, -9.4], [-47.5, YO]];
-    B.S.add(frustum(THREE, AFTH, Z0, Z0 + 4.2, 1.0, 0.99));
-    B.S.add(cylZ(THREE, 2.7, 2.9, 2.3, 14, -42.6, -14.6, Z0 + 4.2));
+    B.S.add(frustum(THREE, AFTH, Z0, Z0 + 4.2, 1.0, 0.99, "t"));
+    B.S.add(cylZ(THREE, 3.0, 3.0, 2.3, 14, -42.6, -14.6, Z0 + 4.2));
     B.W.add(sphere(THREE, 3.0, 16, 9, -42.6, -14.6, Z0 + 6.5, 1, 1, 1.13, true));
     B.W.add(cylZ(THREE, 1.15, 1.15, 3.4, 10, -46.4, -10.6, Z0));
     B.W.add(sphere(THREE, 1.15, 10, 4, -46.4, -10.6, Z0 + 3.4, 1, 1, 0.5, true));
     ringRail(scalePts(AFTH, 0.98), Z0 + 4.2, 1.0);
     /* forward step (the Phalanx stands on it) and the forward deckhouse    */
     var FSTEP = [[24.0, YO], [24.0, -9.6], [18.5, -9.0], [18.5, YO]];
-    B.S.add(frustum(THREE, FSTEP, Z0, Z0 + 7.4, 1.0, 0.99));
+    B.S.add(frustum(THREE, FSTEP, Z0, Z0 + 7.4, 1.0, 0.99, "t"));
     ringRail(scalePts(FSTEP, 0.97), Z0 + 7.4, 1.0);
     var FDH = [[42.5, YO], [42.5, -13.4], [40.6, -12.0], [24.0, -12.0], [24.0, YO]];
-    B.S.add(frustum(THREE, FDH, Z0, Z0 + 3.8, 1.0, 0.99));
+    B.S.add(frustum(THREE, FDH, Z0, Z0 + 3.8, 1.0, 0.99, "t"));
     ringRail(scalePts(FDH, 0.98), Z0 + 3.8, 1.0);
+    /* vent trunks, lockers and a ready-service box on the forward
+       deckhouse roof, the clutter the DPLA broadside shows there (batch 5;
+       spots approximate)                                                  */
+    [[26.5, -14.5, 1.6, 1.2, 1.0], [29.0, -18.8, 1.2, 1.6, 1.3], [34.5, -13.6, 2.2, 1.0, 0.8],
+     [37.5, -18.6, 1.4, 1.4, 1.1], [40.2, -14.4, 1.2, 1.8, 0.9], [27.5, -18.0, 0.8, 0.8, 1.6]].forEach(function (v, q) {
+      (q % 2 ? B.K : B.S).add(box(THREE, v[2], v[3], v[4], v[0], v[1], Z0 + 3.8 + v[4] / 2 - 0.02));
+    });
+    [[-40.0, -18.8], [-44.6, -10.8], [-39.6, -10.2]].forEach(function (v) {
+      B.S.add(box(THREE, 1.4, 1.1, 1.0, v[0], v[1], Z0 + 4.2 + 0.48));
+    });
     B.S.add(cylZ(THREE, 0.25, 0.3, 1.2, 6, 31.0, -16.5, Z0 + 3.8));
     B.R.add(box(THREE, 0.3, 2.4, 0.3, 31.0, -16.5, Z0 + 5.15));
 
     /* the bridge: block, window band all round, a visor roof, wings        */
     var BRG = [[18.5, YO + 0.2], [18.5, -9.6], [9.0, -9.6], [9.0, YO + 0.2]];
-    B.S.add(frustum(THREE, BRG, Z0 + 8.0, Z0 + 12.2, 1.0, 0.985));
+    B.S.add(frustum(THREE, BRG, Z0 + 8.0, Z0 + 12.2, 1.0, 0.985, "t"));
     B.G.add(frustum(THREE, BRG, Z0 + 12.2, Z0 + 13.5, 0.985, 0.985));
     B.S.add(plate(THREE, scalePts(BRG, 1.03), Z0 + 13.5, Z0 + 14.2));
     B.S.add(plate(THREE, rect(12.5, 17.5, -24.2, YO + 0.2), Z0 + 11.8, Z0 + 12.15));
@@ -1125,7 +1269,7 @@ var HeroWaspLHD = (function () {
 
     /* the forward mast block, and the mast                                 */
     var FMB = [[9.0, -19.6], [9.0, -9.6], [-4.5, -9.6], [-4.5, -19.6]];
-    B.S.add(frustum(THREE, FMB, Z0 + 8.0, Z0 + 13.0, 1.0, 0.98));
+    B.S.add(frustum(THREE, FMB, Z0 + 8.0, Z0 + 13.0, 1.0, 0.98, "t"));
     ringRail(scalePts(FMB, 0.97), Z0 + 13.0, 1.0);
     var FMX = -1.0, FMY = -14.6;
     B.S.add(cylZ(THREE, 0.75, 0.9, 2.6, 10, FMX, FMY, Z0 + 13.0));
@@ -1151,7 +1295,7 @@ var HeroWaspLHD = (function () {
       B.M.add(strut(THREE, FMX, FMY + s * 4.6, Z0 + 22.2, FMX, FMY + s * 4.6, Z0 + 24.4, 0.05, 4));
     }
     B.S.add(place(THREE, new THREE.CylinderGeometry(2.0, 2.0, 0.3, 8).rotateX(PI / 2), FMX, FMY, Z0 + 25.2));
-    ringRail([[FMX - 1.6, FMY - 1.6], [FMX + 1.6, FMY - 1.6], [FMX + 1.6, FMY + 1.6], [FMX - 1.6, FMY + 1.6]], Z0 + 25.35, 0.9);
+    ringRail([[FMX - 1.3, FMY - 1.3], [FMX + 1.3, FMY - 1.3], [FMX + 1.3, FMY + 1.3], [FMX - 1.3, FMY + 1.3]], Z0 + 25.35, 0.9);
     for (s = -1; s <= 1; s += 2) {
       B.S.add(cylZ(THREE, 0.2, 0.25, 0.8, 6, FMX + s * 1.5, FMY, Z0 + 25.35));
       B.W.add(sphere(THREE, 0.62, 10, 6, FMX + s * 1.5, FMY, Z0 + 26.4));
@@ -1176,11 +1320,11 @@ var HeroWaspLHD = (function () {
 
     /* the stack, black-capped (the DPLA photograph)                       */
     var STK = [[-19.0, -19.4], [-19.0, -11.4], [-26.2, -11.4], [-26.2, -19.4]];
-    B.S.add(frustum(THREE, STK, Z0 + 8.0, Z0 + 14.0, 1.0, 0.985));
-    B.K.add(frustum(THREE, STK, Z0 + 14.0, Z0 + 15.6, 0.985, 0.95));
+    B.S.add(frustum(THREE, STK, Z0 + 8.0, Z0 + 14.0, 1.0, 0.985, ""));
+    B.K.add(frustum(THREE, STK, Z0 + 14.0, Z0 + 15.6, 0.985, 0.95, "t"));
     B.K.add(plate(THREE, scalePts(STK, 0.8), Z0 + 15.55, Z0 + 15.7));
     /* the small house between stack and forward mast, its whips            */
-    B.S.add(frustum(THREE, rect(-18.5, -5.0, -18.0, -10.2), Z0 + 8.0, Z0 + 9.8, 1.0, 0.97));
+    B.S.add(frustum(THREE, rect(-18.5, -5.0, -18.0, -10.2), Z0 + 8.0, Z0 + 9.8, 1.0, 0.97, "t"));
     [[-16.5, -12.0, 6.0], [-13.8, -17.0, 5.5], [-8.0, -11.0, 4.0], [44.0, -18.0, 7.5]].forEach(function (w) {
       var zb = w[0] > 30 ? Z0 : Z0 + 9.8;
       B.M.add(strut(THREE, w[0], w[1], zb, w[0], w[1], zb + w[2], 0.06, 4, 0.025));
@@ -1188,7 +1332,7 @@ var HeroWaspLHD = (function () {
 
     /* the after mast: taller, dark nearly all its height, three platforms  */
     var AMB = [[-26.2, -19.0], [-26.2, -9.0], [-34.5, -9.0], [-34.5, -19.0]];
-    B.S.add(frustum(THREE, AMB, Z0 + 8.0, Z0 + 12.0, 1.0, 0.98));
+    B.S.add(frustum(THREE, AMB, Z0 + 8.0, Z0 + 12.0, 1.0, 0.98, "t"));
     ringRail(scalePts(AMB, 0.97), Z0 + 12.0, 1.0);
     var AMX = -29.8, AMY = -14.4;
     B.K.add(cylZ(THREE, 0.62, 1.0, 15.0, 10, AMX, AMY, Z0 + 12.0));
@@ -1199,10 +1343,13 @@ var HeroWaspLHD = (function () {
     B.S.add(plate(THREE, APL, Z0 + 15.2, Z0 + 15.5));
     ringRail(scalePts(APL, 0.98), Z0 + 15.5, 1.0);
     B.S.add(cylZ(THREE, 0.5, 0.6, 1.4, 8, -34.4, AMY, Z0 + 15.5));
+    /* the dish as five slats edge to edge on an arc, hollow facing aft,
+       on a yoke off the pedestal                                         */
     for (j = 0; j < 5; j++) {
       var aa = (j - 2) * 0.24;
-      B.R.add(box(THREE, 0.14, 1.0, 2.2, -35.4 + 4.2 * (1 - Math.cos(aa)), AMY + 4.2 * Math.sin(aa), Z0 + 17.9, 0, -0.18, aa));
+      B.R.add(box(THREE, 0.14, 1.12, 2.2, -35.4 - 4.2 * (1 - Math.cos(aa)), AMY + 4.2 * Math.sin(aa), Z0 + 17.9, 0, -0.18, aa));
     }
+    B.M.add(strut(THREE, -34.4, AMY, Z0 + 16.8, -35.3, AMY, Z0 + 17.9, 0.12, 4));
     B.M.add(strut(THREE, -34.4, AMY, Z0 + 16.9, -33.0, AMY, Z0 + 18.4, 0.06, 4));
     /* the yard at 21 m with the Mk 23 TAS on a bracket forward of the mast  */
     B.S.add(box(THREE, 1.4, 12.0, 0.35, AMX, AMY, Z0 + 21.0));
@@ -1217,7 +1364,7 @@ var HeroWaspLHD = (function () {
     B.R.add(box(THREE, 0.3, 3.2, 0.3, AMX - 2.9, AMY, Z0 + 23.7));
     /* top platform at 27 m with the SPS-67, then the pole                  */
     B.S.add(place(THREE, new THREE.CylinderGeometry(2.2, 2.2, 0.3, 8).rotateX(PI / 2), AMX, AMY, Z0 + 27.0));
-    ringRail([[AMX - 1.8, AMY - 1.8], [AMX + 1.8, AMY - 1.8], [AMX + 1.8, AMY + 1.8], [AMX - 1.8, AMY + 1.8]], Z0 + 27.15, 0.9);
+    ringRail([[AMX - 1.4, AMY - 1.4], [AMX + 1.4, AMY - 1.4], [AMX + 1.4, AMY + 1.4], [AMX - 1.4, AMY + 1.4]], Z0 + 27.15, 0.9);
     B.S.add(cylZ(THREE, 0.3, 0.35, 0.8, 6, AMX + 1.0, AMY, Z0 + 27.15));
     B.R.add(box(THREE, 0.35, 3.0, 0.45, AMX + 1.0, AMY, Z0 + 28.2));
     B.M.add(strut(THREE, AMX, AMY, Z0 + 31.0, AMX, AMY, Z0 + 34.0, 0.05, 4, 0.025));
@@ -1242,7 +1389,7 @@ var HeroWaspLHD = (function () {
     for (i = 0; i < 3; i++) B.G.add(box(THREE, 2.2, 0.14, 0.8, -2.5 + i * 4.0, -19.5, Z0 + 11.2));
     for (s = -1; s <= 1; s += 2)
       for (i = 0; i < 4; i++) B.K.add(box(THREE, 1.2, 0.12, 2.6, -24.6 + i * 1.6, s > 0 ? -11.42 : -19.38, Z0 + 11.2));
-    [[-14.5, -16.5], [-12.0, -12.0], [-7.0, -17.5], [4.0, -8.4], [-36.0, -16.5], [22.5, -11.0], [33.0, -13.6], [28.0, -18.6]].forEach(function (v, q) {
+    [[-14.5, -16.5], [-12.0, -12.0], [-7.0, -17.5], [4.0, -10.6], [-36.0, -16.5], [22.5, -11.0], [33.0, -13.6], [28.0, -18.6]].forEach(function (v, q) {
       var zz = v[0] > 24 ? Z0 + 3.8 : v[0] > 18.5 ? Z0 + 7.4 : v[0] > -4.5 && v[0] < 9 ? Z0 + 13.0 : v[0] < -34 ? Z0 + 8.15 : Z0 + 9.8;
       if (v[0] > -19 && v[0] < -5 && v[1] < -10.2) zz = Z0 + 9.8;
       B.S.add(box(THREE, 1.4 + (q % 3) * 0.5, 1.0 + (q % 2) * 0.6, 0.9 + (q % 2) * 0.4, v[0], v[1], zz + 0.45));
@@ -1253,11 +1400,11 @@ var HeroWaspLHD = (function () {
       B.W.add(place(THREE, new THREE.CylinderGeometry(0.42, 0.42, 0.6, 8).rotateZ(PI / 2), 13.4, sly, Z0 + 13.1));
     }
     /* small dish and dome antennas on the after deckhouse and bridge roof   */
-    B.W.add(sphere(THREE, 0.85, 10, 6, -45.6, -18.6, Z0 + 4.2 + 0.2, 1, 1, 1, true));
-    B.W.add(sphere(THREE, 0.75, 10, 6, 10.4, -11.0, Z0 + 14.2 + 0.1, 1, 1, 1, true));
-    B.W.add(sphere(THREE, 0.75, 10, 6, 10.4, -18.4, Z0 + 14.2 + 0.1, 1, 1, 1, true));
+    B.W.add(sphere(THREE, 0.85, 10, 6, -45.6, -18.6, Z0 + 4.2, 1, 1, 1, true));
+    B.W.add(sphere(THREE, 0.75, 10, 6, 10.4, -11.0, Z0 + 14.2, 1, 1, 1, true));
+    B.W.add(sphere(THREE, 0.75, 10, 6, 10.4, -18.4, Z0 + 14.2, 1, 1, 1, true));
     for (j = 0; j < 6; j++) {
-      var wx2 = -44.0 + j * 4.5, wy2 = j % 2 ? -19.8 : -7.6;
+      var wx2 = -44.0 + j * 4.5, wy2 = j % 2 ? -19.8 : wx2 < -38 ? -9.6 : -7.6;   /* on the roof under it */
       var wz2 = wx2 < -38 ? Z0 + 4.2 : Z0 + 8.15;
       B.M.add(strut(THREE, wx2, wy2, wz2, wx2, wy2, wz2 + 3.0 + (j % 3), 0.05, 4, 0.02));
     }
@@ -1292,8 +1439,9 @@ var HeroWaspLHD = (function () {
     B.M.add(box(THREE, 11.8, 0.4, 0.5, -12.6, -(hullY(-12.6, 8.2) + 0.2), 8.2));
     for (i = 0; i < 6; i++) {
       var px2 = [70.0, 76.0, 84.0, 59.0, 92.0, 100.0][i];
-      B.K.add(box(THREE, 1.4, 0.16, 1.6, px2, -(hullY(px2, 14.0) + 0.04), 14.0 - (i % 2) * 2.5));
-      B.K.add(box(THREE, 1.4, 0.16, 1.6, px2 - 3.0, hullY(px2 - 3.0, 14.5) + 0.04, 14.5 - (i % 2) * 2.0));
+      var pz1 = 14.0 - (i % 2) * 2.5, pz2 = 14.5 - (i % 2) * 2.0;
+      B.K.add(box(THREE, 1.4, 0.16, 1.6, px2, -(hullY(px2, pz1) + 0.04), pz1));
+      B.K.add(box(THREE, 1.4, 0.16, 1.6, px2 - 3.0, hullY(px2 - 3.0, pz2) + 0.04, pz2));
     }
 
     /* the island Phalanx on the forward step, its own small group          */
