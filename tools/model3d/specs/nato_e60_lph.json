@@ -1,0 +1,215 @@
+{
+ "key": "nato_e60_lph",
+ "team": "nato",
+ "name": "USS Iwo Jima (LPH-2), Iwo Jima-class amphibious assault ship, as in the early 1960s",
+ "category": "ship",
+ "published": {
+  "len": 180.4,
+  "beam": 25.6,
+  "draught": 8.2,
+  "source": "en.wikipedia 'Iwo Jima-class amphibious assault ship' / Friedman, U.S. Amphibious Ships and Craft: 592 ft (180.4 m) overall, 84 ft (25.6 m) waterline beam, 105 ft (32 m) across the flight deck, 27 ft (8.2 m) draught; beam here is the WATERLINE beam (the model's Y extent is the 52.8 m from lift tip to lift tip)"
+ },
+ "len": 180.4,
+ "nodes": [],
+ "references": [],
+ "must_show": [
+  "one long flush flight deck x -90.2 .. +90.2, 32 m wide (y +-16), flat top at z 18.3, a BLUNT ROUND BOW forward of x +60 and a square stern with its corners cut back 3.2 m (x -86.8 .. -90.2) [P][B]; no angled deck, catapults or wires",
+  "the island on the STARBOARD edge, x -14.4 .. +8.6, inboard face y -8.2, outboard y -16.7, in stepped tiers to z 31.5 (13.2 m over the deck) with two window bands at 5-6 and 8-9 m over the deck and chamfered forward corners [P][F]",
+  "the stack at the island's after end, x -13.4 .. -8.0, head z 33.1 with a dark cap [T]",
+  "a single pole mast at x -2.2, y -12.6 off the island roof with the SPS-10 bar on a platform at z 35.9, the main yard at z 39.9 and a top yard at z 43.7, and the BEDSPRING air-search array at its head (z 46.8 .. 50.0) [F]",
+  "PORT deck-edge lift x +1.5 .. +20.0, platform out to y +26.4, hung outboard of a 2 m chamfered cut in the deck edge, the hangar opening dark in the side behind it (x +4.5 .. +17.0, z 8.6 .. 17.4) [O][P][B]",
+  "STARBOARD deck-edge lift abaft the island, x -46.5 .. -28.0, out to y -26.4, the same hangar opening behind it [P][T]",
+  "two twin 3in/50 mounts in round tubs in tandem on the starboard deck edge forward of the island, centres x +21.0 and +13.9 at y -17.2, on a sponson x +9.4 .. +25.6 just under the deck (floor z 17.3) [O][F][P]",
+  "two more twin 3in/50 in round tubs set into the stern corners under the deck, centres x -86.85, y +-12.0, floor z 13.7, each on a conical knee into the transom [T][S]",
+  "the wineglass transom at x -87.6 (waterline) raking aft to -87.9 at the gallery deck, two large stern ports at z 7.6, y +-5.4 [T][S]",
+  "a strongly flared Essex-like bow over a curved raked stem with no bulb: stem at x +84.0 on the waterline, +87.3 at z 8.6, +89.7 at the gallery deck z 17.4 [N][B][P]",
+  "catwalks with a rail on stanchions and the canted safety net along the deck edges at z 17.3 .. 18.0, white raft canisters on racks under the deck edge at z 14.9 [S][P]",
+  "the 1962 deck markings: eight big spot rings 17.4 m across in two staggered rows (y +7.3 / -7.0) on dark deck grey, e.g. at x +72, +57, +40, +23, -6, -37, -56, -72 [O][T]; no hull number, name or flags",
+  "one screw at x -82.2, z -5.6 with one rudder (x -87.2 .. -84.0) and a skeg (x -80.5 .. -56) [published: one shaft]"
+ ],
+ "landmarks": [
+  {
+   "name": "flight deck forward end",
+   "expect_m": [
+    90.2,
+    null,
+    null
+   ],
+   "tol_m": 0.5,
+   "model_at": {
+    "in_m": [
+     80,
+     -20,
+     17.9,
+     95,
+     20,
+     18.4
+    ],
+    "point": [
+     "max",
+     null,
+     null
+    ]
+   },
+   "note": "[P] deck ends at 4.4 px/m (+-0.5 m); the published 180.4 m overall"
+  },
+  {
+   "name": "flight deck after end",
+   "expect_m": [
+    -90.2,
+    null,
+    null
+   ],
+   "tol_m": 0.5,
+   "model_at": {
+    "in_m": [
+     -95,
+     -14,
+     17.9,
+     -80,
+     14,
+     18.4
+    ],
+    "point": [
+     "min",
+     null,
+     null
+    ]
+   },
+   "note": "[P] deck ends at 4.4 px/m"
+  },
+  {
+   "name": "island after face",
+   "expect_m": [
+    -14.4,
+    null,
+    null
+   ],
+   "tol_m": 0.5,
+   "model_at": {
+    "in_m": [
+     -16,
+     -16.8,
+     18.4,
+     -10,
+     -8.0,
+     21.5
+    ],
+    "point": [
+     "min",
+     null,
+     null
+    ]
+   },
+   "note": "[P] island x -14.4 .. +8.6 at 4.4 px/m"
+  },
+  {
+   "name": "port lift outboard edge and forward end",
+   "expect_m": [
+    20.0,
+    26.4,
+    null
+   ],
+   "tol_m": 0.6,
+   "model_at": {
+    "in_m": [
+     0,
+     19,
+     17.25,
+     22,
+     27,
+     18.35
+    ],
+    "point": [
+     "max",
+     "max",
+     null
+    ],
+    "whole": true
+   },
+   "note": "[O][P]: platform about 18.5 x 12.4 m, reaching some 10 m outboard of the deck edge; the box takes the platform slab only (whole triangles, z 17.25 .. 18.35, |y| > 19, outboard of the catwalk nets)"
+  },
+  {
+   "name": "starboard lift after end",
+   "expect_m": [
+    -46.5,
+    -26.4,
+    null
+   ],
+   "tol_m": 0.6,
+   "model_at": {
+    "in_m": [
+     -48,
+     -27,
+     17.25,
+     -26,
+     -19,
+     18.35
+    ],
+    "point": [
+     "min",
+     "min",
+     null
+    ],
+    "whole": true
+   },
+   "note": "[P][T]: abaft the island, taken as the port lift's size; the box takes the platform slab only (whole triangles, z 17.25 .. 18.35, |y| > 19, outboard of the catwalk nets)"
+  },
+  {
+   "name": "bedspring top",
+   "expect_m": [
+    null,
+    null,
+    50.0
+   ],
+   "tol_m": 1.5,
+   "model_at": {
+    "in_m": [
+     -5,
+     -17,
+     44,
+     1,
+     -8,
+     52
+    ],
+    "point": [
+     null,
+     null,
+     "max"
+    ]
+   },
+   "note": "[F][P]: the bedspring's top 31.7 m over the deck (+-1.5 m, as the header's NOT CONFIRMED says)"
+  },
+  {
+   "name": "stem at the waterline",
+   "expect_m": [
+    84.0,
+    null,
+    null
+   ],
+   "tol_m": 0.6,
+   "model_at": {
+    "in_m": [
+     78,
+     -4,
+     -0.9,
+     90,
+     4,
+     1.3
+    ],
+    "whole": true,
+    "point": [
+     "max",
+     null,
+     null
+    ]
+   },
+   "note": "[P] the waterline stem 6 m abaft the deck tip; the boot band (z -0.8 .. 1.2) reaches 84.5 at its top"
+  }
+ ],
+ "not_confirmed": [
+  "no scale drawing on Wikimedia Commons: every station is read off photographs [P][O][T][F][B][S][N][V] against the published length and deck width (+-0.5 m in plan, +-1.5 m in height); no outline reference is gated",
+  "the deck height (18.3 m), the lift platforms' size, the mast and island heights, the hull lines under the water (fitted to the published length, beam, draught and displacement)",
+  "the stern corners cut back over the quarter tubs; the small director on the island roof; the crane abaft the island; the whip positions; the hangar bay depth and beams; the stations of the side doors, ladders, seams and scuttles (spacing as [V]); the catwalk stanchion spacing (about 3 m)"
+ ]
+}

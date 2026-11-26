@@ -1,0 +1,305 @@
+{
+ "key": "fra_e60_carrier",
+ "team": "nato",
+ "name": "Clemenceau (R98) as completed 1961, eight 100 mm (js/hero/fr_navy_early.js clemenceau(\"e60\"); Foch drawn the same)",
+ "category": "ship",
+ "published": {
+  "len": 265.0,
+  "beam": 51.2,
+  "draught": 8.6,
+  "source": "en.wikipedia 'Clemenceau-class aircraft carrier' (read by the builder of js/hero/fr_navy_early.js, 2026-11): 265 m overall, 51.2 m overall beam, draught 8.6 m; the landing area 165.5 x 29.5 m at 8 deg"
+ },
+ "len": 265.0,
+ "nodes": [],
+ "references": [
+  {
+   "name": "[K1] FS Clem plan1, starboard profile drawing",
+   "image": "ref/fra_e60_carrier/clem_profile_k1.jpg",
+   "source": "Wikimedia Commons 'FS Clem plan1.jpg' (1600 x 450)",
+   "view": "side",
+   "px_per_m": 5.79,
+   "anchor_px": [
+    40,
+    370
+   ],
+   "anchor_m": [
+    -132.5,
+    0.0
+   ],
+   "mask": "dark",
+   "mask_opts": {
+    "threshold": 150,
+    "close_px": 3
+   },
+   "window_m": [
+    -132.5,
+    -8.6,
+    132.5,
+    40.0
+   ],
+   "exact": false,
+   "note": "Flight deck after tip px 40, forward tip px 1575 = the published 265 m: 5.79 px/m; the boot-top (waterline) row 370, the flight-deck edge row 272 (16.9 m; re-read by a column scan at px 100, batch 4), keel row ~420 (8.6 m, the published draught: a second dimension, agrees within 2 px). X = (px - 40) / 5.79 - 132.5, Z = (370 - py) / 5.79. The drawing is light grey on a light textured ground with numbered leader lines over the island, so its dark-line mask is not a clean silhouette: kept as a reference for the reviewer and the overlay, NOT gated (exact false); the island and mast heights are hand readings (landmarks). Readings: island d 112 - 166, main block to 31.1, bridge 37.8, mast head 58.7 at d 150 (a column scan finds the pole tip at px 905 - 910, rows 22 - 30, z 58.7 - 60.1), the DRBV 23 bedstead (8) z 41.5 - 47.5 at d 136 - 145, the 100 mm sponsons (1) at d 24, 41 and 193, 209, boat recesses d 47 - 77 and 167 - 187, the deck-edge lift (3) lowered at hangar level px 575 - 665 (d 92.4 - 108), z 8.6 - 14.7."
+  },
+  {
+   "name": "[K3] FS Clemenceau (R98) side view, starboard broadside afloat",
+   "image": "ref/fra_e60_carrier/clem_broadside_k3.jpg",
+   "source": "Wikimedia Commons 'FS Clemenceau (R98) side view.jpg'",
+   "view": "quarter",
+   "exact": false,
+   "note": "For the reviewer: a long-range starboard broadside, slightly off the beam (the stern is nearer): the stepped island with the radome low at its after end, the tall pole mast with its yards, the thin flight-deck overhang over open galleries, the strongly flared bow, the boat and lift openings in the hull side. Deck edge 16.9 m amidships at [K1]'s scale (cross-check). Perspective: not measured for stations."
+  },
+  {
+   "name": "[K2] Foch (R99) from astern and above, 1982",
+   "image": "ref/fra_e60_carrier/foch_aerial_aft_k2.jpg",
+   "source": "Wikimedia Commons 'French carrier Foch (R99) aerial view aft 1982.jpeg'",
+   "view": "quarter",
+   "exact": false,
+   "note": "The plan from astern (sister ship): the 8 deg angled deck to port with its white edge lines and dashed centre line, the island on its starboard sponson with the radome forward, the deck-edge lift abaft the island, the forward lift to starboard, 100 mm mounts on the four quarters, the narrow bow. Not to scale (oblique)."
+  },
+  {
+   "name": "[K4] F-14As over Foch (R99), from port and above",
+   "image": "ref/fra_e60_carrier/foch_f14_port_k4.jpg",
+   "source": "Wikimedia Commons 'Grumman F-14A Tomcats of VF-14 fly over French aircraft carrier Foch (R99) ... (6451896).jpg'",
+   "view": "quarter",
+   "exact": false,
+   "note": "Oblique from the port bow quarter: the angled deck's port sponson, the round-down aft, the gallery openings under the deck along the port side, the island's tiers."
+  }
+ ],
+ "must_show": [
+  "flight deck 265 m from x -132.5 (after tip) to +132.5 (forward tip), top z 16.9 [K1], the axial deck narrowing to +-3.5 m at the bow (x 132.5)",
+  "the angled deck at 8 deg to port: the port edge from y +12.6 at x -122.5 (d 10) out to y +32.0 at x +17.5 (d 150), carried on the port sponson x +17.5..+63.5 (d 150 - 196) [K2]",
+  "the landing area's white lines: the port line 1.2 m in from the port edge, the foul line 29.5 m (the published width) to starboard of it from x -96.5 (d 36) to +21.7 (d 154), the dashed centre line between them [K2]",
+  "the island on its starboard sponson x -16.5..+29.5 (d 116 - 162), centred y -16.6, three tiers: the first to z 24.0 over its whole length, the second from x -6.0 (d 126.5) to +27.5 at 31.1, the bridge tier x -4.5..+19.5 to 37.8 [K1]",
+  "the funnel on the island's top tier at x +8.0 (d 140.5) with its dark cap, top z 37.4",
+  "the large radome standing free on the first tier's roof (z 24.0) at the island's after end, abaft the second tier: centre x -11.5 (d 121), z 27.5, about 7.6 m across (r 3.8) [K1] [K2]",
+  "the lattice mast at x +18 (d 150.5) from the bridge roof (37.8) to z 50, the pole on it to z 58.7 [K1]",
+  "the DRBV 23 bedstead on its platform at x +8.0 (d 140.5), z 41.5 - 47.5 [K1]",
+  "eight 100 mm Mle 1953 on deck-edge sponsons, two on each quarter: x -108.5 / -91.5 (d 24, 41) and +60.5 / +76.5 (d 193, 209), both sides [K1] [K2]",
+  "the deck-edge lift's opening in the starboard hangar side x -40.1..-24.5 (d 92.4 - 108), z 8.6 - 14.7 [K1]",
+  "boats in their side recesses x -85.5..-55.5 (d 47 - 77) and +34.5..+54.5 (d 167 - 187), z 7.2 - 10.6, both sides [K1]",
+  "plain Marine Nationale light grey over red-brown anti-fouling with a black boot-top (z 0 - 0.8) from the transom's waterline at x -118 (d 14.5) to the stem's at about +110 [K3]; no hull number, no deck lettering",
+  "a near-vertical transom at x -118 (d 14.5) from the waterline to the hangar deck, under the stern overhang of the flight deck [K3]",
+  "the angled deck's support band under the port deck edge, x -92.5..+63.5 (d 40 - 196), z 13.4 - 15.95, its diagonal wall from y +15 at d 40 to +31.4 at d 150 [K4]"
+ ],
+ "landmarks": [
+  {
+   "name": "flight deck forward tip",
+   "ref": 0,
+   "expect_m": [
+    132.5,
+    16.9
+   ],
+   "tol_m": 0.5,
+   "model_at": {
+    "material": "#55595b",
+    "point": [
+     "max",
+     "max"
+    ]
+   },
+   "note": "[K1] forward tip px 1575 (the published length's end), deck edge row 272; tol 0.5 m: +-3 px line width at 5.79 px/m"
+  },
+  {
+   "name": "flight deck after tip",
+   "ref": 0,
+   "expect_m": [
+    -132.5,
+    16.9
+   ],
+   "tol_m": 0.5,
+   "model_at": {
+    "material": "#55595b",
+    "point": [
+     "min",
+     "max"
+    ]
+   },
+   "note": "[K1] after tip px 40, row 272"
+  },
+  {
+   "name": "island main block top (abaft the bridge tier)",
+   "ref": 0,
+   "expect_m": [
+    null,
+    31.1
+   ],
+   "tol_m": 0.5,
+   "model_at": {
+    "material": "#9ea2a3",
+    "in_m": [
+     22.0,
+     -19.5,
+     24.5,
+     26.0,
+     -13.5,
+     31.6
+    ],
+    "point": [
+     null,
+     "max"
+    ]
+   },
+   "note": "[K1] the main block's roof row 190 (31.1 m) at d 154.5 - 158.5"
+  },
+  {
+   "name": "bridge tier roof",
+   "ref": 0,
+   "expect_m": [
+    null,
+    37.8
+   ],
+   "tol_m": 0.5,
+   "model_at": {
+    "material": "#9ea2a3",
+    "in_m": [
+     -5.0,
+     -19.0,
+     32.0,
+     16.0,
+     -14.0,
+     38.3
+    ],
+    "point": [
+     null,
+     "max"
+    ]
+   },
+   "note": "[K1] the bridge roof row 151 (37.8 m) at d 128 - 152 (the funnel, 37.4, is under it)"
+  },
+  {
+   "name": "mast head",
+   "ref": 0,
+   "expect_m": [
+    null,
+    58.7
+   ],
+   "tol_m": 0.6,
+   "model_at": {
+    "in_m": [
+     16.0,
+     -18.5,
+     50.5,
+     20.0,
+     -14.5,
+     61.0
+    ],
+    "point": [
+     null,
+     "max"
+    ]
+   },
+   "note": "[K1] the pole tip px 905 - 910, rows 22 - 30 (58.7 - 60.1; the builder's reading 58.7)"
+  },
+  {
+   "name": "DRBV 23 bedstead top",
+   "ref": 0,
+   "expect_m": [
+    null,
+    47.5
+   ],
+   "tol_m": 0.5,
+   "model_at": {
+    "in_m": [
+     3.0,
+     -21.0,
+     43.0,
+     12.5,
+     -12.0,
+     48.5
+    ],
+    "point": [
+     null,
+     "max"
+    ]
+   },
+   "note": "[K1] item 8, rows 95 - 130 at px 827 - 880 (d 136 - 145): z 41.5 - 47.5"
+  },
+  {
+   "name": "radome centre station",
+   "ref": 0,
+   "expect_m": [
+    -11.5,
+    null
+   ],
+   "tol_m": 1.0,
+   "model_at": {
+    "material": "#c4c6c2",
+    "in_m": [
+     -15.0,
+     -20.0,
+     24.0,
+     -8.0,
+     -13.0,
+     31.5
+    ],
+    "point": [
+     "mid",
+     null
+    ]
+   },
+   "note": "[K1] item 5, the dome centre px 740 (d 121)"
+  },
+  {
+   "name": "second tier after face",
+   "ref": 0,
+   "expect_m": [
+    -6.0,
+    null
+   ],
+   "tol_m": 0.5,
+   "model_at": {
+    "material": "#9ea2a3",
+    "in_m": [
+     -9.0,
+     -19.5,
+     25.0,
+     -2.0,
+     -13.5,
+     30.8
+    ],
+    "point": [
+     "min",
+     null
+    ]
+   },
+   "note": "[K1] the second tier's after face about px 765 (d 126.5); the radome stands abaft it on the 24.0 roof (review, batch 4)"
+  },
+  {
+   "name": "radome top and outboard side",
+   "ref": 0,
+   "expect_m": [
+    null,
+    -20.4,
+    31.3
+   ],
+   "tol_m": 0.4,
+   "model_at": {
+    "material": "#c4c6c2",
+    "in_m": [
+     -16.0,
+     -22.0,
+     22.0,
+     -7.0,
+     -11.0,
+     33.0
+    ],
+    "point": [
+     null,
+     "min",
+     "max"
+    ]
+   },
+   "note": "[K1] the dome about 7.8 m across (px 205 - 295 at the reviewer's 11.58 px/m), top about row 189; a dome buried in the second tier fails this (top 30.7 and side -19.3 before)"
+  }
+ ],
+ "not_confirmed": [
+  "the waterline half-breadth (15.9 m drawn; no published figure fetched) and every half-breadth between the stations; the bow flare",
+  "the flight deck's plan between the published overall beam, the 8 deg landing area and [K2]'s proportions (oblique); the lift outlines and catapult tracks drawn as flush seams",
+  "the landing-area lines' ends and the dashed centre line's pitch (by eye off [K2]); the foul line is put 29.5 m (the published landing-area width) from the port line",
+  "the sponsons' undersides (drawn flat) and the port sponson's plan d 150 - 196",
+  "the island's breadth (4.8 / 4.6 / 4.0 m drawn); the radome's height (K1's dome reads 27 - 28.5 m at its widest, drawn centred at 28)",
+  "the deck-edge lift's opening drawn as a recess, the lift itself not drawn",
+  "Foch: no reference here shows a difference from Clemenceau; she is drawn the same",
+  "the stern below the hangar deck: the transom's half-breadth at the water (8.4 m) and the cut-up's run d 14.5 - 35 (by eye off [K3], no lines plan)"
+ ]
+}

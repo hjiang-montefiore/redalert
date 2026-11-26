@@ -10,17 +10,17 @@
      fra_e00_recon          HeroFrArmour2.vbl     Panhard VBL with the 12.7 mm ring mount       NEW (one build:
                                                   the e00 row's add-on plates were not identified in a photo)
      fra_e80_lighttank      HeroFrArmour2.rc80    AMX-10 RC, French olive                       NEW
-     fra_e90_lighttank      HeroFrArmour2.rc90    AMX-10 RC, Centre-Europe three-tone           NEW
+     fra_e90_lighttank      HeroFrArmour2.rc90    AMX-10 RC, plain green (was the three-tone)   NEW
      fra_e00_lighttank      HeroFrArmour2.rcr     AMX-10 RCR: bow and side add-on armour, sight NEW
      fra_e60_ifv, fra_e80_ifv  HeroFrArmour2.p70  AMX-10P Toucan, olive                         NEW
-     fra_e90_ifv            HeroFrArmour2.p90     AMX-10P, three-tone (Toucan II not told apart) NEW
-     fra_e00_ifv            HeroFrArmour2.vbci    VBCI with the Dragar turret, three-tone       NEW
+     fra_e90_ifv            HeroFrArmour2.p90     AMX-10P, green (Toucan II not told apart)      NEW
+     fra_e00_ifv            HeroFrArmour2.vbci    VBCI with the Dragar turret, plain green      NEW
      fra_e60_spg            HeroFrArmour2.mkf3    155 Mk F3 on the shortened AMX-13 chassis     NEW (hull drawn
                                                   here: F1 shows it 0.44 m shorter than HeroAMX13's tank hull,
                                                   with four return rollers and a low rear idler)
      fra_e80_spg            HeroFrArmour2.auf1    AuF1: HeroAMX30.build (hull, running gear,    REUSED hull
      fra_e90_spg            HeroFrArmour2.auf1ce    wheels) with its "turret" removed and the GCT turret
-                                                  drawn here; e90 re-maps the hull's paint to the three-tone
+                                                  drawn here; e90 re-maps the hull's paint to the green
      fra_e00_spg            HeroFrArmour2.caesar  CAESAR on the Sherpa 5 6x6, on the march      NEW
      fra_e80_tankdestroyer  HeroFrArmour2.vab     VAB 4x4 Mephisto, launcher raised             NEW
      fra_e90_spaag          HeroRoland.build      Roland 2 on the AMX-30R (eu_sams.js), as fra_e80_sam   REUSED
@@ -135,11 +135,15 @@
      with the long 90 (S1-S3).  CAESAR - the long armoured crew cab, the shell racks with round
      cells, the gun laid forward into the fork, the folded spade (C1, C2).  VBL - the tiny body
      with the front panel lamps, two windscreens, the engine louvres, the ring-mounted M2 (B1, B2).
-   PAINT: French olive (#525230, fr_tanks.js's) on the rows of 1951-1985 and on the VAB; the
-     Centre-Europe three-tone (green #3f5634, brown #5e4a37, black #25272a: P1 and R3 sampled,
-     about 0.8 of level) on the 1990s and 2000s rows, as P1, R3, V1-V4, G1, C1, C2, B1 show it.
-     NOT CONFIRMED: the date the three-tone reached each type (e80 rows are drawn olive; G2 shows
-     an AuF1 in the three-tone in 1996).  The Gulf sand (R1, M1), the 2021 earth brown (R4, L1)
+   PAINT (plain-paint policy, batch 4): French olive (#525230, fr_tanks.js's) on the rows of
+     1951-1985 and on the VAB; ONE COAT of green (CE3: #414e35 authored, the three-tone's green
+     taken alone, darker than sampled so it does not read lime at the game camera) on the 1990s
+     and 2000s rows, where P1, R3, V1-V4, G1, C1, C2, B1 show the Centre-Europe three-tone; no
+     camouflage is drawn.  Both carry detailTex's weathering (seams, bolt rows, panels, streaks,
+     grime, chips): x1.3 on the olive, x3.0 on the green's seams, bolts, panels, streaks and chips
+     (the grime and oil ellipses held at x1.2, the green's blots within 4 levels of its base, so
+     no ovals read as camouflage), which keeps the game-camera detail of the camouflaged originals.  NOT CONFIRMED: the green's shade; the date the three-tone
+     reached each type (e80 rows are drawn olive; G2 shows an AuF1 in the three-tone in 1996).  The Gulf sand (R1, M1), the 2021 earth brown (R4, L1)
      and white UN schemes (B2) are not drawn.  No roundels, numbers, names or tactical signs.
      Team colour (C.team): small strips on a deck or turret roof of each.
    NOT CONFIRMED (proportion or judgement): RC - the turret ring's place (X -0.15), the turret
@@ -193,6 +197,21 @@
      CAESAR 10.08 x 2.83 (mirrors) x 3.87 (fork) / 10 x 2.55 x 3.7; 7664; 10.
      VAB Mephisto 6.22 x 2.74 (mirrors) x 3.16 (launcher up) / 5.98 x 2.49 x 2.06; 5068; 11.
      Roland (reused) 6.94 x 3.12 x 4.37; 14426; 13.  M270 (reused) 7.00 x 3.02 x 2.55; 11264; 16.
+     BATCH 4 (floating parts and the gate's other FAILs): every fitting that stood clear of its
+     face is seated on it - the RC turret's lifting eyes and cheek handles, the AMX-10P's nose
+     towing eyes (on the raked lower plate), the VBCI's side studs (vbY: the leaning face), the
+     VAB's mirrors (an arm out of the cab side; the left head was 0.15 m off its post), the AML's
+     side lamps (on the guards' crowns), deck eyes, handles and filler, the ERC's deck-edge bolts
+     and turret handles, the CAESAR's team strips (were over the open bed; now on the rack tops)
+     and hand wheels (a shaft to the mount), the VBL's door seam, hinges, handle and step (vlY: the
+     raked lower side).  VAB: the lower and upper hull lofts made one (two hidden 6 x 2.5 m faces
+     at the chine gone).  VBCI (the lead row, spec tools/model3d/specs/fra_e00_ifv.json): vbDetail /
+     vbTurretDetail from V1 and V3, the sight head round and at V1's station, the smoke
+     dischargers at the turret's rear corners, the lower hull in the paint.  AML: the front coil
+     springs (A2), 26 tread lugs.  VBL: coil springs on the dampers, the louvres seated above the
+     front arch in the body colour, bonnet handles and latches, 28 tread lugs.  CAESAR: three rows
+     of rack cells, the rack-top caps and tarpaulins, the cab ladder (C2); len 9.70 -> 10.00 (the
+     published 10 m; drawn 10.08).  VAB: the rolled tarpaulin, the troop box's vision ports (M2).
    Model space: +X nose, +Y left, +Z up, metres, ground at z = 0.  ASCII only.  */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
@@ -208,73 +227,25 @@ var HeroFrArmour2 = (function () {
      Centre-Europe three-tone (green, brown, black) of the late 1980s on: sampled off the
      Saumur AMX-10P (P1, museum light: green #3c6b3e, brown #7a5f48, black #2a2d33) and the
      Metz AMX-10 RCR (R3, daylight), taken to about 0.8 of level. */
-  var OLIVE = { base: "#525230", blots: ["#4a4a2b", "#5a5a37"], seed: 1981 };
-  var CE3 = { base: "#3f5634", brown: "#5e4a37", black: "#25272a", seed: 1990 };
-  var _camo = {};
+  var OLIVE = { base: "#525230", blots: ["#4a4a2b", "#5a5a37"], seed: 1981, wear: 1.3 };
+  /* PLAIN-PAINT POLICY (no camouflage): the rows that wore the three-tone take its green alone,
+     one coat (CE3 keeps the name; its soft blots are the green's own shades, as OLIVE's) */
+  var CE3 = { base: "#414e35", blots: ["#3d4a32", "#455239"], seed: 1990, wear: 3.0 };   /* blots within 4 levels of the base */
   function rng(seed) { var s = seed >>> 0; return function () { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
-  /* the three-tone: big soft-edged blotches of brown and black over the green, the canvas
-     wrapping (0.34 UV per metre: one tile is 2.94 m of hull) */
-  function camoTex(THREE, P) {
-    if (_camo[P.seed] !== undefined) return _camo[P.seed];
-    var tx = null;
-    try {
-      var cv = document.createElement("canvas"), S = 512, q, R = rng(P.seed), i, k, x, y, n, a, r;
-      cv.width = cv.height = S; q = cv.getContext("2d");
-      q.fillStyle = P.base; q.fillRect(0, 0, S, S);
-      function blob(col, cx, cy, rad) {
-        q.fillStyle = col; q.beginPath();
-        n = 9;
-        for (k = 0; k <= n; k++) {
-          a = k / n * TAU; r = rad * (0.65 + R() * 0.55);
-          var px = cx + Math.cos(a) * r * 1.5, py = cy + Math.sin(a) * r * 0.8;
-          if (k === 0) q.moveTo(px, py); else q.lineTo(px, py);
-        }
-        q.closePath();
-        for (var dx = -S; dx <= S; dx += S) for (var dy = -S; dy <= S; dy += S) { q.save(); q.translate(dx, dy); q.fill(); q.restore(); }
-      }
-      for (i = 0; i < 6; i++) blob(P.brown, R() * S, R() * S, 55 + R() * 45);
-      for (i = 0; i < 5; i++) blob(P.black, R() * S, R() * S, 35 + R() * 30);
-      for (i = 0; i < 120; i++) {               /* grime and wear */
-        q.fillStyle = (i % 3) ? "rgba(20,18,12,0.06)" : "rgba(235,230,205,0.05)";
-        q.fillRect(R() * S, R() * S, 3 + R() * 40, 2 + R() * 26);
-      }
-      tx = new THREE.CanvasTexture(cv);
-      tx.wrapS = tx.wrapT = THREE.RepeatWrapping;
-      if (THREE.sRGBEncoding !== undefined) tx.encoding = THREE.sRGBEncoding;
-      tx.anisotropy = 4;
-    } catch (e) { tx = null; }
-    _camo[P.seed] = tx;
-    return tx;
-  }
   var __DTEX = {};
   /* DETAIL PAINT (the detail pass): a 512 px tile over 2.94 m of surface (UVs 0.34 a metre, 174 px a
      metre).  Over the base colour and its soft blots: plate seams with a lit edge, bolt rows along some
      of them, access-panel outlines with corner screws, rain streaks, grime, dust, chipped paint and oil
      spots.  Plain paint - no markings, numbers or camouflage. */
   function detailTex(THREE, P) {
-    var key = "detail" + P.seed + P.base;
+    var key = "detail" + P.seed + P.base + (P.wear || 1), W = P.wear || 1, WE = Math.min(W, 1.2);   /* the grime and oil ellipses stay near x1: at x2.2 they read as ovals */
     if (__DTEX[key] !== undefined) return __DTEX[key];
     var t = null;
     try {
       var S = 512, cv = document.createElement("canvas"), q, R = rng(P.seed * 7 + 13), i, k, x, y, w, h, ox, oy, a, xs, n;
       cv.width = cv.height = S; q = cv.getContext("2d");
       q.fillStyle = P.base; q.fillRect(0, 0, S, S);
-      if (P.brown) {
-        /* the Centre-Europe three-tone, as camoTex draws it: brown and black blotches over the green */
-        var blob = function (col, cx, cy, rad) {
-          var kk, aa, rr, px, py, dx, dy;
-          q.fillStyle = col; q.beginPath();
-          for (kk = 0; kk <= 9; kk++) {
-            aa = kk / 9 * TAU; rr = rad * (0.65 + R() * 0.55);
-            px = cx + Math.cos(aa) * rr * 1.5; py = cy + Math.sin(aa) * rr * 0.8;
-            if (kk === 0) q.moveTo(px, py); else q.lineTo(px, py);
-          }
-          q.closePath();
-          for (dx = -S; dx <= S; dx += S) for (dy = -S; dy <= S; dy += S) { q.save(); q.translate(dx, dy); q.fill(); q.restore(); }
-        };
-        for (i = 0; i < 6; i++) blob(P.brown, R() * S, R() * S, 55 + R() * 45);
-        for (i = 0; i < 5; i++) blob(P.black, R() * S, R() * S, 35 + R() * 30);
-      } else {
+      {
         /* soft mottling in the base's own shades, drawn wrapped so the tile repeats without a seam */
         for (k = 0; k < P.blots.length; k++) {
           q.fillStyle = P.blots[k];
@@ -292,22 +263,22 @@ var HeroFrArmour2 = (function () {
       xs = [];
       for (i = 0; i < 4; i++) xs.push(Math.floor(i * 128 + 20 + R() * 80) + 0.5);
       for (i = 0; i < 4; i++) {
-        q.globalAlpha = 1; q.strokeStyle = "rgba(14,15,10,0.42)"; q.lineWidth = 2;
+        q.globalAlpha = 1; q.strokeStyle = "rgba(14,15,10," + Math.min(1, 0.42 * W).toFixed(3) + ")"; q.lineWidth = 2;
         q.beginPath(); q.moveTo(xs[i], 0); q.lineTo(xs[i], S); q.stroke();
-        q.strokeStyle = "rgba(255,250,225,0.12)"; q.lineWidth = 1;
+        q.strokeStyle = "rgba(255,250,225," + Math.min(1, 0.12 * W).toFixed(3) + ")"; q.lineWidth = 1;
         q.beginPath(); q.moveTo(xs[i] + 2, 0); q.lineTo(xs[i] + 2, S); q.stroke();
         y = Math.floor(60 + R() * 120) + 0.5;
         for (k = 0; k < 2; k++) {
           var xa = xs[i], xb = i < 3 ? xs[i + 1] : xs[0] + S;
-          q.strokeStyle = "rgba(14,15,10,0.38)"; q.lineWidth = 2;
+          q.strokeStyle = "rgba(14,15,10," + Math.min(1, 0.38 * W).toFixed(3) + ")"; q.lineWidth = 2;
           q.beginPath(); q.moveTo(xa, y); q.lineTo(xb, y); q.stroke();
           q.beginPath(); q.moveTo(xa - S, y); q.lineTo(xb - S, y); q.stroke();
-          q.strokeStyle = "rgba(255,250,225,0.10)"; q.lineWidth = 1;
+          q.strokeStyle = "rgba(255,250,225," + Math.min(1, 0.10 * W).toFixed(3) + ")"; q.lineWidth = 1;
           q.beginPath(); q.moveTo(xa, y + 2); q.lineTo(xb, y + 2); q.stroke();
           /* a bolt row along every other seam */
           if ((i + k) % 2 === 0) for (x = xa + 8; x < xb - 4; x += 15) {
-            q.fillStyle = "rgba(12,12,8,0.45)"; q.fillRect(x % S, y - 6, 3, 3);
-            q.fillStyle = "rgba(255,250,225,0.18)"; q.fillRect(x % S, y - 7, 2, 1);
+            q.fillStyle = "rgba(12,12,8," + Math.min(1, 0.45 * W).toFixed(3) + ")"; q.fillRect(x % S, y - 6, 3, 3);
+            q.fillStyle = "rgba(255,250,225," + Math.min(1, 0.18 * W).toFixed(3) + ")"; q.fillRect(x % S, y - 7, 2, 1);
           }
           y = (y + 200 + Math.floor(R() * 60)) % S;
         }
@@ -315,32 +286,32 @@ var HeroFrArmour2 = (function () {
       /* access panels: outlined, a screw at each corner */
       for (i = 0; i < 6; i++) {
         x = Math.floor(R() * (S - 90)) + 10.5; y = Math.floor(R() * (S - 70)) + 10.5; w = 26 + Math.floor(R() * 60); h = 18 + Math.floor(R() * 44);
-        q.strokeStyle = "rgba(14,15,10,0.36)"; q.lineWidth = 1.5; q.strokeRect(x, y, w, h);
-        q.strokeStyle = "rgba(255,250,225,0.10)"; q.lineWidth = 1; q.strokeRect(x + 1.5, y + 1.5, w, h);
-        q.fillStyle = "rgba(12,12,8,0.5)";
+        q.strokeStyle = "rgba(14,15,10," + Math.min(1, 0.36 * W).toFixed(3) + ")"; q.lineWidth = 1.5; q.strokeRect(x, y, w, h);
+        q.strokeStyle = "rgba(255,250,225," + Math.min(1, 0.10 * W).toFixed(3) + ")"; q.lineWidth = 1; q.strokeRect(x + 1.5, y + 1.5, w, h);
+        q.fillStyle = "rgba(12,12,8," + Math.min(1, 0.5 * W).toFixed(3) + ")";
         q.fillRect(x + 3, y + 3, 2, 2); q.fillRect(x + w - 5, y + 3, 2, 2); q.fillRect(x + 3, y + h - 5, 2, 2); q.fillRect(x + w - 5, y + h - 5, 2, 2);
       }
       q.globalAlpha = 1;
       /* rain streaks down the plates (side faces carry v along z) */
       for (i = 0; i < 260; i++) {
-        q.fillStyle = (i % 4) ? "rgba(18,16,10,0.08)" : "rgba(230,225,200,0.06)";
+        q.fillStyle = (i % 4) ? "rgba(18,16,10," + Math.min(1, 0.08 * W).toFixed(3) + ")" : "rgba(230,225,200," + Math.min(1, 0.06 * W).toFixed(3) + ")";
         q.fillRect(R() * S, R() * S, 1 + R() * 2, 8 + R() * 54);
       }
       /* grime and dust patches */
       for (i = 0; i < 70; i++) {
-        q.fillStyle = (i % 3) ? "rgba(30,25,15,0.08)" : "rgba(150,135,100,0.08)";
+        q.fillStyle = (i % 3) ? "rgba(30,25,15," + Math.min(1, 0.08 * WE).toFixed(3) + ")" : "rgba(150,135,100," + Math.min(1, 0.08 * WE).toFixed(3) + ")";
         q.beginPath(); q.ellipse(R() * S, R() * S, 8 + R() * 46, 4 + R() * 22, R() * Math.PI, 0, TAU); q.fill();
       }
       /* chipped paint and scratches */
       for (i = 0; i < 180; i++) {
-        q.fillStyle = (i % 2) ? "rgba(205,200,175,0.22)" : "rgba(10,10,8,0.30)";
+        q.fillStyle = (i % 2) ? "rgba(205,200,175," + Math.min(1, 0.22 * W).toFixed(3) + ")" : "rgba(10,10,8," + Math.min(1, 0.30 * W).toFixed(3) + ")";
         n = 1 + Math.floor(R() * 3); q.fillRect(R() * S, R() * S, n, n);
       }
-      q.strokeStyle = "rgba(210,205,180,0.14)"; q.lineWidth = 1;
+      q.strokeStyle = "rgba(210,205,180," + Math.min(1, 0.14 * W).toFixed(3) + ")"; q.lineWidth = 1;
       for (i = 0; i < 14; i++) { x = R() * S; y = R() * S; q.beginPath(); q.moveTo(x, y); q.lineTo(x + (R() - 0.5) * 40, y + (R() - 0.5) * 14); q.stroke(); }
       /* oil and fuel spots */
       for (i = 0; i < 8; i++) {
-        q.fillStyle = "rgba(12,10,6,0.16)";
+        q.fillStyle = "rgba(12,10,6," + Math.min(1, 0.16 * WE).toFixed(3) + ")";
         q.beginPath(); q.ellipse(R() * S, R() * S, 5 + R() * 12, 4 + R() * 9, 0, 0, TAU); q.fill();
       }
       t = new THREE.CanvasTexture(cv);
@@ -351,11 +322,11 @@ var HeroFrArmour2 = (function () {
     __DTEX[key] = t;
     return t;
   }
-  /* materials: HeroFrKit's (paint, dark, wheel, team), the paint re-mapped for the three-tone */
+  /* materials: HeroFrKit's (paint, dark, wheel, team), the paint re-mapped for the later green */
   function mats(THREE, C, scheme) {
     var T = K.materials(THREE, C, OLIVE), tx;
     if (scheme === "ce3") {
-      tx = camoTex(THREE, CE3);
+      tx = detailTex(THREE, CE3);
       T.paint = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0.05 });
       if (tx) T.paint.map = tx; else T.paint.color.set(CE3.base);
       T.base = CE3.base;
@@ -585,7 +556,7 @@ var HeroFrArmour2 = (function () {
       cylZ(D, 1.75, s * 1.20, 1.55, 1.72, 0.025, 6);
       box(P, 1.68, 1.86, s * 1.20 - 0.09, s * 1.20 + 0.09, 1.72, 1.86);
       B.vc.col = LAMP; box(B.vc, 1.86, 1.87, s * 1.20 - 0.06, s * 1.20 + 0.06, 1.75, 1.83);
-      box(D, T.NOSE - 0.05, T.NOSE + 0.10, s * 0.50 - 0.06, s * 0.50 + 0.06, 0.78, 0.90);
+      box(D, 2.60, 2.80, s * 0.50 - 0.06, s * 0.50 + 0.06, 0.78, 0.90);
       /* the tube rails along the roof edges over the troop compartment (P3) */
       box(D, -2.70, -0.70, s * 1.30 - 0.02, s * 1.30 + 0.02, T.DECK + 0.14, T.DECK + 0.17);
       for (i = 0; i < 5; i++) { x = -2.65 + i * 0.48; box(D, x - 0.02, x + 0.02, s * 1.30 - 0.02, s * 1.30 + 0.02, T.DECK, T.DECK + 0.15); }
@@ -659,11 +630,18 @@ var HeroFrArmour2 = (function () {
   var VB = { AX: [2.43, 0.86, -0.97, -2.66], ZW: 0.63, R: 0.63, TW: 0.37, TY: 1.22,
              NOSE: 3.80, REAR: -3.80, DECK: 2.36, SIDE: 1.52, HW: 1.49, RW: 1.22, LW: 1.00, NZ: 1.75,
              TX: -0.35, TY2: 0.20, GZ: 2.70 };
+  /* the VBCI's upper side: its half width at station x and height z (the loft below: vertical
+     from the chine to zb + 0.10, then leaning in to the roof edge; narrowing from X 2.09 to the bow) */
+  function vbY(x, z) {
+    var V = VB, t = Math.max(0, Math.min(1, (x - 2.09) / (V.NOSE - 2.09)));
+    var w0 = V.HW - 0.04 * t, wt = V.RW + (V.HW - 0.10 - V.RW) * t, zt = V.DECK + (V.NZ + 0.05 - V.DECK) * t, zb = V.SIDE + 0.10;
+    return z <= zb ? w0 : w0 + (wt - w0) * (z - zb) / (zt - zb);
+  }
   function vbHull(B) {
     var P = B.paint, D = B.dark, s, i, x, V = VB;
     /* the lower hull between the tyres, dark in every photo (V1-V3): belly, the lower nose
        plate raking back to under the bow, the lower rear */
-    prismY(D, [[V.REAR, 0.75], [V.REAR + 0.25, 0.52], [2.90, 0.52], [3.29, 1.08], [V.NOSE - 0.02, V.NZ - 0.05], [V.NOSE - 0.02, V.SIDE], [V.REAR, V.SIDE]], -V.LW, V.LW);
+    prismY(P, [[V.REAR, 0.75], [V.REAR + 0.25, 0.52], [2.90, 0.52], [3.29, 1.08], [V.NOSE - 0.02, V.NZ - 0.05], [V.NOSE - 0.02, V.SIDE], [V.REAR, V.SIDE]], -V.LW, V.LW);
     /* the upper hull: the side plates leaning in from the chine at 1.52 m to the roof edge, the
        long glacis down to the bow at 1.75 m (V1), the vertical rear */
     function sec(x, zt, w0, wt, zb) { return [[x, -w0, zb], [x, w0, zb], [x, w0, zb + 0.10], [x, wt, zt], [x, -wt, zt], [x, -w0, zb + 0.10]]; }
@@ -672,19 +650,17 @@ var HeroFrArmour2 = (function () {
     for (s = -1; s <= 1; s += 2) {
       box(D, V.NOSE - 0.04, V.NOSE + 0.01, s * 0.85, s * 1.42, 1.52, 1.68);
       if (s < 0) box(D, V.NOSE - 0.04, V.NOSE + 0.01, -1.42, -0.85, 1.52, 1.68);
-      lamp(B, V.NOSE - 0.02, s * 1.10, 1.60, 0.055, 1);
+      lamp(B, V.NOSE - 0.02, s * 0.98, 1.60, 0.07, 1);   /* the round headlamp inboard in the recess (V2) */
       B.vc.col = [0.75, 0.35, 0.08]; box(B.vc, V.NOSE - 0.03, V.NOSE + 0.005, s * 1.30 - 0.04, s * 1.30 + 0.04, 1.56, 1.64);
       /* the towing eyes on the lower nose plate */
       box(D, 3.30, 3.42, s * 0.45 - 0.06, s * 0.45 + 0.06, 1.05, 1.18);
       /* the convoy lamp and mirror posts at the bow corners (V2) */
       box(D, 2.95, 3.10, s * 1.30 - 0.07, s * 1.30 + 0.07, 1.95, 2.10);
       cylZ(D, 2.90, s * 1.38, 1.98, 2.35, 0.02, 6);
-      /* the bolt heads of the add-on armour along the side (V1): a row of studs */
-      var yo = s * (V.HW + 0.004);
-      for (i = 0; i < 14; i++) { x = -3.55 + i * 0.52; box(D, x - 0.025, x + 0.025, s > 0 ? yo - 0.01 : yo - 0.01, s > 0 ? yo + 0.012 : yo + 0.01, 1.68, 1.73); }
-      /* the Galix smoke launchers, three tubes at each rear corner of the roof (V4) */
-      for (i = 0; i < 3; i++) cyl(D, [V.REAR + 0.25, s * 1.05, V.DECK + 0.05 + i * 0.12], [V.REAR + 0.20, s * 1.35, V.DECK + 0.12 + i * 0.12], 0.06, 0.06, 10);
-      box(D, V.REAR + 0.10, V.REAR + 0.40, s * 0.95 - 0.08, s * 0.95 + 0.08, V.DECK, V.DECK + 0.40);
+      /* the Galix smoke launchers: three tubes at each corner of the rear plate, below the roof
+         edge, firing back and out (V1 rear: x -4.13..-3.79, z 1.93..2.30), on a low mounting plate */
+      box(D, V.REAR - 0.06, V.REAR + 0.01, s > 0 ? 1.06 : -1.36, s > 0 ? 1.36 : -1.06, 1.92, 2.31);
+      for (i = 0; i < 3; i++) cyl(D, [V.REAR - 0.05, s * 1.18, 1.99 + i * 0.12], [V.REAR - 0.28, s * 1.26, 2.00 + i * 0.12], 0.06, 0.06, 10);
       /* rear lamps */
       B.vc.col = RED; box(B.vc, V.REAR - 0.02, V.REAR, s * 1.15 - 0.08, s * 1.15 + 0.08, 0.95, 1.05);
     }
@@ -717,21 +693,100 @@ var HeroFrArmour2 = (function () {
     cylX(D, cx + 0.80, cx + 1.25, cy + 0.30, V.GZ - 0.04, 0.025, 0.022, 6);
     /* the sight box and head on the roof (V1, V2), the hatch */
     box(P, cx - 0.40, cx + 0.25, cy - 0.45, cy - 0.10, 3.03, 3.22);
-    box(P, cx - 0.10, cx + 0.12, cy - 0.40, cy - 0.15, 3.22, 3.48);
-    B.vc.col = GLASS; box(B.vc, cx + 0.12, cx + 0.13, cy - 0.37, cy - 0.18, 3.28, 3.44);
+    /* (batch 4: V1 puts the round sight head at X -0.65..-0.41, up to 3.53 m with its cap) */
+    cylZ(P, cx - 0.18, cy - 0.28, 3.22, 3.34, 0.08, 12);           /* the neck */
+    cylZ(P, cx - 0.18, cy - 0.28, 3.34, 3.48, 0.12, 14);           /* the head, 0.24 m */
+    B.vc.col = GLASS; box(B.vc, cx - 0.075, cx - 0.06, cy - 0.36, cy - 0.20, 3.36, 3.46);
     box(B.vc, cx + 0.25, cx + 0.26, cy - 0.42, cy - 0.13, 3.06, 3.18);
     cylZ(P, cx - 0.40, cy + 0.30, 3.03, 3.08, 0.25, 14);
     for (s = -1; s <= 1; s += 2) {
-      for (i = 0; i < 3; i++) cyl(D, [cx - 0.10 - i * 0.14, cy + s * 0.66, 2.75], [cx + 0.05 - i * 0.14, cy + s * 0.78, 2.90], 0.045, 0.045, 10);
+      /* the smoke dischargers: two stacked at each rear corner, firing out and forward (V1: X -1.30..-1.00, Z 2.49..2.79) */
+      for (i = 0; i < 2; i++) cyl(D, [cx - 0.82, cy + s * 0.62, 2.56 + i * 0.15], [cx - 0.75, cy + s * 0.82, 2.58 + i * 0.15], 0.065, 0.065, 12);
     }
     box(B.team, cx - 0.80, cx - 0.62, cy - 0.40, cy + 0.40, 3.03, 3.045);
+  }
+  /* VBCI DETAIL (batch 4, from V1 dead side-on and V3 front left): the add-on armour's bolt
+     columns at the panel joints (V1: a column every 0.6 m, three bolts high), the joints, the small
+     access hatches with their handles high on the side (V1: X -3.6, -1.15, 1.15), the two step
+     plates under the chine (V1: X -0.40..0.47, 1.27..2.11), the mirror heads on the bow posts
+     and the wire mesh over the lamp recesses (V3), the rear whip, the roof's grab handles, the
+     troop hatches' hinges, the ramp's hinges and handle, the rear towing hooks.  Sizes by
+     proportion: NOT CONFIRMED. */
+  function vbFace(x, z, s) {
+    var V = VB, t = Math.max(0, Math.min(1, (x - 2.09) / (V.NOSE - 2.09)));
+    var w0 = V.HW - 0.04 * t, wt = V.RW + (V.HW - 0.10 - V.RW) * t, zt = V.DECK + (V.NZ + 0.05 - V.DECK) * t, dz = zt - V.SIDE - 0.10, dw = wt - w0;
+    var L = Math.sqrt(dz * dz + dw * dw);
+    return { p: [x, s * vbY(x, z), z], up: [0, s * dw / L, dz / L], n: [0, s * dz / L, -dw / L] };
+  }
+  function vbDetail(B) {
+    var P = B.paint, D = B.dark, V = VB, s, i, k, x, f, q;
+    function onFace(bin, x, z, s, hu, hv, hw) {
+      var F = vbFace(x, z, s);
+      slab(bin, [F.p[0] + F.n[0] * hw * 0.6, F.p[1] + F.n[1] * hw * 0.6, F.p[2] + F.n[2] * hw * 0.6], [1, 0, 0], F.up, F.n, hu, hv, hw);
+    }
+    for (s = -1; s <= 1; s += 2) {
+      /* bolt columns and joints of the add-on armour */
+      for (i = 0; i < 11; i++) {
+        x = -3.29 + i * 0.60;
+        var ztop = x > 2.09 ? V.DECK + (V.NZ + 0.05 - V.DECK) * (x - 2.09) / (V.NOSE - 2.09) : V.DECK;
+        for (k = 0; k < 3; k++) if (1.66 + k * 0.29 < ztop - 0.07) onFace(D, x, 1.66 + k * 0.29, s, 0.022, 0.022, 0.014);   /* V1: three a column, z 1.65 / 1.95 / 2.24 */
+        f = vbFace(x - 0.05, 1.64, s); q = vbFace(x - 0.05, Math.min(2.30, ztop - 0.04), s);
+        dbar(D, [f.p[0], f.p[1] + f.n[1] * 0.004, f.p[2]], [q.p[0], q.p[1] + q.n[1] * 0.004, q.p[2]], 0.007);
+      }
+      /* the access hatches: the plate, its rim, the handle */
+      var HX = [-3.48, -1.15, 1.15];
+      for (i = 0; i < 3; i++) {
+        onFace(P, HX[i], 2.12, s, 0.15, 0.15, 0.022);
+        onFace(D, HX[i], 2.12, s, 0.165, 0.165, 0.008);
+        f = vbFace(HX[i] - 0.07, 2.02, s); q = vbFace(HX[i] + 0.07, 2.02, s);
+        dbar(D, [f.p[0], f.p[1] + f.n[1] * 0.05, f.p[2] + f.n[2] * 0.05], [q.p[0], q.p[1] + q.n[1] * 0.05, q.p[2] + q.n[2] * 0.05], 0.011);
+        dbar(D, [f.p[0], f.p[1] + f.n[1] * 0.01, f.p[2]], [f.p[0], f.p[1] + f.n[1] * 0.055, f.p[2] + f.n[2] * 0.05], 0.010);
+        dbar(D, [q.p[0], q.p[1] + q.n[1] * 0.01, q.p[2]], [q.p[0], q.p[1] + q.n[1] * 0.055, q.p[2] + q.n[2] * 0.05], 0.010);
+      }
+      /* the step plates hanging under the chine, with their brackets to the lower hull */
+      var SX = [[-0.40, 0.47], [1.27, 2.11]];
+      for (k = 0; k < 2; k++) {
+        box(P, SX[k][0], SX[k][1], s > 0 ? V.LW : -V.HW - 0.03, s > 0 ? V.HW + 0.03 : -V.LW, V.SIDE - 0.06, V.SIDE);
+        for (i = 0; i < 2; i++) { x = SX[k][0] + 0.12 + i * (SX[k][1] - SX[k][0] - 0.24); box(D, x - 0.03, x + 0.03, s > 0 ? V.LW : -V.HW, s > 0 ? V.HW : -V.LW, V.SIDE - 0.20, V.SIDE - 0.06); }
+      }
+      /* the mirror heads on the bow posts (V3), the arm */
+      box(D, 2.87, 2.93, s > 0 ? 1.30 : -1.50, s > 0 ? 1.50 : -1.30, 2.30, 2.60);
+      dbar(D, [2.90, s * 1.20, 2.10], [2.90, s * 1.38, 2.10], 0.015);
+      /* the wire mesh over the lamp recesses (V3) */
+      for (i = 0; i < 6; i++) { var yy = s * (0.88 + i * 0.105); box(D, V.NOSE - 0.005, V.NOSE + 0.012, yy - 0.007, yy + 0.007, 1.52, 1.68); }
+      for (k = 0; k < 2; k++) box(D, V.NOSE - 0.002, V.NOSE + 0.014, s > 0 ? 0.85 : -1.42, s > 0 ? 1.42 : -0.85, 1.555 + k * 0.08, 1.565 + k * 0.08);
+      /* the roof's grab handles, the troop hatches' hinges and handles */
+      DP.grabTop(D, -1.70, -1.30, s * 1.10, s * 1.10, V.DECK);
+      DP.grabTop(D, 1.30, 1.70, s * 1.10, s * 1.10, V.DECK);
+      DP.hingeTop(D, -3.25, -1.95, s * 0.76, s * 0.76, V.DECK + 0.03);
+      DP.grabTop(D, -2.75, -2.45, s * 0.35, s * 0.35, V.DECK + 0.05);
+      /* the ramp's hinges, the rear towing hooks */
+      DP.hook(D, -3.68, s * 0.80, 0.62, -1, 0.15);   /* under the rear plate, on the raked belly corner */
+    }
+    for (i = 0; i < 2; i++) cylY(D, V.REAR - 0.05, 0.05 + i * 0.60, 0.35 + i * 0.60, 0.84, 0.03, 8);
+    box(D, V.REAR - 0.10, V.REAR - 0.05, 0.75, 0.82, 1.45, 1.60);
+    DP.whip(D, -3.20, -1.05, V.DECK, 0.45);
+  }
+  function vbTurretDetail(B) {
+    var P = B.paint, D = B.dark, V = VB, cx = V.TX, cy = V.TY2, s, i;
+    /* the hatch's hinge and handle, the roof's lifting eyes, the sight head's cap and wiper hood,
+       the barrel's clamp bands, the cradle's bolts */
+    DP.hingeTop(D, cx - 0.62, cx - 0.62, cy + 0.12, cy + 0.48, 3.06);
+    DP.grabTop(D, cx - 0.25, cx - 0.25, cy + 0.20, cy + 0.40, 3.08);
+    for (s = -1; s <= 1; s += 2) { DP.eye(D, cx + 0.15, cy + s * 0.55, 3.03); DP.eye(D, cx - 0.78, cy + s * 0.55, 3.03); }
+    box(D, cx - 0.10, cx - 0.04, cy - 0.38, cy - 0.18, 3.43, 3.46);
+    cyl(P, [cx - 0.18, cy - 0.28, 3.48], [cx - 0.18, cy - 0.28, 3.53], 0.13, 0.10, 14);
+    for (i = 0; i < 2; i++) cylX(D, 1.55 + i * 0.40, 1.58 + i * 0.40, cy, V.GZ, 0.042, 0.042, 8);
+    for (i = 0; i < 4; i++) box(D, cx + 0.62 + i * 0.10, cx + 0.64 + i * 0.10, cy - 0.185, cy + 0.185, V.GZ + 0.14, V.GZ + 0.155);
   }
   function buildVBCI(THREE, C) {
     var T = mats(THREE, C, "ce3"), g = new THREE.Group(), HB = bins(T), TB = bins(T);
     vbHull(HB);
+    vbDetail(HB);
     K.flush(THREE, g, HB);
     axles(THREE, g, T, VB.AX, VB.ZW, VB.TY, VB.R, VB.TW, 0.55, 24);
     vbTurret(TB);
+    vbTurretDetail(TB);
     turretGroup(THREE, g, TB, VB.TX, VB.TY2, VB.DECK);
     return g;
   }
@@ -889,22 +944,23 @@ var HeroFrArmour2 = (function () {
   function vaHull(B) {
     var P = B.paint, D = B.dark, s, i, x, V = VA;
     /* the lower hull: from the chine in to the belly, the lower nose plate raking back */
-    function lo(x, zt, wt, zb, wb) { return [[x, -wb, zb], [x, wb, zb], [x, wt, zt], [x, -wt, zt]]; }
-    loftN(P, [lo(V.REAR, V.CH, V.HW - 0.05, 0.75, V.LW), lo(V.REAR + 0.40, V.CH, V.HW, V.BELLY, V.LW), lo(2.40, V.CH, V.HW, V.BELLY, V.LW),
-              lo(V.NOSE, V.CH, V.HW - 0.10, 0.62, V.LW - 0.10)]);
-    /* the upper hull: the sides leaning in from the chine to the roof edge; the flat front
-       deck, the windscreen face, the cab and box roofs as one */
-    function up(x, zt, wt) { return [[x, -V.HW, V.CH], [x, V.HW, V.CH], [x, wt, zt], [x, -wt, zt]]; }
-    loftN(P, [up(V.REAR, V.ROOF, V.RW), up(1.85, V.ROOF, V.RW), up(2.20, 1.42, V.RW + 0.12), up(V.NOSE, 1.16, V.HW - 0.12)]);
+    /* and the upper hull: the sides leaning in from the chine to the roof edge; the flat front
+       deck, the windscreen face, the cab and box roofs as one.  One loft, chine in each section. */
+    function sec(x, zb, wb, wc, zt, wt) { return [[x, -wb, zb], [x, wb, zb], [x, wc, V.CH], [x, wt, zt], [x, -wt, zt], [x, -wc, V.CH]]; }
+    loftN(P, [sec(V.REAR, 0.75, V.LW, V.HW, V.ROOF, V.RW), sec(V.REAR + 0.40, V.BELLY, V.LW, V.HW, V.ROOF, V.RW),
+              sec(1.85, V.BELLY, V.LW, V.HW, V.ROOF, V.RW), sec(2.20, V.BELLY, V.LW, V.HW, 1.42, V.RW + 0.12),
+              sec(2.40, V.BELLY, V.LW, V.HW, 1.354, V.RW + 0.134), sec(V.NOSE, 0.62, V.LW - 0.10, V.HW - 0.05, 1.16, V.HW - 0.12)]);
     for (s = -1; s <= 1; s += 2) {
       /* the windscreens, the armoured shutters lifted above them (M3) */
       var a = Math.atan2(V.ROOF - 1.42, 2.20 - 1.85), u = [Math.cos(a), 0, Math.sin(a)];
       B.vc.col = GLASS;
       slab(B.vc, [2.03 + Math.sin(a) * 0.012, s * 0.46, 1.68 + Math.cos(a) * 0.012], [-Math.cos(a), 0, Math.sin(a)], [0, 1, 0], [Math.sin(a), 0, Math.cos(a)], 0.20, 0.38, 0.008);
       slab(D, [2.02, s * 0.46, 2.00], [1, 0, 0.12], [0, 1, 0], [-0.12, 0, 1], 0.22, 0.42, 0.015);
-      /* mirrors on their arms at the cab corners */
+      /* mirrors on their arms at the cab corners: the arm out of the cab side (y 1.03 at z 1.64),
+         the post, the glass */
+      DP.bar(D, [2.00, s * 1.00, 1.64], [2.00, s * 1.15, 1.64], 0.016, 6);
       box(D, 1.95, 2.05, s * 1.15 - 0.02, s * 1.15 + 0.02, 1.60, 1.90);
-      box(D, 1.97, 2.03, s * 1.30 - 0.12, s * 1.30 + 0.02 * s, 1.70, 1.92);
+      box(D, 1.97, 2.03, s > 0 ? 1.17 : -1.31, s > 0 ? 1.31 : -1.17, 1.70, 1.92);
       /* headlamps in their wire guards low on the nose corners (M2, M3) */
       lamp(B, 2.78, s * 0.98, 0.78, 0.08, 1);
       box(D, 2.75, 2.92, s * 0.98 - 0.13, s * 0.98 + 0.13, 0.66, 0.68);
@@ -1158,6 +1214,20 @@ var HeroFrArmour2 = (function () {
      door's frame, hinges and handle, the stowage box's lid and latches, the fuel filler, the
      grab handles, the lamp guards, the cupola's vision blocks, the muzzle brake's ports, the
      aerial bases).  Sizes by proportion: NOT CONFIRMED. */
+  /* a coil spring from A to B: radius r, n turns of wire w, 8 segments a turn (open tubes) */
+  function coil(bin, A, B, r, n, w) {
+    var d = [B[0] - A[0], B[1] - A[1], B[2] - A[2]], l = Math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]), ax = [d[0] / l, d[1] / l, d[2] / l];
+    var t = Math.abs(ax[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0], u = [ax[1] * t[2] - ax[2] * t[1], ax[2] * t[0] - ax[0] * t[2], ax[0] * t[1] - ax[1] * t[0]];
+    var ul = Math.sqrt(u[0] * u[0] + u[1] * u[1] + u[2] * u[2]); u = [u[0] / ul, u[1] / ul, u[2] / ul];
+    var v = [ax[1] * u[2] - ax[2] * u[1], ax[2] * u[0] - ax[0] * u[2], ax[0] * u[1] - ax[1] * u[0]], i, m = n * 8, P0 = null, P1, a, f, k;
+    for (i = 0; i <= m; i++) {
+      a = i / 8 * TAU; f = i / m;
+      P1 = [0, 0, 0];
+      for (k = 0; k < 3; k++) P1[k] = A[k] + d[k] * f + (u[k] * Math.cos(a) + v[k] * Math.sin(a)) * r;
+      if (P0) K.cyl(bin, P0, P1, w, w, 4, true);
+      P0 = P1;
+    }
+  }
   function dbar(bin, A, B, h) {
     var d = [B[0] - A[0], B[1] - A[1], B[2] - A[2]], l = Math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]), ax = [d[0] / l, d[1] / l, d[2] / l];
     var t = Math.abs(ax[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0], u = [ax[1] * t[2] - ax[2] * t[1], ax[2] * t[0] - ax[0] * t[2], ax[0] * t[1] - ax[1] * t[0]];
@@ -1192,10 +1262,11 @@ var HeroFrArmour2 = (function () {
       box(D, -0.32, 0.27, s > 0 ? V.RW + 0.035 : -V.RW - 0.07, s > 0 ? V.RW + 0.07 : -V.RW - 0.035, 1.54, 1.57);
       box(D, -0.32, 0.27, s > 0 ? V.RW + 0.035 : -V.RW - 0.07, s > 0 ? V.RW + 0.07 : -V.RW - 0.035, 1.28, 1.31);
       /* the door: its front seam, hinges, handle and the step handle under it (B2) */
-      box(D, 0.32, 0.35, s * (V.HW - 0.01) - 0.01, s * (V.HW - 0.01) + 0.01, 0.55, 1.10);
-      for (k = 0; k < 2; k++) cylZ(D, 0.30, s * (V.HW + 0.02), 0.62 + k * 0.34, 0.72 + k * 0.34, 0.022, 8);
-      box(D, -0.32, -0.29, s > 0 ? V.HW : -V.HW - 0.05, s > 0 ? V.HW + 0.05 : -V.HW, 0.82, 1.00);
-      grabY(B, s, V.HW - 0.02, -0.25, 0.10, 0.50);
+      /* (all on the lower side's face, which rakes in from the waist: vlY) */
+      dbar(D, [0.335, s * (vlY(0.55) + 0.002), 0.55], [0.335, s * (vlY(1.10) + 0.002), 1.10], 0.012);
+      for (k = 0; k < 2; k++) { var zh = 0.67 + k * 0.34; cyl(P, [0.30, s * (vlY(zh - 0.05) + 0.012), zh - 0.05], [0.30, s * (vlY(zh + 0.05) + 0.012), zh + 0.05], 0.022, 0.022, 8); }
+      box(P, -0.32, -0.29, s > 0 ? vlY(0.95) - 0.01 : -vlY(0.95) - 0.05, s > 0 ? vlY(0.95) + 0.05 : -vlY(0.95) + 0.01, 0.95, 1.06);
+      grabY(B, s, vlY(0.50) - 0.005, -0.25, 0.10, 0.50);
       /* the wire guards over the headlamps and the side-lamp clusters (B1, B2) */
       guardX(B, V.NOSE, s * 0.60, 1.00, 0.065);
       guardX(B, V.NOSE, s * 0.815, 1.005, 0.09);
@@ -1210,6 +1281,7 @@ var HeroFrArmour2 = (function () {
         dbar(D, [xw + 0.12, s * 0.42, 0.60], [xw + 0.02, s * 0.70, 0.55], 0.022);
         dbar(D, [xw - 0.12, s * 0.42, 0.60], [xw - 0.02, s * 0.70, 0.55], 0.022);
         cyl(D, [xw + 0.05, s * 0.66, 0.45], [xw + 0.12, s * 0.52, 0.85], 0.03, 0.03, 8);
+        coil(D, [xw + 0.06, s * 0.64, 0.50], [xw + 0.115, s * 0.53, 0.80], 0.055, 5, 0.009);
       }
       /* the aerial bases on the roof's rear corners */
       cylZ(D, -0.80, s * 0.58, V.ROOF - 0.01, V.ROOF + 0.07, 0.035, 8);
@@ -1247,18 +1319,24 @@ var HeroFrArmour2 = (function () {
       q = o(0.10); box(D, -0.80, -0.30, q[0], q[1], 1.22, 1.24);
       box(D, -0.70, -0.65, q[0], q[1], 1.05, 1.15); box(D, -0.45, -0.40, q[0], q[1], 1.05, 1.15);
       /* the fuel filler below it (A2), grab handles on the upper sides */
-      cylY(D, -0.55, s * A.HW, s * (A.HW + 0.03), 0.57, 0.055, 12);
-      grabY(B, s, A.HW, 0.75, 1.00, 1.30);
-      grabY(B, s, A.HW, -1.40, -1.15, 1.30);
+      cylY(D, -0.55, s * 0.73, s * 0.79, 0.57, 0.055, 12);          /* (the lower side's face: y 0.75 at z 0.57) */
+      grabY(B, s, 0.71, 0.75, 1.00, 1.30);                            /* (the upper side's face at z 1.30: y 0.71-0.73) */
+      grabY(B, s, 0.72, -1.40, -1.15, 1.30);
       /* the lamp guards, the front towing hooks, the side lamps on the mudguards */
       guardX(B, 1.45, s * 0.62, 1.22, 0.07);
       box(D, A.NOSE - 0.25, A.NOSE - 0.13, s * 0.40 - 0.03, s * 0.40 + 0.03, 0.52, 0.64);
       cylY(D, A.NOSE - 0.14, s * 0.40 - 0.04, s * 0.40 + 0.04, 0.54, 0.04, 8);
-      B.vc.col = [0.75, 0.42, 0.10]; box(B.vc, 1.70, 1.73, s * 0.90 - 0.03, s * 0.90 + 0.03, A.ZW + A.R + 0.10, A.ZW + A.R + 0.14);
+      B.vc.col = [0.75, 0.42, 0.10]; box(B.vc, 1.38, 1.44, s * 0.90 - 0.03, s * 0.90 + 0.03, 1.035, 1.075);   /* on the guard's crown */
       /* bolt heads along the chine */
       for (i = 0; i < 14; i++) { var bx = -1.85 + i * 0.26; box(D, bx - 0.012, bx + 0.012, s > 0 ? A.HW - 0.005 : -A.HW - 0.012, s > 0 ? A.HW + 0.012 : -A.HW + 0.005, A.CH - 0.012, A.CH + 0.012); }
+      /* the front suspension's coil spring behind the wheel, against the hull side, with its
+         seats and the trailing arm's top (A2) */
+      coil(D, [A.AX[0] - 0.60, s * 0.86, 0.72], [A.AX[0] - 0.60, s * 0.86, 0.99], 0.065, 5, 0.011);
+      cylZ(D, A.AX[0] - 0.60, s * 0.86, 0.69, 0.72, 0.08, 10);
+      cylZ(D, A.AX[0] - 0.60, s * 0.84, 0.99, 1.02, 0.08, 10);
+      dbar(D, [A.AX[0] - 0.60, s * 0.80, 0.70], [A.AX[0] - 0.15, s * 0.74, 0.55], 0.03);
       /* lifting eyes on the deck */
-      box(D, 1.10, 1.16, s * 0.60 - 0.012, s * 0.60 + 0.012, A.DECK - 0.02, A.DECK + 0.05);
+      box(D, 0.74, 0.80, s * 0.60 - 0.012, s * 0.60 + 0.012, A.DECK - 0.02, A.DECK + 0.05);
       box(D, -1.90, -1.84, s * 0.60 - 0.012, s * 0.60 + 0.012, A.DECK - 0.10, A.DECK - 0.03);
     }
     /* the rear towing pintle, the engine grille's slats */
@@ -1563,12 +1641,12 @@ var HeroFrArmour2 = (function () {
     DP.hingeTop(D, -0.70, -0.70, -0.62, -0.22, 2.50);
     /* lifting eyes, bolt rings round the mantlet collar, the sight's wiper hood */
     for (s = -1; s <= 1; s += 2) {
-      DP.eye(D, 0.90, s * 0.72, 2.38); DP.eye(D, -1.45, s * 0.86, 2.38);
+      DP.eye(D, 0.90, s * 0.56, 2.39); DP.eye(D, -1.45, s * 0.62, 2.405);
       /* the smoke dischargers' caps and the cables to them */
       for (i = 0; i < 2; i++) cyl(D, [-1.12 - i * 0.18, s * 1.05, 2.40], [-1.10 - i * 0.18, s * 1.06, 2.42], 0.066, 0.066, 10);
       cyl(D, [-1.20, s * 0.98, 2.30], [-0.90, s * 0.95, 2.36], 0.01, 0.01, 4);
-      /* grab handles on the turret cheeks */
-      DP.grab(D, s, s * 1.22, -0.70, -0.30, 2.18);
+      /* grab handles on the turret cheeks (seated on the cheek's slope: y 0.95 at z 2.25) */
+      DP.grab(D, s, s * 0.95, -0.70, -0.30, 2.25);
     }
     for (i = 0; i < 10; i++) { a = i / 10 * TAU; cylX(D, 1.68, 1.72, Math.cos(a) * 0.185, R.GZ + Math.sin(a) * 0.185, 0.016, 0.016, 6); }
     box(D, 1.02, 1.34, 0.28, 0.64, 2.30, 2.33);
@@ -1584,7 +1662,7 @@ var HeroFrArmour2 = (function () {
       DP.cable(D, -2.20, 0.60, ys, 1.42, s);
       DP.tool(P, D, "shovel", -0.40, -1.40, ys, 1.26, s);
       DP.tool(P, D, "bar", 0.10, 1.20, ys, 1.26, s);
-      DP.bolts(D, -2.55, 1.35, 22, ys, E.DECK - 0.035, s);
+      DP.bolts(D, -2.40, 1.15, 20, s * 1.083, E.DECK - 0.035, s);   /* (the side's face at z 1.465: y 1.083) */
       DP.grabTop(D, 0.75, 1.05, s * 1.00, s * 1.00, E.DECK);
       /* the guards over the front lamp clusters, the rear lamp hoods */
       DP.guard(D, E.NOSE + 0.01, s * 0.95, 0.92, 0.075, 1);
@@ -1615,7 +1693,7 @@ var HeroFrArmour2 = (function () {
       DP.bags(P, D, x0 - 0.58, x0 + 0.38, s > 0 ? 0.96 : -1.13, s > 0 ? 1.13 : -0.96, 1.67, 0.21, 5 + s);
       for (i = 0; i < 4; i++) box(D, x0 - 0.58 + i * 0.32, x0 - 0.56 + i * 0.32, s * 1.14 - 0.012, s * 1.14 + 0.012, 1.65, 1.90);
       DP.eye(D, x0 + 0.70, s * 0.70, E.ROOF); DP.eye(D, x0 - 1.00, s * 0.62, E.ROOF - 0.03);
-      DP.grab(D, s, s * 0.95, x0 - 0.30, x0 + 0.10, 2.05);
+      DP.grab(D, s, s * 0.84, x0 - 0.30, x0 + 0.10, 2.05);   /* (the turret side at z 2.05: y 0.84) */
     }
     DP.rollY(P, D, x0 - 1.42, -0.55, 0.55, 1.88, 0.09);
     /* the cupola's vision blocks, its hatch hinge; the MG's grips and ammunition box */
@@ -1669,6 +1747,24 @@ var HeroFrArmour2 = (function () {
       DP.basket(D, -0.95, 0.65, s > 0 ? 0.40 : -1.12, s > 0 ? 1.12 : -0.40, C.ROOF, 0.16);
       DP.bags(P, D, -0.92, 0.62, s > 0 ? 0.43 : -1.09, s > 0 ? 1.09 : -0.43, C.ROOF, 0.20, 3 + s);
     }
+    /* on the racks' tops (C2): a row of round caps over the cells and the crew's tarpaulin bundles;
+       the ladder up the cab's rear (C2) */
+    for (s = -1; s <= 1; s += 2) {
+      var yr = s * 0.95;
+      for (i = 0; i < 5; i++) { var xr = -3.50 + i * 0.30; cylZ(D, xr, yr, 2.35, 2.40, 0.10, 12); cyl(D, [xr, yr, 2.40], [xr, yr, 2.46], 0.085, 0.03, 10); }
+      DP.bags(P, D, -2.10, -1.70, s > 0 ? 0.70 : -1.20, s > 0 ? 1.20 : -0.70, 2.35, 0.22, 9 + s);
+    }
+    /* the racks' fold-down doors (C2: hinged along the foot, two a side): hinge bar, joint, latches */
+    for (s = -1; s <= 1; s += 2) {
+      var yd = s > 0 ? [C.HW, C.HW + 0.025] : [-C.HW - 0.025, -C.HW];
+      cyl(D, [-3.68, s * (C.HW + 0.015), 1.31], [-1.27, s * (C.HW + 0.015), 1.31], 0.022, 0.022, 8);
+      box(D, -2.49, -2.46, yd[0], yd[1], 1.30, 2.34);
+      for (i = 0; i < 2; i++) box(D, -3.20 + i * 1.40, -3.12 + i * 1.40, yd[0], yd[1] + s * 0.01, 1.36, 1.42);
+    }
+    /* the folded spade's stiffening ribs (C1, C2) */
+    for (i = -1; i <= 1; i++) slab(D, [C.TAIL - 0.17, i * 0.55, 1.35], [0.25, 0, 0.97], [0, 1, 0], [0.97, 0, -0.25], 0.55, 0.025, 0.04);
+    for (i = 0; i < 2; i++) DP.bar(D, [C.CABR - 0.015, -0.62 - i * 0.30, 1.40], [C.CABR - 0.015, -0.62 - i * 0.30, C.ROOF], 0.016, 5);
+    for (i = 0; i < 6; i++) DP.bar(D, [C.CABR - 0.015, -0.62, 1.55 + i * 0.30], [C.CABR - 0.015, -0.92, 1.55 + i * 0.30], 0.013, 5);
     /* the roof hatch with its hinge and handle, the rear hook, the spade's rams */
     DP.hatch(P, D, 1.30, -0.45, C.ROOF, 0.32);
     DP.hook(D, C.TAIL + 0.05, 0, 0.95, -1, 0.19);
@@ -1680,7 +1776,7 @@ var HeroFrArmour2 = (function () {
     /* clamp bands on the tube, bolts along the cradle, the hand wheels on the mount */
     for (i = 0; i < 3; i++) { var a = at(2.6 + i * 1.3, 0), b = at(2.65 + i * 1.3, 0); cyl(D, a, b, 0.12, 0.12, 12); }
     for (i = 0; i < 8; i++) { var q = at(-0.85 + i * 0.32, 0.27); box(D, q[0] - 0.02, q[0] + 0.02, -0.14, 0.14, q[2] - 0.01, q[2] + 0.02); }
-    for (var s = -1; s <= 1; s += 2) { cylY(D, C.TX - 0.10, s * 0.72, s * 0.80, 2.60, 0.12, 12); DP.bar(D, [C.TX - 0.10, s * 0.80, 2.60], [C.TX - 0.10, s * 0.86, 2.72], 0.012, 4); }
+    for (var s = -1; s <= 1; s += 2) { cylY(D, C.TX - 0.10, s * 0.72, s * 0.80, 2.60, 0.12, 12); cylY(D, C.TX - 0.10, s * 0.56, s * 0.73, 2.60, 0.03, 8); DP.bar(D, [C.TX - 0.10, s * 0.80, 2.60], [C.TX - 0.10, s * 0.86, 2.72], 0.012, 4); }
   }
   /* the VAB's upper side leans in from the chine to the roof edge: its y at height z */
   function vaY(z) { var V = VA; return V.HW - (V.HW - V.RW) * (z - V.CH) / (V.ROOF - V.CH); }
@@ -1717,6 +1813,16 @@ var HeroFrArmour2 = (function () {
       /* a vision block in each rear door */
       B.vc.col = GLASS; box(B.vc, V.REAR - 0.05, V.REAR - 0.03, s * 0.26 - 0.07, s * 0.26 + 0.07, 1.48, 1.58);
     }
+    /* (M2) the rolled tarpaulin along the upper left side at the roof edge, strapped; the troop
+       box's side vision ports with their armoured shutters, the frame and the hinge bar */
+    DP.roll(P, D, -2.30, -0.90, vaY(1.80) + 0.08, 1.80, 0.11);
+    for (s = -1; s <= 1; s += 2) for (i = 0; i < 2; i++) {
+      var xv = i ? 0.35 : -1.60, yv = vaY(1.62);
+      B.vc.col = GLASS; box(B.vc, xv - 0.17, xv + 0.17, s > 0 ? yv - 0.02 : -yv - 0.005, s > 0 ? yv + 0.005 : -yv + 0.02, 1.52, 1.72);
+      box(D, xv - 0.21, xv + 0.21, s > 0 ? vaY(1.78) - 0.02 : -vaY(1.78) - 0.05, s > 0 ? vaY(1.78) + 0.05 : -vaY(1.78) + 0.02, 1.76, 1.80);
+      box(D, xv - 0.20, xv - 0.17, s > 0 ? vaY(1.62) - 0.02 : -vaY(1.62) - 0.02, s > 0 ? vaY(1.62) + 0.02 : -vaY(1.62) + 0.02, 1.50, 1.74);
+      box(D, xv + 0.17, xv + 0.20, s > 0 ? vaY(1.62) - 0.02 : -vaY(1.62) - 0.02, s > 0 ? vaY(1.62) + 0.02 : -vaY(1.62) + 0.02, 1.50, 1.74);
+    }
     /* the hatches on the cab roof: rims, hinges and handles; the mushroom vents on the box roof */
     DP.hatch(P, D, 1.30, 0.45, V.ROOF, 0.30, -1);
     DP.hatch(P, D, 1.30, -0.45, V.ROOF, 0.30, 1);
@@ -1730,7 +1836,7 @@ var HeroFrArmour2 = (function () {
     amHull(HB);
     amDetail(HB);
     K.flush(THREE, g, HB);
-    axles(THREE, g, T, AM.AX, AM.ZW, AM.TY, AM.R, AM.TW, 1.1, 18);
+    axles(THREE, g, T, AM.AX, AM.ZW, AM.TY, AM.R, AM.TW, 1.1, 26);
     amTurret(TB);
     amTurretDetail(TB);
     turretGroup(THREE, g, TB, AM.TX, 0, AM.DECK);
@@ -1859,9 +1965,9 @@ var HeroFrArmour2 = (function () {
          (C1, C2) */
       var ya = s > 0 ? [0.65, C.HW] : [-C.HW, -0.65];
       box(P, -3.70, -1.25, ya[0], ya[1], C.BED, 2.35);
-      for (k = 0; k < 2; k++) for (i = 0; i < 6; i++) {
+      for (k = 0; k < 3; k++) for (i = 0; i < 6; i++) {   /* three rows of six (C2) */
         x = -3.45 + i * 0.40;
-        cylY(D, x, s * C.HW, s * (C.HW + 0.01), 1.65 + k * 0.40, 0.14, 10);
+        cylY(D, x, s * C.HW, s * (C.HW + 0.01), 1.52 + k * 0.33, 0.13, 10);
       }
       /* the fuel tank and the boxes under the bed */
       cylX(P, -1.10, 0.10, s * 0.85, 0.85, 0.25, 0.25, 12);
@@ -1874,7 +1980,7 @@ var HeroFrArmour2 = (function () {
     slab(P, [C.TAIL - 0.12, 0, 1.35], [0.25, 0, 0.97], [0, 1, 0], [0.97, 0, -0.25], 0.62, 0.95, 0.05);
     for (s = -1; s <= 1; s += 2) box(D, C.TAIL - 0.05, C.TAIL + 0.35, s * 0.55 - 0.08, s * 0.55 + 0.08, 0.70, 1.20);
     box(P, -5.05, -3.95, -0.75, 0.75, C.BED, 2.10);
-    box(B.team, -3.40, -3.10, -0.40, 0.40, 2.10, 2.115);
+    for (s = -1; s <= 1; s += 2) box(B.team, -1.62, -1.37, s > 0 ? 0.75 : -1.10, s > 0 ? 1.10 : -0.75, 2.35, 2.365);   /* on the rack tops */
     B.vc.col = RED; for (s = -1; s <= 1; s += 2) box(B.vc, C.TAIL + 0.15, C.TAIL + 0.17, s * 1.10 - 0.06, s * 1.10 + 0.06, 1.10, 1.18);
   }
   /* the 155 mm 52-calibre on its mount: "turret" origin on the pedestal, the gun along +X,
@@ -1925,6 +2031,12 @@ var HeroFrArmour2 = (function () {
   var VL = { AX: [1.12, -1.33], ZW: 0.445, R: 0.445, TW: 0.27, TY: 0.86,
              NOSE: 1.90, REAR: -1.90, BELT: 1.12, HW: 1.00, ROOF: 1.65, RW: 0.78, BELLY: 0.36,
              TX: -0.35, TZ: 1.65 };
+  /* the VBL body's side between X -1.55 and 0.75: its half width at height z (the lower hull rakes
+     in from the waist to the belly, the upper side leans in to the roof) */
+  function vlY(z) {
+    var V = VL;
+    return z <= V.BELT ? 0.62 + (V.HW - 0.62) * (z - V.BELLY) / (V.BELT - V.BELLY) : V.HW - (V.HW - V.RW) * (z - V.BELT) / (V.ROOF - V.BELT);
+  }
   function vlHull(B) {
     var P = B.paint, D = B.dark, s, i, V = VL;
     function sec(x, zb, wb, zm, wm, zt, wt) { return [[x, -wb, zb], [x, wb, zb], [x, wm, zm], [x, wt, zt], [x, -wt, zt], [x, -wm, zm]]; }
@@ -1947,9 +2059,10 @@ var HeroFrArmour2 = (function () {
       B.vc.col = GLASS;
       slab(B.vc, [0.533, s * 0.42, 1.523], [Math.cos(a), 0, Math.sin(a)], [0, 1, 0], [-Math.sin(a), 0, Math.cos(a)], 0.22, 0.27, 0.01);
       box(B.vc, -0.30, 0.25, s > 0 ? V.RW + 0.04 : -V.RW - 0.06, s > 0 ? V.RW + 0.06 : -V.RW - 0.04, 1.30, 1.55);
-      box(D, -0.40, -0.37, s * (V.HW - 0.01) - 0.01, s * (V.HW - 0.01) + 0.01, 0.55, 1.10);
+      dbar(D, [-0.385, s * (vlY(0.55) + 0.002), 0.55], [-0.385, s * (vlY(1.10) + 0.002), 1.10], 0.012);
       /* the louvred engine grille behind the front wheel (B2) */
-      for (i = 0; i < 6; i++) box(D, 0.38, 0.72, s > 0 ? V.HW - 0.02 : -V.HW - 0.02, s > 0 ? V.HW + 0.02 : -V.HW + 0.02, 0.70 + i * 0.065, 0.73 + i * 0.065);
+      for (i = 0; i < 8; i++) { var zl = 0.89 + i * 0.052, yl = vlY(zl + 0.015); box(P, 0.40, 0.72, s > 0 ? yl - 0.02 : -yl - 0.035, s > 0 ? yl + 0.035 : -yl + 0.02, zl, zl + 0.022); }
+      for (i = 0; i < 2; i++) { var xl = i ? 0.73 : 0.37; dbar(P, [xl, s * (vlY(0.87) + 0.012), 0.87], [xl, s * (vlY(1.30) + 0.012), 1.30], 0.016); }
       /* the lamps in the front panel (B1): headlamp, side lamp and indicator */
       lamp(B, V.NOSE, s * 0.60, 1.00, 0.065, 1);
       B.vc.col = [0.75, 0.35, 0.08]; box(B.vc, V.NOSE - 0.01, V.NOSE + 0.01, s * 0.88 - 0.05, s * 0.88 + 0.05, 0.96, 1.05);
@@ -1960,11 +2073,16 @@ var HeroFrArmour2 = (function () {
       B.vc.col = RED; box(B.vc, V.REAR - 0.01, V.REAR + 0.01, s * 0.62 - 0.05, s * 0.62 + 0.05, 0.92, 1.00);
     }
     /* the nose box below the front panel (B1), the towing eye */
-    box(D, V.NOSE - 0.15, V.NOSE - 0.05, -0.20, 0.20, 0.40, 0.55);
-    /* the stowage basket on the tail (B2) */
-    box(D, -1.85, -1.40, -0.65, 0.65, 1.30, 1.33);
-    for (i = 0; i < 4; i++) box(D, -1.85 + i * 0.15, -1.83 + i * 0.15, -0.65, 0.65, 1.12, 1.55);
-    box(D, -1.85, -1.40, -0.66, 0.66, 1.52, 1.55);
+    box(P, V.NOSE - 0.15, V.NOSE - 0.05, -0.20, 0.20, 0.40, 0.55);
+    /* the stowage basket on the tail (B2), in the body colour */
+    box(P, -1.85, -1.40, -0.65, 0.65, 1.30, 1.33);
+    for (i = 0; i < 4; i++) box(P, -1.85 + i * 0.15, -1.83 + i * 0.15, -0.65, 0.65, 1.12, 1.55);
+    box(P, -1.85, -1.40, -0.66, 0.66, 1.52, 1.55);
+    /* the bonnet's lifting handles at its rear corners and the two latches on its front edge (B1) */
+    for (s = -1; s <= 1; s += 2) {
+      DP.grabTop(D, 0.95, 1.20, s * 0.78, s * 0.78, 1.37 - (1.05 - 0.75) * (1.37 - 1.26) / (V.NOSE - 0.75) - 0.01);
+      box(P, V.NOSE - 0.12, V.NOSE - 0.02, s * 0.18 - 0.05, s * 0.18 + 0.05, 1.255, 1.285);
+    }
     /* the roof hatch ring the mount sits on */
     cylZ(P, V.TX, 0, V.ROOF, V.ROOF + 0.06, 0.45, 18);
     box(B.team, 0.05, 0.25, -0.40, 0.40, V.ROOF, V.ROOF + 0.015);
@@ -1985,7 +2103,7 @@ var HeroFrArmour2 = (function () {
     vlHull(HB);
     vlDetail(HB);
     K.flush(THREE, g, HB);
-    axles(THREE, g, T, VL.AX, VL.ZW, VL.TY, VL.R, VL.TW, 0.9, 18);
+    axles(THREE, g, T, VL.AX, VL.ZW, VL.TY, VL.R, VL.TW, 0.9, 28);
     vlGun(TB);
     vlGunDetail(TB);
     turretGroup(THREE, g, TB, VL.TX, 0, VL.TZ);
@@ -2025,7 +2143,7 @@ UNIT_MODELS["fra_e80_tankdestroyer"] = { len: 6.22, build: HeroFrArmour2.vab };
 UNIT_MODELS["fra_e50_recon"] = { len: 6.15, build: HeroFrArmour2.ebr };
 UNIT_MODELS["fra_e60_recon"] = { len: 5.13, build: HeroFrArmour2.aml };
 UNIT_MODELS["fra_e80_recon"] = { len: 7.69, build: HeroFrArmour2.erc };
-UNIT_MODELS["fra_e00_spg"] = { len: 9.70, build: HeroFrArmour2.caesar };
+UNIT_MODELS["fra_e00_spg"] = { len: 10.00, build: HeroFrArmour2.caesar };   /* published 10 m; drawn 10.08 (C1) */
 UNIT_MODELS["fra_e90_recon"] = { len: 3.80, build: HeroFrArmour2.vbl };
 UNIT_MODELS["fra_e00_recon"] = { len: 3.80, build: HeroFrArmour2.vbl };
 UNIT_MODELS["fra_e00_lighttank"] = { len: 9.31, build: HeroFrArmour2.rcr };

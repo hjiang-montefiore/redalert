@@ -1,0 +1,85 @@
+{
+ "key": "pla_e00_df21d",
+ "team": "pla",
+ "name": "DF-21D anti-ship ballistic missile on its five-axle TEL (the 2015 Beijing parade vehicle)",
+ "category": "veh",
+ "published": {
+  "source": "en.wikipedia 'DF-21': the round 10.7 m long, 1.4 m in diameter (the DF-21 family figure; NOT CONFIRMED for the D). No figure of the TEL (the truck) is published: its 11.68 m is the model's own X extent, from the canister's tail to the bumper's tow hooks, scaled off [DF1] on the round."
+ },
+ "len": 11.68,
+ "nodes": [
+  "roadwheel",
+  "podelev"
+ ],
+ "engine_contract": {
+  "row": "js/eras.js row pla_e00_df21d; js/hero/misc_borrowed.js builds it through HeroMiscBorrowed.df21d (buildTel('df21d'))",
+  "current_nodes": "five 'roadwheel' axle groups (axle on local Y, origin on the axle, z = tyre radius 0.61); one 'podelev' group hinged at (-5.40, 0, 1.45) with userData.el (radians, the erect angle render3d poseLauncher raises to) and userData.cells [[mouth x, y, z, rear x]]",
+  "len_rule": "UNIT_MODELS[key].len = the measured X extent"
+ },
+ "references": [
+  {
+   "name": "[DF1] DF-21D TEL, 2015 parade, near side-on from the starboard side, nose right",
+   "image": "ref/pla_e00_df21d/Dongfeng-21D.JPG",
+   "source": "Wikimedia Commons 'Dongfeng-21D.JPG' (1280 x 956; cached by the first builder in the scratchpad q_misc_ref)",
+   "view": "quarter",
+   "px_per_m": 77.6,
+   "anchor_px": [185, 607],
+   "anchor_m": [-5.64, 0.0],
+   "exact": false,
+   "note": "Scale: the round, canister tail (px 185) to the tip of the pale nose (px 1015), taken as the published 10.7 m: 77.6 px/m (NOT CONFIRMED that the canister ends at the round's tail). Ground: the foot of the near front-pair tyre, px y 607. The photograph is oblique - the cab is nearer the camera than the tail and the vehicle is turning at the corner - and the running gear is in deep shadow, so it is kept as 'quarter' (not outlined) and its readings are landmarks in side axes. Readings (px -> m, x = -5.64 + (px - 185) / 77.6, z = (607 - py) / 77.6): canister top at its tail y 437 (z 2.19); at px 650 y 392 (x 0.35, z 2.77); at its front end, px 897, y 377 (x 3.54, z 2.96); the nose tip px 1016, y 412 (x 5.07, z 2.51); the cab roof y 440 (z 2.15) from px 940 to the cab front at px 1055 (x 5.57); the near front-pair rear tyre, px 750 to 835, centre px 792, y 565 (x 2.18); a tall lamp post hides px 897 to 940, where the canister meets the cab."
+  }
+ ],
+ "must_show": [
+  "the canister lying along the whole body between the equipment sides, tail flush with the body's rear at x -5.64, rising 5.5 degrees nose-up toward the cab: its top z 2.19 at the tail, 2.77 at x 0.35",
+  "seven dark hoops round the canister, evenly spaced from 0.6 m to 8.6 m along it",
+  "the long pale nose cone running out of the canister's front end at the cab's back wall (x 3.30) and standing over the cab roof to its tip at x 5.0, z 2.4",
+  "a forward-control cab, x 3.30 to 5.64, roof z 2.12, with the raked windscreen, two side windows, door, mirrors on arms, the steps below the door hung on two straps, lamp clusters and a grille, the bumper with two tow hooks",
+  "five axles: three at the rear (x -4.67, -3.00, -1.19) under the body, two forward (x 2.16, 3.96) under the cab, the big lugged single tyres 1.22 m across",
+  "the body's flat sides, x -5.64 to 3.25, foot z 1.03 to top z 1.93, carrying equipment lockers with doors and louvres, a ladder near the front (x 2.70), grab rails along the top",
+  "the dark wheel-arch cut-outs over the three rear axles (x -4.67, -3.00, -1.19) in the body sides, the red tail lamps on the rear face at x -5.64"
+ ],
+ "landmarks": [
+  {
+   "name": "near front-pair rear axle centre",
+   "ref": 0, "view": "side",
+   "expect_m": [2.18, null],
+   "model_at": { "node": "roadwheel", "index": 3 },
+   "note": "[DF1] the tyre px 750 to 835, centre px 792 -> x 2.18; the height is not checked (the tyre reads 85 px = 1.10 m against the model's 1.22: the shadow eats its rim)"
+  },
+  {
+   "name": "canister top at its tail",
+   "ref": 0, "view": "side",
+   "expect_m": [-5.52, 2.19],
+   "model_at": { "path": "podelev", "in_m": [-5.8, -1.0, 1.0, 3.5, 1.0, 3.2], "edge": "upper" },
+   "note": "[DF1] y 437 at px 194 (x -5.52)"
+  },
+  {
+   "name": "canister top at mid-length",
+   "ref": 0, "view": "side",
+   "expect_m": [0.35, 2.77],
+   "model_at": { "path": "podelev", "in_m": [-5.8, -1.0, 1.0, 3.5, 1.0, 3.2], "edge": "upper" },
+   "note": "[DF1] y 392 at px 650 (x 0.35); a hoop (2 cm proud) may lie under the station"
+  },
+  {
+   "name": "nose tip",
+   "ref": 0, "view": "side",
+   "expect_m": [5.07, null],
+   "model_at": { "path": "lamp", "in_m": [3.0, -1.0, 1.6, 5.5, 1.0, 3.2], "point": ["max", null] },
+   "note": "[DF1] px 1016 (x 5.07). Its height reads z 2.51 on the photograph, the model has 2.37: not checked - see not_confirmed"
+  },
+  {
+   "name": "cab roof top",
+   "ref": 0, "view": "side",
+   "expect_m": [4.60, 2.15],
+   "model_at": { "path": "paint", "in_m": [3.6, -1.5, 1.0, 5.7, 1.5, 2.4], "edge": "upper" },
+   "note": "[DF1] y 440 between px 940 and 1055; the selection is the painted surfaces ahead of the canister (x 3.6 to 5.7): the nose cone over the roof is another material"
+  }
+ ],
+ "not_confirmed": [
+  "the canister's pitch: [DF1] reads 4.9 degrees (tail to its front end), 5.5 (tail to mid-length) or 6.3 (tail to the nose tip) because the cab is nearer the camera than the tail; 5.5 is drawn, so the nose tip sits 0.14 m under the photograph's reading and the canister's front top 0.1 m over it",
+  "where the canister ends: [DF1]'s lamp post hides px 897 to 940; it is drawn ending at the cab's back wall (x 3.30) where the photograph's pale cone first shows at px 940 (x 4.09)",
+  "the cab's length and its back wall (hidden by the same post); the cab's far side, the erector rams, the jacks (no photograph)",
+  "the tyre size (1.22 m from the first builder's reading; this re-reading gives 1.10 m off a tyre in shadow)",
+  "the round's tail end inside the canister and the hinge at the rear of the frame (render3d's podelev pose; not photographed raised)"
+ ]
+}

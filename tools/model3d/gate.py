@@ -415,8 +415,8 @@ def main(argv):
     if cat not in CATS:
         cat = None
     if cat is None:
-        cat = "ship" if re.search(r"cruiser|destroyer|frigate|corvette|carrier|boat|ship|sub|ssbn|ssn|lcu|lst|lhd|lph|lpd|landing|patrol|minesweep", key) else \
-              "air" if re.search(r"fighter|bomber|cas|helo|gunship|airlift|tanker|ewair|awacs|air|stealth|drone|uav", key) else "veh"
+        cat = "ship" if re.search(r"cruiser|(?<!tank)destroyer|frigate|corvette|carrier|boat|(?<!gun)ship|sub|ssbn|ssn|lcu|lst|lhd|lph|lpd|landing|patrol|minesweep", key) else \
+              "air" if re.search(r"fighter|bomber|cas|helo|gunship|transport|lamps|airlift|tanker|ewair|awacs|air|stealth|drone|uav", key) else "veh"
         add("INFO", "category", cat, "", "guessed from the key: put \"category\" in the spec")
 
     # ---- 2. rules on the dump

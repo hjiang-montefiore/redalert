@@ -1,0 +1,91 @@
+{
+  "key": "asw_helo_b",
+  "team": "nato",
+  "name": "AgustaWestland Merlin HM2 (AW101)",
+  "category": "air",
+  "published": { "len": 22.81, "height": 6.62, "rotor_diameter": 18.59, "source": "en.wikipedia 'AgustaWestland AW101', specifications: length 22.81 m (rotors turning), height 6.62 m, main rotor diameter 18.59 m; fuselage length 19.53 m" },
+  "len": 23.0,
+  "nodes": ["gear", "rotor", "rotordisc", "tailrotor"],
+  "engine": {
+    "row": "UNIT_MODELS['asw_helo_b'] = { len: 23.0, build: HeroEuNavalAir.merlinHM } in js/hero/eu_naval_air.js (merlin(), shared with gbr_e00_aswhelo and, with the Crowsnest pod, cawacs_b)",
+    "current_nodes": "rotor (with rotordisc) and tailrotor turned by the renderer; gear hidden in flight",
+    "measured": "23.10 m X extent (the main rotor disc fore and aft is 18.59 m, inside it; the length is nose 7.19 m to the tail rotor's tips at -12.45 m and beyond, as the published 'rotors turning' figure counts), height 7.21 m to the tail rotor's upper tip against the published 6.62 (the published height is to the top of the main rotor head; the drawing's tail rotor stands higher, see merlin())"
+  },
+  "references": [
+    {
+      "name": "[ME1] AW EH101 three-view, side",
+      "image": "ref/asw_helo_b/aw_eh101_3v.png",
+      "source": "Wikimedia Commons 'AW EH101.png' (700 x 417 px three-view)",
+      "view": "side",
+      "crop": [200, 250, 690, 402],
+      "flip": true,
+      "px_per_m": 20.4,
+      "anchor_px": [398, 393.75],
+      "anchor_m": [0.0, -2.0],
+      "hide": ["rotor", "tailrotor"],
+      "mask": "dark",
+      "mask_opts": { "threshold": 200, "fill": true, "close_px": 5 },
+      "window_m": [-12.7, -2.05, 7.4, 2.85],
+      "ignore_m": [[1.8, 2.25, 9.0, 2.9], [-1.4, -2.1, 5.2, -1.5]],
+      "exact": false,
+      "note": "Nose left in the sheet: flip. Scale 20.4 px/m on the published fuselage length 19.53 m (nose col 251 to the pylon's trailing edge col 650); col 398 is the main hub (model x 0), row 393.75 the wheels' ground line (model z -2.0). Measured by a pixel scan for this spec: nose tip col 251 row 370 (x 7.20, h 1.15); main wheel ring cols 429-442, rows 379-393 (axle x -1.84, h 0.38, the wheel 0.69 m across); nose wheels cols 283-292, rows 383-395 (axle x 5.42, h 0.23); tail rotor hub col 638 row 288 (x -11.76, h 5.18). Not exact: a 700 px drawing (one pixel is 5 cm, the lines 1-2 px wide), and its plan view puts the hub 6.24 m behind the nose against this side view's 7.19 (merlin(): not resolved, the side view used). The window stops at h 4.85 (the cowl's top) and the ignore box takes out the main rotor's forward blade, which the drawing shows dipping to h 4.5 over the cockpit; the model's rotors are hidden; the second ignore box is the strip between the wheels where the drawing's ground line and shadow fill up to the belly (and where the HM2's ventral radome, which the generic EH101 drawing lacks, would be). With threshold 200 and close_px 5 the IoU is about 0.7: the drawing's tail cone and pylon outline is open (the pylon's and tailplane's lines run into it), so the fill misses most of the tail cone, read as model-only; where the outline closes (nose, cabin, cowl, belly) the model follows the drawing within a line width."
+    },
+    {
+      "name": "[ME2] Merlin HM2s on HMS Illustrious, head-on",
+      "image": "ref/asw_helo_b/merlin_hm2_illustrious.jpg",
+      "source": "Wikimedia Commons 'Royal Navy Melin Mk 2 Helicopters on HMS Illustrious MOD 45157435.jpg', 960 px",
+      "view": "quarter",
+      "exact": false,
+      "note": "For the reviewer: the ventral search radome under the forward fuselage (between the nose wheels and the sponsons), the sponsons with the main wheels, the twin nose wheels, the five-blade head, the box intakes beside the cowl, the mirrors on stalks at the nose sides, the plain grey. Codes and the deck markings are NOT to be drawn."
+    },
+    {
+      "name": "[ME3] Merlin HM2 Crowsnest, port bow",
+      "image": "ref/asw_helo_b/merlin_hm2_crowsnest.jpg",
+      "source": "Wikimedia Commons 'Royal Navy Merlin HM2 Crowsnest ASaC.jpg', 960 px",
+      "view": "quarter",
+      "exact": false,
+      "note": "For the reviewer (cawacs_b, the same airframe): the Crowsnest pod on the port side over the sponson, black; the ventral radome; the cockpit side windows and chin windows; the cowl's intakes; the mirror stalks. The ship's name on the nose is NOT to be drawn."
+    }
+  ],
+  "must_show": [
+    "long fuselage, deepest over the cabin (roof h 4.12 m from x 1.6 to -1.45 m), tapering aft into an upswept tail cone (x -4 to -12.4 m) and a swept pylon carrying the tail rotor at x -11.8 m, h 5.21 m",
+    "three-engine cowl on the roof from x 0.9 to -3.4 m, up to h 4.78 m, 3.3 m across, with an intake box at each side (x 0.95) and one in the middle, the exhausts angled out aft at x -2.2 to -2.9 m",
+    "five-blade main rotor (radius 9.3 m) with swept paddle tips, the hub at x 0, h 5.14 m",
+    "four-blade tail rotor on the PORT side of the pylon at x -11.8 m",
+    "sponsons low on the fuselage sides aft of the cabin (x -1.2 to -4.3 m, out to y 2.2 m) with one main wheel each under them at x -1.86 m",
+    "twin nose wheels at x 5.49 m under the nose",
+    "the HM1/HM2 ventral radome: a broad flat pod under the forward cabin, x 0.8 to 4.6 m",
+    "large four-pane windscreen and cockpit side windows (x 4.3 to 6.45 m), chin windows low on the nose sides (x 5.1 to 5.6 m)",
+    "tailplane on the starboard side at the base of the pylon (x -11.0 to -12.0 m, h 2.8 m)",
+    "plain grey overall, no markings; team colour in small strips only"
+  ],
+  "landmarks": [
+    { "name": "nose tip", "ref": 0, "expect_m": [7.20, null], "tol_m": 0.10,
+      "model_at": { "point": ["max", null] },
+      "note": "[ME1] side: col 251; tol two pixels of the 20.4 px/m drawing" },
+    { "name": "wheels on the ground (gear lowest point)", "ref": 0, "expect_m": [null, -2.0], "tol_m": 0.02,
+      "model_at": { "path": "gear", "point": [null, "min"] },
+      "note": "[ME1] side: the ground line row 393.75 is the anchor" },
+    { "name": "port main wheel axle", "ref": 0, "expect_m": [-1.84, -1.62], "tol_m": 0.10,
+      "model_at": { "path": "gear", "in_m": [-2.4, 1.7, -2.1, -1.3, 2.4, -1.0], "whole": true, "point": ["mid", "mid"] },
+      "note": "[ME1] side: the wheel ring cols 429-442, rows 379-393: axle x -1.84, h 0.38" },
+    { "name": "nose wheel axle", "ref": 0, "expect_m": [5.42, -1.77], "tol_m": 0.10,
+      "model_at": { "path": "gear", "in_m": [5.0, -0.4, -2.1, 6.0, 0.4, -1.3], "whole": true, "point": ["mid", "mid"] },
+      "note": "[ME1] side: the nose wheel ring cols 283-292, rows 383-395: axle x 5.42, h 0.23" },
+    { "name": "tail rotor hub", "ref": 0, "expect_m": [-11.76, 3.18], "tol_m": 0.10,
+      "model_at": { "node": "tailrotor", "index": 0 },
+      "note": "[ME1] side: the hub's ring centre col 638 row 288: x -11.76, h 5.18" },
+    { "name": "main rotor hub", "ref": 0, "expect_m": [0.02, 3.18], "tol_m": 0.10,
+      "model_at": { "node": "rotor", "index": 0 },
+      "note": "[ME1] side: the head's dark block cols 383-412, rows 285-295 (pixel scan): centre col 397.5 row 290, x 0.02, h 5.18" }
+  ],
+  "free_parts": ["rotordisc"],
+  "not_confirmed": [
+    "the sense of rotation of the main rotor (drawn anti-clockwise from above)",
+    "the ventral radome's size (one head-on photograph, [ME2])",
+    "the tailplane's side ([ME1] plan only)",
+    "the hub's station: [ME1]'s plan and side views disagree by 0.95 m; the side view is used",
+    "the nose wheel radius (0.30 m drawn; [ME1] reads 0.25 m, a 10 px ring)",
+    "the mirror stalks' length and angle (photographs only)"
+  ]
+}

@@ -74,6 +74,10 @@
     11. a 26-ft motor whaleboat in davits each side abaft the after stack
         (p6, p8, p10; d2 "26 ft motor whaleboat" port and starboard).
 
+   BATCH 4: the Hedgehog spigots stand in their raked bed; the bedspring frames follow the dish's curve and
+   sit on their pedestals on a yoke; the 3-inch slides and side plates sit on the carriage; the masthead
+   whip on a pole cap, the propeller bosses on their shafts; deck fittings added (see DETAIL below).
+
    Model space: +X bow, +Y port, +Z up, metres, waterline z = 0, keel -4.2,
    sonar dome to -5.9. render3d.js stands the model up with rotation.x =
    -PI/2 and scales it by its measured X extent, so nothing stands past the
@@ -483,7 +487,7 @@ var HeroForrestShermanDD = (function () {
         if (flip) idx.push(ci, q, p); else idx.push(ci, p, q);
       }
     }
-    cap(0, false); cap(XS.length - 1, true);
+    cap(0, true); cap(XS.length - 1, true);   /* both caps wound outward (the transom faced in: a hole from astern) */
     var g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
     g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
@@ -745,7 +749,7 @@ var HeroForrestShermanDD = (function () {
     bx("dark", 6.5, 0.35, 2.6, -59.6, 0, -2.1, 0, -0.25, 0);
     for (s = -1; s <= 1; s += 2) {
       tube("metal", -38.0, s * 2.4, -3.3, -55.5, s * 2.4, -2.6, 0.22, 0.22, 6);
-      cz("metal", 0.5, 0.5, 0.25, 10, -55.8, s * 2.4, -3.1);
+      cx("metal", 0.5, 0.5, 0.25, 10, -55.6, s * 2.4, -2.6);   /* the propeller boss, on its shaft */
     }
 
     /* two anchors in hawses on the bows, chain led back to the windlass */
@@ -958,10 +962,14 @@ var HeroForrestShermanDD = (function () {
           Bm.triOut(a0, b0, b1, [6, 0, AH * 0.5]); Bm.triOut(a0, b1, a1, [6, 0, AH * 0.5]);
           Bm.triOut(a0, b0, b1, [-6, 0, AH * 0.5]); Bm.triOut(a0, b1, a1, [-6, 0, AH * 0.5]);
         }
-        bar("dark", rx(-AW), -AW, 0, depth * 0.5, 0, 0, 0.05);
-        bar("dark", depth * 0.5, 0, 0, rx(AW), AW, 0, 0.05);
-        bar("dark", rx(-AW), -AW, AH, depth * 0.5, 0, AH, 0.05);
-        bar("dark", depth * 0.5, 0, AH, rx(AW), AW, AH, 0.05);
+        /* the top and bottom frame members follow the dish's curve, so every slat ends on them */
+        for (q = 0; q < NSL * 2; q++) {
+          var y0 = -AW + AW * q / NSL, y1 = -AW + AW * (q + 1) / NSL;
+          bar("dark", rx(y0), y0, 0, rx(y1), y1, 0, 0.05);
+          bar("dark", rx(y0), y0, AH, rx(y1), y1, AH, 0.05);
+        }
+        /* the yoke down onto the pedestal */
+        bar("dark", 0, 0, -0.12, depth * 0.5, 0, 0.02, 0.06);
         bar("dark", depth * 0.5, 0, AH * 0.5, depth * 0.5 + 1.3, 0, AH * 0.45, 0.05);
         bx("dark", 0.3, 0.42, 0.36, depth * 0.5 + 1.35, 0, AH * 0.45);
       });
@@ -982,6 +990,7 @@ var HeroForrestShermanDD = (function () {
     cz("dark", 0.16, 0.2, 0.35, 6, FX + 0.35, 0, 26.32);
     bedspring(FX + 0.35, 0, 26.75, 0, 1.65, 0.75, 7, 0.45);
     bar("sup", FX, -1.1, 28.4, FX, 1.1, 28.4, 0.04);
+    cz("dark", 0.09, 0.09, 0.08, 6, FX, 0, 29.55);   /* the pole cap the whip stands on */
     bar("dark", FX, 0, 29.6, FX, 0, 30.4, 0.03);
 
     /* ----------------------------------------------------- amidships ---- */
@@ -1083,12 +1092,12 @@ var HeroForrestShermanDD = (function () {
       cur.sup.add(place(THREE, sh, -0.3, 0, 1.3));
       bx("sup", 0.7, 2.25, 0.08, 0.3, 0, 1.95);
       for (var q = -1; q <= 1; q += 2) {
-        cx("dark", 0.17, 0.15, 0.6, 8, 0.75, q * 0.34, 1.32);
+        cx("dark", 0.17, 0.15, 0.75, 8, 0.6, q * 0.34, 1.32);   /* the slide, out of the carriage face */
         cx("metal", 0.075, 0.06, 3.15, 6, 1.3, q * 0.34, 1.32);
         cx("sup", 0.16, 0.16, 0.85, 8, -1.2, q * 0.34, 1.32);
       }
-      bx("dark", 0.45, 0.1, 0.6, -0.2, 0.95, 1.2);
-      bx("dark", 0.45, 0.1, 0.6, -0.2, -0.95, 1.2);
+      bx("dark", 0.45, 0.1, 0.6, -0.2, 0.9, 1.2);    /* the side plates, on the carriage */
+      bx("dark", 0.45, 0.1, 0.6, -0.2, -0.9, 1.2);
     }
     stamp(29.0, 0, z01(29.0), 0, threeInch);
     stamp(-22.6, 0, Z01, PI, threeInch);
@@ -1102,7 +1111,10 @@ var HeroForrestShermanDD = (function () {
       bx("sup", 1.6, 1.4, 0.35, 0.05, 0, 0.5, 0, -0.32, 0);
       for (var r = 0; r < 4; r++) for (var c = 0; c < 6; c++) {
         var xr = -0.55 + r * 0.38, yc = -0.55 + c * 0.22, zr = 0.62 + r * 0.12;
-        bar("dark", xr, yc, zr, xr + 0.42, yc, zr + 0.42, 0.045);
+        /* each spigot's foot sunk into the raked bed (its top face rises 0.33 per metre aft-forward
+           from z 0.666 at x 0), so no spigot stands clear of the cradle */
+        var zf = 0.666 + 0.3315 * (xr + 0.005) - 0.04;
+        bar("dark", xr, yc, zf, xr + 0.42, yc, zr + 0.42, 0.045);
       }
     }
     stamp(26.1, 3.35, z01(26.1), 0, hedgehog);
@@ -1167,6 +1179,52 @@ var HeroForrestShermanDD = (function () {
       bitts(58.4, s * 1.8); bitts(44.5, s * 4.6); bitts(-42.0, s * 5.7); bitts(-58.0, s * 4.4);
       bitts(12.0, s * 6.2); bitts(-28.0, s * 6.2);
     }
+    /* DETAIL (batch 4, rule 10): the small fittings every photograph of a destroyer of the period shows at
+       deck level, placed by proportion where d2 and p8/p10 leave room (NOT CONFIRMED one by one): fairleads at
+       the deck edge abreast the bitts, hatches on the forecastle and the fantail, mushroom ventilators,
+       a ready-service locker by mount 52 (none by 53: the Mk 42 is fed by hoists), and oblong life floats
+       hung on the main deckhouse sides between its doors. */
+    function chock(x, sy) {
+      var yy = sy * (hullHW(x) * secOf(x)[0] - 0.32), z0 = topZ(x, Math.abs(yy)) - 0.02;
+      bx("sup", 0.26, 0.34, 0.32, x - 0.28, yy, z0 + 0.16);
+      bx("sup", 0.26, 0.34, 0.32, x + 0.28, yy, z0 + 0.16);
+      bx("sup", 0.82, 0.34, 0.06, x, yy, z0 + 0.03);
+    }
+    function hatch(x, y, lx, ly) {
+      var z0 = topZ(x, Math.abs(y)) - 0.02;
+      bx("sup", lx, ly, 0.22, x, y, z0 + 0.11);
+      bx("dark", lx - 0.12, ly - 0.12, 0.05, x, y, z0 + 0.235);
+    }
+    function mushroom(x, y, z0) {
+      cz("sup", 0.13, 0.15, 0.55, 8, x, y, z0);
+      cz("sup", 0.34, 0.34, 0.14, 10, x, y, z0 + 0.53);
+    }
+    /* a life float hung on a house side: an oblong ring with rounded ends (light), a dark grating in it */
+    function lifeFloat(x, y, z) {
+      var tg = new THREE.TorusGeometry(0.44, 0.12, 6, 18);
+      tg.scale(2.1, 1, 1); tg.rotateX(PI / 2);
+      cur.metal.add(place(THREE, tg, x, y, z));
+      bx("dark", 1.7, 0.04, 0.66, x, y, z);
+    }
+    function locker(x, y, z0) {
+      bx("sup", 1.1, 0.7, 1.0, x, y, z0 + 0.5);
+      bx("dark", 1.14, 0.74, 0.04, x, y, z0 + 0.78);
+    }
+    for (s = -1; s <= 1; s += 2) {
+      chock(44.5, s); chock(-42.0, s); chock(12.0, s); chock(-28.0, s); chock(-58.0, s); chock(56.0, s);
+      hatch(46.6, s * 2.1, 1.2, 1.0); hatch(-52.6, s * 2.3, 1.2, 1.0); hatch(33.8, s * 3.0, 0.9, 0.9);
+      mushroom(54.4, s * Math.min(3.0, hullHW(54.4) * 0.55), topZ(54.4, Math.min(3.0, hullHW(54.4) * 0.55)) - 0.02);
+      mushroom(-54.6, s * 3.4, topZ(-54.6, 3.4) - 0.02);
+      mushroom(-36.2, s * 2.2, Z01 - 0.02);
+      locker(-28.4, s * 3.7, Z01 - 0.02);
+      [-22.5, -7.5].forEach(function (fx) {
+        var wy = 4.65 + 0.10 * (fx + 30.0) / 30.0;
+        lifeFloat(fx, s * (wy + 0.08), 4.0);
+        bx("dark", 0.12, 0.14, 0.2, fx - 0.75, s * (wy + 0.03), 4.62);   /* the two hooks it hangs on */
+        bx("dark", 0.12, 0.14, 0.2, fx + 0.75, s * (wy + 0.03), 4.62);
+      });
+    }
+
     /* the depth-charge track at the stern under its canvas cover (p8; d2
        "depth charge rack (removed)")                                       */
     bx("dark", 6.4, 1.3, 0.85, -59.6, -0.9, topZ(-59.6, 0.9) + 0.4);

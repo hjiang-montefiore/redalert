@@ -173,8 +173,17 @@
    NOT CONFIRMED: the AT-3A/B attack aircraft's service paint (every
    photograph fetched is a display aircraft: plain white); the dihedral
    (D3 head-on: 0.5 deg port, 2.1 deg starboard; the mean, 1.3 deg, is
-   drawn); the main track (D3 head-on, one leg drawn: 3.87 m). Not drawn:
-   pylons, the gun pod.
+   drawn); the main track (D3 head-on, one leg drawn: 3.87 m); the
+   pylons' chord, thickness and fore-and-aft station; the ventral
+   fairing's and the dorsal fillet's widths. Not drawn: stores (no
+   reference shows one fitted: the pylons are bare), the gun pod, the
+   wingtip launch rails.
+   BATCH 4 (spec tools/model3d/specs/roc_e80_cas.json): the four underwing
+   pylons (D3 head-on, P3), the ventral fairing, the belly blade at px 720 (the one at px 900 removed: D3 shows only px 720), the dorsal
+   fillet, seam rings on the nacelles and tail cone (D3); the tailplane
+   moved down onto the body's top at py 575 (it was at the fillet's py
+   556, 0.16 m clear of the body); the mains moved forward to D3's px 1031
+   (from 1050); the belly beacon and the nose steps seated on the skin.
 
    ======================================================================
    5. AIDC F-CK-1 CHING-KUO (roc_e90_cas A/B, roc_e00_cas C/D)
@@ -256,7 +265,7 @@
    RECOGNITION: the narrow tandem fuselage and flat-plate canopy; the two
    T700 nacelles beside the pylon fairing with their big exhausts (twin
    engines, against the AH-1G's one); the M197 three-barrel chin gun; the
-   stub wings with tip boxes, a 19-tube pod inboard and the TOW launcher
+   stub wings with tip boxes, a 7-tube pod inboard and the TOW launcher
    outboard; two-blade rotor, 0.86 m chord (DW plan); the tail rotor on the
    STARBOARD side of the swept fin (DW plan); skids.
    MEASURED: L 17.44 m with rotors (58 ft = 17.68 m); rotor 14.29 m off DW
@@ -265,7 +274,7 @@
    ROTOR GROUP NAMES: "rotor" (unrotated, local +Z up the mast; turns
    anti-clockwise from above, as a Bell head) holding "rotordisc";
    "tailrotor" (unrotated, local Y the shaft) holding its own "rotordisc".
-   NOT CONFIRMED: the inboard store (DW's 19-tube pod; R9 shows only the
+   NOT CONFIRMED: the inboard store (DW's 7-tube pod; R9 shows only the
    outboard station); the tail rotor's distance from the fin (0.24 m); the
    rocket pod and tube lengths (DW side, small); the blade root and hub
    detail. Not drawn: Hellfire rails, Sidewinders, markings.
@@ -405,7 +414,7 @@ var HeroRocAir = (function () {
       lampR: new V.MeshStandardMaterial({ color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 }),
       lampG: new V.MeshStandardMaterial({ color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 }),
       /* the redo's panel seams (only builders that lay them emit this) */
-      seam: new V.MeshStandardMaterial({ color: 0x4c5052, roughness: 0.8, metalness: 0.2, side: V.DoubleSide })
+      seam: new V.MeshStandardMaterial({ color: P.seam || 0x4c5052, roughness: 0.8, metalness: 0.2, side: V.DoubleSide })
     };
   }
 
@@ -594,6 +603,24 @@ var HeroRocAir = (function () {
   /* a jet's table of fuselage rows [x, zt, zb, w, e] to sections */
   function secs(rows, zw) {
     return rows.map(function (r) { return S(r[0], r[1], r[2], r[3], zw === undefined ? (r[1] + r[2]) / 2 : zw(r), r[4] || 1); });
+  }
+
+  /* (batch 4) the half width of a loft section S() at height z, so a fitting
+     on the side is seated on the skin at its own height, not at the
+     section's widest line */
+  function halfW(sec, z) {
+    var zw = sec.zw === undefined ? (sec.zt + sec.zb) / 2 : sec.zw, e = sec.e || 1;
+    var f = z >= zw ? (z - zw) / Math.max(1e-6, sec.zt - zw) : (zw - z) / Math.max(1e-6, zw - sec.zb);
+    f = Math.max(0, Math.min(1, f));
+    var sz = Math.pow(f, 1 / e), cy = Math.sqrt(Math.max(0, 1 - sz * sz));
+    return sec.w * Math.pow(cy, e);
+  }
+  /* a body table's section at side station px: rows [px, top py, bottom py,
+     half width px, (e)], mapped by the airframe's own px -> m functions */
+  function tabSec(tab, px, fz, k, zwOff, e) {
+    var zt = lerpTab(tab, px, 1), zb = lerpTab(tab, px, 2);
+    return { zt: fz(zt), zb: fz(zb), w: lerpTab(tab, px, 3) / k, zw: fz((zt + zb) / 2 + (zwOff || 0)),
+             e: e !== undefined ? e : (tab[0].length > 4 ? lerpTab(tab, px, 4) : 1) };
   }
 
   /* ======================================================= detail kit ==
@@ -990,7 +1017,7 @@ var HeroRocAir = (function () {
     navLamps(K, tipX, ty + tipR - 0.045, tz, 0.05);                  /* on the tanks' outboard sides */
     K.metal.push(ball(0.035, f84x(1110), 0, f84z(222), 1.3, 0.8, 1.0));          /* tail lamp */
     beacon(K, f84x(640), 0, f84z(191), 1);
-    beacon(K, f84x(700), 0, f84z(327), -1);
+    beacon(K, f84x(700), 0, f84z(lerpTab(F84_BODY, 700, 2)) + 0.005, -1);    /* (batch 4) on the belly's line */
     bladeAnt(K.skin2, f84x(640), f84z(194), 0.18, 0.24);              /* the radio mast behind the hood */
     bladeAnt(K.skin2, f84x(760), f84z(318), -0.16, 0.22);
     K.ink.push(rod([f84x(640) - 0.1, 0, f84z(194) + 0.16], [f84x(1000), 0, f84z(150)], 0.005, 3));  /* the wire aerial to the fin */
@@ -1005,7 +1032,10 @@ var HeroRocAir = (function () {
        leg's taxi lamp, the main doors' hinges */
     oleo(G.metal, [nX, 0, ZG + nR], [f84x(118), 0, f84z(296)], 0.05, 0.14);
     hubCap(G.metal, nX, 0, ZG + nR, nR, 0.16, 1); hubCap(G.metal, nX, 0, ZG + nR, nR, 0.16, -1);
-    G.metal.push(ball(0.05, nX + 0.16, 0, ZG + nR + 0.42, 1, 1, 1));
+    /* (batch 4) the taxi lamp seated on the front of the leg at its height
+       (it stood 0.11 m clear of the leg) */
+    var tlt = 0.42 / (f84z(296) - ZG - nR);
+    G.metal.push(ball(0.05, nX + (f84x(118) - nX) * tlt + 0.08, 0, ZG + nR + 0.42, 1, 1, 1));
     for (s = -1; s <= 1; s += 2) {
       oleo(G.metal, [mX, s * (mY - 0.10), ZG + mR], [mX + 0.05, s * (mY - 0.10), f84wz(mY) - 0.08], 0.06, -0.16);
       hubCap(G.metal, mX, s * mY, ZG + mR, mR, 0.22, s);
@@ -1142,7 +1172,8 @@ var HeroRocAir = (function () {
       G.metal.push(rod([mX + 0.10, s * 1.0, fhz(420)], [mX + 0.05, s * (mY - 0.17), ZG + mR + 0.55], 0.03, 6));
       wheel(G.metal, G.tyre, mR, 0.24, mX, s * mY, ZG + mR);
       G.skin2.push(pin(box(1.0, 0.02, 0.80, mX + 0.05, s * (mY + 0.16), F100_WZ - 0.45)));
-      G.skin2.push(pin(box(0.80, 0.02, 0.40, fhx(625), s * 0.25, fhz(424) - 0.2, s * 0.2, 0, 0)));
+      /* (batch 4) the nose-gear door hung from the belly (it stood 7 cm under it) */
+      G.skin2.push(pin(box(0.80, 0.02, 0.40, fhx(625), s * 0.25, fhz(420) - 0.15, s * 0.2, 0, 0)));
     }
 
     /* ---- DETAIL PASS: the fittings the first pass left out, placed off
@@ -1159,12 +1190,19 @@ var HeroRocAir = (function () {
     /* the afterburner's eyelid ring and flame holder, the fuel dump */
     K.metal.push(pin(tube(0.44, 0.44, nx + 0.20, nx + 0.16, 0, nz, 20, true)));
     K.hot.push(pin(place(new V.TorusGeometry(0.30, 0.02, 5, 18), nx + 0.45, 0, nz, 0, HALF_PI, 0)));
-    K.metal.push(tube(0.015, 0.015, fhx(1300), fhx(1320), 0, fhz(330), 6));
+    /* (batch 4) the fuel dump run forward onto the tail cone's top (it
+       stood 8 cm above the body's end) */
+    K.metal.push(tube(0.015, 0.015, fhx(1288), fhx(1320), 0, fhz(334.5), 6));
     /* the speed brake under the belly (D100: the panel behind the nose
        gear) and the boarding steps on the port side */
     K.skin2.push(pin(box(1.10, 0.80, 0.02, fhx(730), 0, fhz(423) - 0.01)));
     K.ink.push(pin(box(1.12, 0.02, 0.02, fhx(730), 0.41, fhz(423) - 0.02)), pin(box(1.12, 0.02, 0.02, fhx(730), -0.41, fhz(423) - 0.02)));
-    [fhz(400), fhz(375)].forEach(function (zz) { K.ink.push(pin(box(0.14, 0.03, 0.05, fhx(640), 0.86, zz))); });
+    /* (batch 4) the steps seated on the skin at their own height (they
+       stood off at the body's widest line, 0.86 m) */
+    [fhz(400), fhz(375)].forEach(function (zz) {
+      var q640 = tabSec(F100_BODY, 640, fhz, F100.k, 0, 1);
+      K.ink.push(pin(box(0.14, 0.03, 0.05, fhx(640), halfW(q640, zz) + 0.005, zz)));
+    });
     /* gear: oleos, torque links, hub caps, the taxi lamp */
     oleo(G.metal, [nX, 0, ZG + nR], [fhx(640), 0, fhz(419)], 0.05, 0.14);
     for (s = -1; s <= 1; s += 2) {
@@ -1306,11 +1344,13 @@ var HeroRocAir = (function () {
     K.metal.push(box(0.03, 2.2, 0.03, cx(222), 0, cz(1668)));
     /* the cabin windows and the big cargo door, PORT side only (D46 side
        is the port side; no reference shows the starboard) */
+    /* (batch 4) each window seated on the skin at its own height: the
+       rear one stood 5 cm off where the body narrows */
     [363, 446, 530, 612].forEach(function (wx) {
-      K.ink.push(box(0.26, 0.04, 0.26, cx(wx), lerpTab(C46_BODY, wx, 3) / C46.kp + 0.005, cz(1668)));
+      K.ink.push(box(0.26, 0.04, 0.26, cx(wx), halfW(tabSec(C46_BODY, wx, cz, C46.kp, 6, 0.86), cz(1668)) + 0.005, cz(1668)));
     });
-    K.ink.push(box(0.36, 0.04, 0.55, cx(497), lerpTab(C46_BODY, 497, 3) / C46.kp + 0.005, cz(1656)));
-    K.ink.push(box(0.36, 0.04, 0.80, cx(272), lerpTab(C46_BODY, 272, 3) / C46.kp + 0.005, cz(1678)));
+    K.ink.push(box(0.36, 0.04, 0.55, cx(497), halfW(tabSec(C46_BODY, 497, cz, C46.kp, 6, 0.86), cz(1656)) + 0.005, cz(1656)));
+    K.ink.push(box(0.36, 0.04, 0.80, cx(272), halfW(tabSec(C46_BODY, 272, cz, C46.kp, 6, 0.86), cz(1678)) + 0.005, cz(1678)));
     K.skin2.push(pin(box(3.40, 0.03, 1.95, cx(723), lerpTab(C46_BODY, 723, 3) / C46.kp + 0.006, cz(1661))));
     K.ink.push(box(0.04, 0.05, 1.95, cx(706), lerpTab(C46_BODY, 706, 3) / C46.kp + 0.02, cz(1661)));
     /* the astrodome on the roof (D46 side, x px 331) */
@@ -1336,7 +1376,7 @@ var HeroRocAir = (function () {
       /* the propeller: a spinner, four blades standing still and a faint
          disc for the turning prop (as ru_il10.js); 162 in = 4.11 m */
       var hx = cx(296), hz = cz(1716);
-      K.metal.push(loft([O(hx + 0.38, 0.02, hz, ny), O(hx + 0.25, 0.17, hz, ny), O(hx, 0.25, hz, ny), O(hx - 0.06, 0.25, hz, ny)], 14));
+      K.metal.push(loft([O(hx + 0.38, 0.02, hz, ny), O(hx + 0.25, 0.17, hz, ny), O(hx, 0.25, hz, ny), O(hx - 0.06, 0.25, hz, ny)], 14, false, true));
       for (i = 0; i < 4; i++) {
         var a = (45 + 90 * i) * D2R, b = box(0.05, 0.26, 1.80, hx + 0.02, 0, 0, 0, 0, 0);
         b.translate(-hx - 0.02, 0, 0.25 + 0.90);
@@ -1345,6 +1385,10 @@ var HeroRocAir = (function () {
         K.blade.push(b);
       }
       var dsk = new V.CircleGeometry(2.055, 40); dsk.rotateY(HALF_PI); dsk.translate(hx + 0.03, ny, hz); K.disc.push(dsk);
+      /* (batch 4) the propeller shaft from the spinner's back into the
+         engine's nose case (the propeller stood 0.1 m clear of the cowl on
+         nothing) */
+      K.metal.push(tube(0.10, 0.10, hx - 0.04, cx(334), ny, hz, 10));
     }
     /* tailplane and fin */
     both(K.skin, C46_TAIL.map(function (r) {
@@ -1368,8 +1412,11 @@ var HeroRocAir = (function () {
     for (s = -1; s <= 1; s += 2) {
       var wy = s * C46_NAC_Y;
       for (var f = -1; f <= 1; f += 2) {
-        G.metal.push(rod([mX + 0.05, wy + f * 0.24, cz(1760)], [mX, wy + f * 0.24, ZG + mR], 0.07, 8));
-        G.metal.push(rod([mX - 0.60, wy + f * 0.24, cz(1760)], [mX, wy + f * 0.24, ZG + mR + 0.30], 0.035, 6));
+        /* (batch 4) the legs' tops run up into the nacelle's gear bay, 0.60 m
+           under its axis (they stopped at py 1760, 0.16 m under the
+           nacelle's skin, so the whole main gear hung clear of it) */
+        G.metal.push(rod([mX + 0.05, wy + f * 0.24, cz(1726) - 0.60], [mX, wy + f * 0.24, ZG + mR], 0.07, 8));
+        G.metal.push(rod([mX - 0.60, wy + f * 0.24, cz(1726) - 0.60], [mX, wy + f * 0.24, ZG + mR + 0.30], 0.035, 6));
       }
       G.metal.push(cylY(0.05, 0.56, mX, wy, ZG + mR, 8));
       wheel(G.metal, G.tyre, mR, 0.38, mX, wy, ZG + mR, 0.30);
@@ -1399,6 +1446,24 @@ var HeroRocAir = (function () {
       var le = cx(csx(lerpTab(RT46, xx, 2))), te = cx(csx(lerpTab(RT46, xx, 1)));
       return { s: cy(xx), le: le + 0.02, te: le - 0.22, t: (le - te) * 0.11 * 0.9, h: cz(1650), pad: 0.006 };
     }));
+    /* (batch 4) the aileron and flap hinge line on the wing's top, 0.63 m
+       ahead of the trailing edge (D46 plan: the line 25 px ahead of the TE
+       from the tip, plan x 40, to the nacelle, x 470, and inboard of it,
+       x 545-590), and the aileron's inner end at plan x 290 (D46 plan: the
+       step there). Ribbon width NOT measured. */
+    var DXC = DK(V);
+    function c46Top(xx, aft) {
+      var le = cx(csx(lerpTab(RW46, xx, 2))), te = cx(csx(lerpTab(RW46, xx, 1))), c = le - te, y = cy(xx);
+      var xc = 1 - aft / c, t = c * (0.17 - 0.08 * y / 16.4);
+      return [te + aft, y, c46wz(y) + Math.max(0.003, 0.5 * t * foil(xc))];
+    }
+    for (s = -1; s <= 1; s += 2) {
+      [[40, 120, 200, 290, 380, 470], [545, 568, 590]].forEach(function (run) {
+        K.seam.push(DXC.ribbon(run.map(function (xx) { var q = c46Top(xx, 0.63); return [q[0], s * q[1], q[2]]; }), [0, 0, 1], 0.04, 0.003));
+      });
+      var a0 = c46Top(290, 0.63), a1 = c46Top(290, 0.04);
+      K.seam.push(DXC.ribbon([[a0[0], s * a0[1], a0[2]], [(a0[0] + a1[0]) / 2, s * a0[1], c46Top(290, 0.33)[2]], [a1[0], s * a1[1], a1[2]]], [0, 0, 1], 0.04, 0.003));
+    }
     /* the cockpit's windscreen posts, the pitot masts under the nose, the
        ADF loop housing and the long-wire aerial to the fin */
     for (s = -1; s <= 1; s += 2) {
@@ -1421,12 +1486,13 @@ var HeroRocAir = (function () {
       }
     }
     [cz(1630), cz(1661), cz(1692)].forEach(function (zz) {
-      K.metal.push(pin(box(0.08, 0.04, 0.10, cx(764), lerpTab(C46_BODY, 764, 3) / C46.kp + 0.02, zz)));
+      /* (batch 4) on the cargo door's outer face (they stood inside it) */
+      K.metal.push(pin(box(0.08, 0.04, 0.10, cx(764), lerpTab(C46_BODY, 723, 3) / C46.kp + 0.006 + 0.03, zz)));
     });
     /* gear: oleo pistons, hub caps, the tailwheel's fork */
     for (s = -1; s <= 1; s += 2) {
       var wy2 = s * C46_NAC_Y;
-      for (var f2 = -1; f2 <= 1; f2 += 2) oleo(G.metal, [mX, wy2 + f2 * 0.24, ZG + mR], [mX + 0.05, wy2 + f2 * 0.24, cz(1760)], 0.07, -0.20);
+      for (var f2 = -1; f2 <= 1; f2 += 2) oleo(G.metal, [mX, wy2 + f2 * 0.24, ZG + mR], [mX + 0.05, wy2 + f2 * 0.24, cz(1726) - 0.60], 0.07, -0.20);
       hubCap(G.metal, mX, wy2, ZG + mR, mR, 0.38, 1); hubCap(G.metal, mX, wy2, ZG + mR, mR, 0.38, -1);
     }
     hubCap(G.metal, tX, 0, ZG + tR, tR, 0.16, 1); hubCap(G.metal, tX, 0, ZG + tR, tR, 0.16, -1);
@@ -1471,15 +1537,20 @@ var HeroRocAir = (function () {
                   [100, 288, 409], [60, 292, 400], [45, 293, 392], [39, 299, 384]];
   var AT3_WZ = a3z(642), AT3_DIH = 1.3 * D2R;     /* the chord plane (D3 side), dihedral (D3 head-on, mean) */
   function a3wz(y) { return AT3_WZ + Math.max(0, Math.abs(y) - 0.9) * Math.tan(AT3_DIH); }
-  /* TAILPLANE (plan): y px, TE column, LE column; on the spine at side py 556 */
-  var AT3_TAIL = [[380, 30, 132], [360, 30, 126], [330, 31, 115], [300, 31, 104], [260, 32, 89], [245, 34, 82], [238, 40, 72]];
+  /* TAILPLANE (plan): y px, TE column, LE column. (batch 4) It sits on the
+     body's top at the fin root, side py 575 (D3 side: the slab's section
+     at px 1260-1357, py 572-578; D3 head-on puts it 67 px over the wing's
+     line, as the side's 642 - 575): py 556 was the dorsal fillet's top, and
+     put the slabs 0.16 m clear of the body. The root row at the centreline
+     (py 397) carries each slab in to the fin, as D3's plan meets the body. */
+  var AT3_TAIL = [[397, 30, 137], [380, 30, 132], [360, 30, 126], [330, 31, 115], [300, 31, 104], [260, 32, 89], [245, 34, 82], [238, 40, 72]];
   /* FIN (side): py, LE x px, TE x px */
   var AT3_FIN = [[572, 1200, 1392], [555, 1240, 1391], [540, 1250, 1390], [520, 1263, 1387], [500, 1276, 1385],
                  [480, 1289, 1383], [460, 1303, 1381], [440, 1320, 1378], [434, 1337, 1378]];
 
   function buildAT3(THREE, M, C) {
     V = THREE;
-    var P = { key: "at3", base: "#d6d8d5", dk: "#c2c5c3", pale: "#e4e5e2", seed: 3301, metal: false, nose: 0x30343a };
+    var P = { key: "at3", base: "#d6d8d5", dk: "#c2c5c3", pale: "#e4e5e2", seed: 3301, metal: false, nose: 0x30343a, seam: 0x9a9e9c };
     var K = lists(), G = lists(), s;
     K.skin.push(loft(AT3_BODY.map(function (r) {
       return S(a3x(r[0]), a3z(r[1]), a3z(r[2]), r[3] / AT3.kp, a3z((r[1] + r[2]) / 2 + 4), 0.9);
@@ -1523,8 +1594,14 @@ var HeroRocAir = (function () {
     /* tailplane on the spine, fin */
     both(K.skin, AT3_TAIL.map(function (r) {
       var te = a3x(a3sx(r[1])), le = a3x(a3sx(r[2]));
-      return { s: a3y(r[0]), le: le, te: te, t: (le - te) * 0.08, h: a3z(556) };
+      return { s: a3y(r[0]), le: le, te: te, t: (le - te) * 0.08, h: a3z(575) };
     }));
+    /* (batch 4) the dorsal fillet running forward from the fin's root
+       along the spine (D3 side: px 1147-1243, its flat top at py 553-557;
+       D3 plan: the narrow strip on the centreline). Its 8 cm width is NOT
+       measured. */
+    K.skin.push(plateXZ([[a3x(1144), a3z(572)], [a3x(1149), a3z(558)], [a3x(1160), a3z(554)], [a3x(1243), a3z(552)],
+                         [a3x(1252), a3z(576)]], 0.08, 0));
     K.skin.push(surf(AT3_FIN.map(function (r) {
       var le = a3x(r[1]), te = a3x(r[2]);
       return { s: a3z(r[0]), le: le, te: te, t: Math.max(0.05, (le - te) * 0.08), h: 0 };
@@ -1536,8 +1613,11 @@ var HeroRocAir = (function () {
     }));
 
     /* ---- undercarriage: "gear" (D3 side: nose wheel at x 652, mains at
-       1050, ground py 745; head-on: the main track 3.87 m) ---- */
-    var ZG = a3z(745), nX = a3x(652), nR = 17 / AT3.k, mX = a3x(1050), mR = 23 / AT3.k, mY = 1.93;
+       1031, ground py 745; head-on: the main track 3.87 m). (batch 4) The
+       mains were at px 1050, 0.27 m aft of D3's wheel: its tyre spans px
+       1010-1052 behind the leg fairing, centre 1031 (read row by row at
+       py 722 and 730). ---- */
+    var ZG = a3z(745), nX = a3x(652), nR = 17 / AT3.k, mX = a3x(1031), mR = 23 / AT3.k, mY = 1.93;
     G.metal.push(rod([nX + 0.05, 0, a3z(679)], [nX, 0, ZG + nR], 0.045, 8));
     G.metal.push(rod([nX - 0.40, 0, a3z(680)], [nX, 0, ZG + nR + 0.25], 0.022, 6));
     wheel(G.metal, G.tyre, nR, 0.13, nX, 0, ZG + nR);
@@ -1555,9 +1635,9 @@ var HeroRocAir = (function () {
     navLamps(K, awx, a3y(aw[0]) - 0.04, a3wz(a3y(aw[0])), 0.05);
     K.metal.push(ball(0.035, a3x(1380), 0, a3z(440), 1.3, 0.8, 1.0));
     beacon(K, a3x(1080), 0, a3z(570), 1);
-    beacon(K, a3x(1000), 0, a3z(676), -1);
+    /* (batch 4) the belly beacon seated on the skin (it hung 3 cm under it) */
+    beacon(K, a3x(1000), 0, a3z(lerpTab(AT3_BODY, 1000, 2)) + 0.005, -1);
     bladeAnt(K.skin2, a3x(1120), a3z(570), 0.18, 0.26);
-    bladeAnt(K.skin2, a3x(900), a3z(677), -0.16, 0.22);
     /* the canopy's sills, the intake lips, the jet pipes' bright rims, the
        ventral speed brakes */
     for (s = -1; s <= 1; s += 2) {
@@ -1566,8 +1646,59 @@ var HeroRocAir = (function () {
       for (var q = 0; q < sl.length - 1; q++) K.metal.push(rod(sl[q], sl[q + 1], 0.016, 4));
       K.metal.push(loft([O(a3x(1300) + 0.01, 0.12, a3z(609), s * 0.44), O(a3x(1300) - 0.02, 0.12, a3z(609), s * 0.44)], 12));
       K.ink.push(pin(box(0.60, 0.02, 0.30, a3x(1150), s * 0.60, a3z(655))));
-      [a3z(640), a3z(620)].forEach(function (zz) { K.ink.push(pin(box(0.12, 0.03, 0.04, a3x(760), s * 0.52, zz))); });
+      /* (batch 4) the two steps seated on the skin at their own heights
+         (the upper one stood 8 cm off at the body's widest line) */
+      [a3z(640), a3z(620)].forEach(function (zz) {
+        K.ink.push(pin(box(0.12, 0.03, 0.04, a3x(760), s * (halfW(tabSec(AT3_BODY, 760, a3z, AT3.kp, 4, 0.9), zz) + 0.005), zz)));
+      });
     }
+    /* (batch 4) the four underwing pylons, bare: D3 head-on draws them
+       hanging 0.14 m under the wing at 2.08 m and 3.44 m out (69.8 px/m,
+       its 730 px span), and the Hsinchu photograph (P3, 0832) shows the
+       stubs under the wing with nothing on them. Their chord (0.9 m, about
+       40 % of the local chord, from 25 % chord) and their 8 cm thickness
+       are NOT measured. No stores: no reference shows one fitted. */
+    for (s = -1; s <= 1; s += 2) {
+      [2.08, 3.44].forEach(function (py2) {
+        var wy = AT3.y0 - py2 * AT3.kp;          /* plan row px of this span */
+        var RW3 = AT3_WING.slice().reverse();
+        var le = a3x(a3sx(lerpTab(RW3, wy, 2))), te = a3x(a3sx(lerpTab(RW3, wy, 1))), ch = le - te;
+        var hz = a3wz(py2), lo = hz - 0.5 * ch * (0.10 - 0.02 * py2 / 5.2) * foil(0.45);
+        var f0 = le - 0.25 * ch, f1 = f0 - 0.9;
+        var pyl = plateXZ([[f0 + 0.05, hz], [f0, lo - 0.08], [f0 - 0.12, lo - 0.14], [f1 + 0.10, lo - 0.14],
+                           [f1, lo - 0.10], [f1 - 0.05, hz]], 0.08, s * py2);
+        K.skin2.push(pyl);
+      });
+    }
+    /* (batch 4) the ventral fairing under the forward fuselage (D3 side:
+       px 580-645, its bottom at py 693; the Hsinchu photograph shows it,
+       white, under the front cockpit). Its width (0.24 m) is NOT measured.
+       A blade aerial under the belly (D3 side, px 720). */
+    K.skin2.push(loft([S(a3x(578), a3z(673), a3z(686), 0.06, undefined, 0.6), S(a3x(588), a3z(674), a3z(693), 0.12, undefined, 0.6),
+                       S(a3x(638), a3z(676), a3z(693), 0.12, undefined, 0.6), S(a3x(648), a3z(677), a3z(688), 0.06, undefined, 0.6)], 12, true, true));
+    bladeAnt(K.skin2, a3x(720), a3z(lerpTab(AT3_BODY, 720, 2)) + 0.01, -0.13, 0.18);
+    /* the panel breaks D3's side view draws, as seam rings: round each
+       nacelle at px 1100 and 1180, round the tail cone at px 1320 and 1350 */
+    var DXT = DK(V);
+    function ringPt(q) {
+      return function (a) {
+        var cy = Math.cos(a), sz = Math.sin(a);
+        return [q.x, (q.yc || 0) + q.w * Math.sign(cy) * Math.pow(Math.abs(cy), q.e),
+                q.zw + (sz >= 0 ? (q.zt - q.zw) : (q.zw - q.zb)) * Math.sign(sz) * Math.pow(Math.abs(sz), q.e)];
+      };
+    }
+    [1100, 1180].forEach(function (px) {
+      for (s = -1; s <= 1; s += 2) {
+        var o = lerpTab(AT3_NAC, px, 3), inn = Math.max(0.12, Math.min(o - 0.10, lerpTab(AT3_BODY, px, 3) / AT3.kp - 0.06));
+        var zt = a3z(lerpTab(AT3_NAC, px, 1)), zb = a3z(lerpTab(AT3_NAC, px, 2));
+        var q = { x: a3x(px), w: (o - inn) / 2, zt: zt, zb: zb, zw: (zt + zb) / 2, e: 0.82, yc: s * (o + inn) / 2 };
+        K.seam.push(DXT.hoop(ringPt(q), 0, 2 * PI, 24, function () { return [q.x, q.yc, q.zw]; }, 0.03, 0.003));
+      }
+    });
+    [1320, 1350].forEach(function (px) {
+      var q = tabSec(AT3_BODY, px, a3z, AT3.kp, 4, 0.9); q.x = a3x(px);
+      K.seam.push(DXT.hoop(ringPt(q), 0, 2 * PI, 24, function () { return [q.x, 0, q.zw]; }, 0.03, 0.003));
+    });
     /* gear: oleos, torque links, hub caps, the taxi lamp */
     oleo(G.metal, [nX, 0, ZG + nR], [nX + 0.05, 0, a3z(679)], 0.045, 0.12);
     hubCap(G.metal, nX, 0, ZG + nR, nR, 0.13, 1); hubCap(G.metal, nX, 0, ZG + nR, nR, 0.13, -1);
@@ -1618,10 +1749,14 @@ var HeroRocAir = (function () {
   /* WING with the leading-edge root extension (PA, upper wing): span m,
      LE column px, TE column px. LE 32 deg, the TE swept 11.6 deg forward. */
   var FCK_WING = [[0.45, 800, 328], [0.67, 760, 330], [0.86, 720, 332], [1.07, 680, 334], [1.26, 640, 336],
-                  [1.40, 590, 338], [1.81, 568, 344], [2.62, 531, 356], [3.43, 494, 368], [3.84, 475, 375], [4.11, 462, 378]];
+                  [1.40, 590, 338], [1.81, 568, 344], [2.62, 531, 356], [3.43, 494, 368], [3.84, 475, 375], [4.11, 462, 378], [4.22, 458, 379]];
   var FCK_WZ = fcz(398);                           /* the chord plane (PC: the near wing's root) */
-  /* TAILPLANE (PA): span m, LE, TE; FIN (PC): py, LE station, TE station */
-  var FCK_TAIL = [[1.05, 300, 118], [1.34, 251, 116], [1.61, 234, 117], [2.02, 209, 119], [2.43, 184, 120],
+  /* TAILPLANE (PA): span m, LE, TE; FIN (PC): py, LE station, TE station.
+     (batch 4) The root row at 0.85 m carries each slab into the body side
+     (PA: the slabs meet the fuselage; they stood 0.11 m clear of it), and
+     the wing's last row at 4.22 m carries the tip out to the launch rail
+     (PA: the rail sits on the tip; it stood 0.11 m clear). */
+  var FCK_TAIL = [[0.85, 300, 118], [1.05, 300, 118], [1.34, 251, 116], [1.61, 234, 117], [2.02, 209, 119], [2.43, 184, 120],
                   [2.70, 167, 121], [2.79, 158, 138]];
   var FCK_FIN = [[352, 860, 1060], [330, 893, 1066], [300, 923, 1073], [260, 963, 1081], [220, 1002, 1090],
                  [195, 1027, 1097], [183, 1042, 1072]];
@@ -1642,7 +1777,10 @@ var HeroRocAir = (function () {
     K.skin.push(loft(body.slice(4), 30, false, true));
     /* the radome, dark, and the probe (PA, PC) */
     K.nose.push(loft(body.slice(0, 5), 30, true, false));
-    K.metal.push(tube(0.012, 0.03, fcsx(45), fcsx(86), 0, fcz(420), 6));
+    /* (batch 4) the probe's root run back into the radome tip (it stood
+       0.19 m clear of it: PA's radome starts at column 1100, side station
+       100) */
+    K.metal.push(tube(0.012, 0.03, fcsx(45), fcsx(112), 0, fcz(420), 6));
     /* the side intakes under the root extensions (PC: the lip at station
        445, py 395-445; head-on photograph PF: the half-round mouths) */
     for (s = -1; s <= 1; s += 2) {
@@ -1702,8 +1840,10 @@ var HeroRocAir = (function () {
     wheel(G.metal, G.tyre, nR, 0.15, nX, 0, ZG + nR);
     G.skin2.push(pin(box(1.10, 0.02, 0.32, fcsx(330), 0.20, fcz(450))));
     for (s = -1; s <= 1; s += 2) {
-      G.metal.push(rod([mX + 0.1, s * 0.85, fcz(448)], [mX, s * mY, ZG + mR], 0.06, 8));
-      G.metal.push(rod([mX + 0.7, s * 0.70, fcz(448)], [mX + 0.04, s * (mY - 0.03), ZG + mR + 0.35], 0.03, 6));
+      /* (batch 4) the legs' tops run up into the intake trunks' gear bays
+         (at py 448 they stopped 3 cm under the trunks' skin) */
+      G.metal.push(rod([mX + 0.1, s * 0.85, fcz(438)], [mX, s * mY, ZG + mR], 0.06, 8));
+      G.metal.push(rod([mX + 0.7, s * 0.70, fcz(438)], [mX + 0.04, s * (mY - 0.03), ZG + mR + 0.35], 0.03, 6));
       wheel(G.metal, G.tyre, mR, 0.20, mX, s * (mY + 0.08), ZG + mR);
       G.skin2.push(pin(box(1.0, 0.02, 0.40, mX + 0.1, s * 0.88, fcz(452) - 0.15, s * 0.6, 0, 0)));
     }
@@ -1714,9 +1854,13 @@ var HeroRocAir = (function () {
     navLamps(K, fcx(470), 0.95, fcz(398), 0.045);                    /* on the intake trunks' tops */
     K.metal.push(ball(0.035, fcsx(1068), 0, fcz(190), 1.3, 0.8, 1.0));
     beacon(K, fcsx(700), 0, fcz(347), 1);
-    beacon(K, fcsx(640), 0, fcz(451), -1);
+    /* (batch 4) the belly beacon seated on the skin (it hung 2 cm under):
+       the body's bottom at side station 640 is PA column 562 */
+    beacon(K, fcsx(640), 0, fcz(FCK_BODY[15][3] + (FCK_BODY[14][3] - FCK_BODY[15][3]) * (fcp(640) - 520) / 80) + 0.005, -1);
     bladeAnt(K.skin2, fcsx(620), fcz(347), 0.16, 0.24);
-    bladeAnt(K.skin2, fcsx(560), fcz(451), -0.14, 0.20);
+    /* (batch 4) seated on the belly (PA column of side station 560: the
+       bottom at py 449.x; it stood 3 cm under) */
+    bladeAnt(K.skin2, fcsx(560), fcz(449) - 0.005, -0.14, 0.20);
     bladeAnt(K.skin2, fcsx(820), fcz(449), -0.12, 0.18);
     /* the intakes' splitter plates and bright lips, the nozzles' petals */
     for (s = -1; s <= 1; s += 2) {
@@ -1737,7 +1881,7 @@ var HeroRocAir = (function () {
     hubCap(G.metal, nX, 0, ZG + nR, nR, 0.15, 1); hubCap(G.metal, nX, 0, ZG + nR, nR, 0.15, -1);
     G.metal.push(ball(0.045, nX + 0.14, 0.06, ZG + nR + 0.38, 1, 1, 1), ball(0.045, nX + 0.14, -0.06, ZG + nR + 0.38, 1, 1, 1));
     for (s = -1; s <= 1; s += 2) {
-      oleo(G.metal, [mX, s * mY, ZG + mR], [mX + 0.1, s * 0.85, fcz(448)], 0.06, -0.16);
+      oleo(G.metal, [mX, s * mY, ZG + mR], [mX + 0.1, s * 0.85, fcz(438)], 0.06, -0.16);
       hubCap(G.metal, mX, s * (mY + 0.08), ZG + mR, mR, 0.20, s);
     }
 
@@ -1806,6 +1950,9 @@ var HeroRocAir = (function () {
         /* each tube's front and rear bands and its rear cap */
         K.metal.push(tube(0.18, 0.18, mdx(2.06), mdx(2.12), ly2 + k * 0.17, lz2, 14, true));
         K.metal.push(tube(0.18, 0.18, mdx(3.90), mdx(3.96), ly2 + k * 0.17, lz2, 14, true));
+        /* (batch 4 review) the muzzle's lip ring at the tube's front (R14,
+           RL: the bright mouths); size NOT measured */
+        K.metal.push(tube(0.174, 0.174, mdx(2.02), mdx(2.035), ly2 + k * 0.17, lz2, 14, true));
         var rc = new V.CircleGeometry(0.16, 12); rc.rotateY(-HALF_PI); rc.translate(mdx(4.00) - 0.004, ly2 + k * 0.17, lz2); K.ink.push(pin(rc));
       }
       /* the launcher's sway braces and the umbilical to the cabin */
@@ -1814,14 +1961,20 @@ var HeroRocAir = (function () {
       /* the skids' wear shoes and the boarding steps */
       K.ink.push(pin(box(1.60, 0.05, 0.016, mdx(1.30), s * 0.935, mdz(0.013))));
       K.metal.push(pin(box(0.22, 0.14, 0.02, mdx(1.05), s * 0.76, mdz(0.34))));
-      /* nav lamps on the stabiliser's end plates, port red, starboard green */
-      (s > 0 ? K.lampR : K.lampG).push(ball(0.03, mdx(7.12), s * 0.85, mdz(2.76), 1.3, 0.7, 1.0));
+      /* (batch 4) the rear door's grab handle (kpa_air.js, s 2.29-2.39 at
+         h 1.30) stands 4 cm off the skin on nothing: its two stand-off
+         legs, down to the skin. kpa_air.js is not edited here. */
+      [2.29, 2.39].forEach(function (hs) { K.metal.push(rod([mdx(hs), s * 0.712, mdz(1.30)], [mdx(hs), s * 0.650, mdz(1.30)], 0.010, 5)); });
+      /* (batch 4 review) the end-plate nav lamps this file repeated at s
+         7.12 are gone: kpa_air.js draws them (s 7.10) */
     }
-    /* the anti-collision beacon on the boom top behind the fairing and
-       under the belly; the white tail lamp; the whip aerial under the boom */
+    /* the anti-collision beacon on the boom top behind the fairing (the
+       belly beacon this file repeated at s 1.90 is gone: kpa_air.js draws
+       it at s 2.05); the whip aerial under the boom */
     beacon(K, mdx(4.40), 0, mdz(1.97), 1);
-    beacon(K, mdx(1.90), 0, mdz(0.48), -1);
-    K.metal.push(ball(0.028, mdx(7.17), 0, mdz(2.60), 1.3, 0.8, 1.0));
+    /* (batch 4) the second white tail lamp this file drew at s 7.17 is
+       gone: it hung 0.12 m clear behind the stabiliser and repeated
+       kpa_air.js's own tail light at the boom's end (s 6.66) */
     K.ink.push(rod([mdx(4.80), 0, mdz(1.62)], [mdx(5.20), 0, mdz(1.05)], 0.008, 4));
 
     var mats = makeMats(C, P);
@@ -1887,7 +2040,7 @@ var HeroRocAir = (function () {
   function buildAH1W(THREE, M, C) {
     V = THREE;
     var P = { key: "ah1w", base: "#4b5040", dk: "#41463a", pale: "#575c4a", seed: 1101, metal: false, nose: 0x2a2d29,
-              blade: 0x2a2d2c };
+              blade: 0x2a2d2c, seam: 0x2e3229 };
     var K = lists(), s, k;
     K.skin.push(loft(AHW_BODY.map(function (r) {
       return S(ahx(r[0]), ahz(r[1]), ahz(r[2]), r[3] / AHW.kp, ahz((r[1] + r[2]) / 2), r[4]);
@@ -1924,7 +2077,7 @@ var HeroRocAir = (function () {
     }
     /* stub wings (DW side: x px 1090-1200 at py 875; head-on 3.10 m over
        the tips), the dispenser box on each tip (DW; the ROC photograph R9),
-       an M260 19-tube rocket pod inboard and a 4-round TOW launcher
+       an M260 7-tube rocket pod inboard and a 4-round TOW launcher
        outboard, two over two (DW head-on; R9) */
     var wz = ahz(875);
     both(K.skin, [{ s: 0.45, le: ahx(1088), te: ahx(1202), t: 0.22, h: wz }, { s: 1.55, le: ahx(1098), te: ahx(1195), t: 0.18, h: wz }]);
@@ -1933,17 +2086,36 @@ var HeroRocAir = (function () {
       K.ink.push(box(0.36, 0.23, 0.02, ahx(1150), s * 1.58, wz + 0.335));
       /* team colour: the side of each tip box */
       K.team.push(box(0.50, 0.02, 0.18, ahx(1150), s * 1.70, wz + 0.18));
-      /* the 19-tube pod */
-      K.skin.push(loft([O(ahx(1085), 0.17, wz - 0.61, s * 1.15), O(ahx(1092), 0.20, wz - 0.61, s * 1.15),
-                        O(ahx(1180), 0.20, wz - 0.61, s * 1.15), O(ahx(1196), 0.15, wz - 0.61, s * 1.15)], 16, true, true));
-      K.metal.push(box(0.60, 0.06, 0.30, ahx(1145), s * 1.15, wz - 0.26));
+      /* the 7-tube pod */
+      /* (batch 4 review) the pod at y 1.09 and the TOW pair centred at
+         1.57, under the tip box (DW head-on): at 1.15 / 1.47 the pod and the
+         lower inboard round overlapped by 5-11 cm */
+      K.skin.push(loft([O(ahx(1085), 0.17, wz - 0.61, s * 1.09), O(ahx(1092), 0.20, wz - 0.61, s * 1.09),
+                        O(ahx(1180), 0.20, wz - 0.61, s * 1.09), O(ahx(1196), 0.15, wz - 0.61, s * 1.09)], 16, true, true));
+      K.metal.push(box(0.60, 0.06, 0.30, ahx(1145), s * 1.09, wz - 0.26));
       /* the TOW launcher */
+      /* (batch 4) each round as R9 shows it: the fat sealed canister aft,
+         a collar, and the narrower launch tube forward, about 35 % of the
+         length (R9: px 540-730 of 180-730); radii 0.11 / 0.125 / 0.085 m
+         read through R9's perspective, NOT measured */
       for (var r = 0; r < 2; r++) for (k = -1; k <= 1; k += 2) {
-        var ty = s * 1.47 + k * 0.12, tz = wz - 0.35 - r * 0.26;
-        K.skin2.push(tube(0.11, 0.11, ahx(1065), ahx(1190), ty, tz, 12));
-        var tm = new V.CircleGeometry(0.09, 10); tm.rotateY(HALF_PI); tm.translate(ahx(1065) + 0.005, ty, tz); K.ink.push(tm);
+        var ty = s * 1.57 + k * 0.12, tz = wz - 0.35 - r * 0.26;
+        K.skin2.push(tube(0.11, 0.11, ahx(1112), ahx(1190), ty, tz, 12));
+        K.metal.push(tube(0.125, 0.125, ahx(1106), ahx(1113), ty, tz, 12));
+        K.skin2.push(tube(0.085, 0.085, ahx(1065), ahx(1106), ty, tz, 12));
+        K.metal.push(tube(0.092, 0.092, ahx(1065), ahx(1067), ty, tz, 12, true));
+        var tm = new V.CircleGeometry(0.075, 10); tm.rotateY(HALF_PI); tm.translate(ahx(1065) + 0.005, ty, tz); K.ink.push(tm);
+        var tb2 = new V.CircleGeometry(0.105, 10); tb2.rotateY(-HALF_PI); tb2.translate(ahx(1190) - 0.004, ty, tz); K.ink.push(pin(tb2));
       }
-      K.metal.push(box(0.70, 0.10, 0.25, ahx(1128), s * 1.47, wz - 0.17));
+      K.metal.push(box(0.70, 0.10, 0.25, ahx(1128), s * 1.57, wz - 0.17));
+      /* (batch 4) the launcher's spine between the left and right pairs
+         (DW head-on: the bar down the middle of the four; R9) */
+      K.metal.push(box(1.10, 0.03, 0.50, ahx(1128), s * 1.57, wz - 0.48));
+      /* the 7-tube pod's mouths (DW head-on: one and a ring of six) */
+      for (k = 0; k < 7; k++) {
+        var ma = k * PI / 3, mr = k ? 0.11 : 0, mo = new V.CircleGeometry(0.042, 8);
+        mo.rotateY(HALF_PI); mo.translate(ahx(1085) + 0.004, s * 1.09 + Math.cos(ma) * mr, wz - 0.61 + Math.sin(ma) * mr); K.ink.push(mo);
+      }
     }
     /* the M197 three-barrel gun in the chin turret (DW side) */
     K.metal.push(loft([O(ahx(858), 0.05, ahz(935)), O(ahx(864), 0.20, ahz(935)), O(ahx(886), 0.21, ahz(935)), O(ahx(892), 0.08, ahz(935))], 14, true, true));
@@ -1969,8 +2141,16 @@ var HeroRocAir = (function () {
       var yS = s * 0.99;
       K.metal.push(tube(0.045, 0.045, ahx(965), ahx(1200), yS, zg, 10));
       K.metal.push(rod([ahx(965), yS, zg], [ahx(948), yS, zg + 0.12], 0.045, 8));
-      K.metal.push(rod([ahx(1010), s * 0.38, ahz(958)], [ahx(1012), yS, zg + 0.02], 0.05, 8));
-      K.metal.push(rod([ahx(1168), s * 0.38, ahz(958)], [ahx(1172), yS, zg + 0.02], 0.05, 8));
+      /* (batch 4) the cross tubes' bows as DW head-on draws them: out
+         from the belly nearly level, then bending down onto the skid
+         (fractions of the run out and down read off DW head-on) */
+      [[1010, 1012], [1168, 1172]].forEach(function (cx2) {
+        var fy = [0, 0.43, 0.73, 0.92, 1], fz = [0, 0.16, 0.40, 0.71, 1], bw = [];
+        for (var bi = 0; bi < fy.length; bi++)
+          bw.push([ahx(cx2[0] + (cx2[1] - cx2[0]) * fz[bi]), s * (0.38 + (0.99 - 0.38) * fy[bi]), ahz(958) + (zg + 0.02 - ahz(958)) * fz[bi]]);
+        for (bi = 0; bi + 1 < bw.length; bi++) K.metal.push(rod(bw[bi], bw[bi + 1], 0.05, 8));
+        for (bi = 1; bi + 1 < bw.length; bi++) K.metal.push(ball(0.05, bw[bi][0], bw[bi][1], bw[bi][2], 1, 1, 1, 8));
+      });
     }
     K.metal.push(rod([ahx(1010), -0.38, ahz(958)], [ahx(1010), 0.38, ahz(958)], 0.05, 8));
     K.metal.push(rod([ahx(1168), -0.38, ahz(958)], [ahx(1168), 0.38, ahz(958)], 0.05, 8));
@@ -1989,36 +2169,93 @@ var HeroRocAir = (function () {
       for (k = 0; k < cs2.length - 1; k++) K.metal.push(rod(cs2[k], cs2[k + 1], 0.018, 4));
       /* the canopy doors' hinges and the kick-in steps below them */
       [930, 1010].forEach(function (hx2) {
-        K.ink.push(pin(box(0.12, 0.03, 0.03, ahx(hx2), s * (lerpTab(AHW_CAN, hx2, 3) + 0.02), ahz(lerpTab(AHW_CAN, hx2, 2)) + 0.25)));
-        [0.30, 0.55].forEach(function (dz) { K.ink.push(pin(box(0.12, 0.02, 0.04, ahx(hx2 + 10), s * (lerpTab(AHW_BODY, hx2 + 10, 3) / AHW.kp + 0.006), ahz(958) + dz))); });
+        /* (batch 4) on the glazing at their own height (1.6 cm off it) */
+        var cq = { zt: ahz(lerpTab(AHW_CAN, hx2, 1)), zb: ahz(lerpTab(AHW_CAN, hx2, 2)) - 0.05, zw: ahz(lerpTab(AHW_CAN, hx2, 2)), w: lerpTab(AHW_CAN, hx2, 3), e: 0.72 };
+        K.ink.push(pin(box(0.12, 0.03, 0.03, ahx(hx2), s * (halfW(cq, cq.zw + 0.25) + 0.012), cq.zw + 0.25)));
+        /* (batch 4) seated on the skin at their own heights (the lower
+           ones stood 4 cm off at the body's widest line) */
+        [0.30, 0.55].forEach(function (dz) {
+          var kq = tabSec(AHW_BODY, hx2 + 10, ahz, AHW.kp, 0);
+          K.ink.push(pin(box(0.12, 0.02, 0.04, ahx(hx2 + 10), s * (halfW(kq, ahz(958) + dz) + 0.004), ahz(958) + dz)));
+        });
       });
       /* the nacelles' intake screens and the exhausts' bright lips */
       var ny2 = s * 0.58, zt2 = ahz(808), zb2 = ahz(875);
       for (k = 0; k < 4; k++) K.metal.push(pin(box(0.02, 0.24, 0.012, ahx(1113), ny2, zt2 - 0.14 - k * 0.07)));
-      K.metal.push(tube(0.31, 0.31, ahx(1340), ahx(1346), ny2, (zt2 + zb2) / 2 - 0.02, 14, true));
+      K.metal.push(tube(0.278, 0.278, ahx(1340), ahx(1346), ny2, (zt2 + zb2) / 2 - 0.02, 14, true));    /* (batch 4) flush: 0.31 stood 3 cm off */
+      /* (batch 4) the exhaust's stepped rings (DW side: three steps over px
+         1322-1346) */
+      [1327, 1334].forEach(function (rx) {
+        var rr = 0.30 - 0.03 * (rx + 1.5 - 1322) / 24 + 0.002;      /* the pipe's own radius there, 2 mm proud */
+        K.metal.push(tube(rr, rr, ahx(rx), ahx(rx + 3), ny2, (zt2 + zb2) / 2 - 0.02, 14, true));
+      });
       /* the skids' wear shoes and the boarding step on the forward cross tube */
       K.ink.push(pin(box(2.4, 0.05, 0.016, ahx(1080), s * 0.99, zg - 0.045 + 0.0085)));
       K.metal.push(pin(box(0.24, 0.14, 0.02, ahx(1010), s * 0.80, zg + 0.20)));
       /* the stub wings' tip lamps, port red and starboard green */
-      (s > 0 ? K.lampR : K.lampG).push(ball(0.04, ahx(1120), s * 1.66, wz + 0.18, 1.6, 0.6, 0.8));
+      /* (batch 4) on the tip box's outer face (R9: the lamp on the box's
+         side), not 0.1 m ahead of the box */
+      (s > 0 ? K.lampR : K.lampG).push(ball(0.04, ahx(1150) + 0.26, s * 1.70, wz + 0.18, 1.6, 0.6, 0.8));
       /* the boom's drive-shaft cover hinges */
       [1400, 1480, 1560].forEach(function (bx2) {
-        K.ink.push(pin(box(0.10, 0.02, 0.05, ahx(bx2), s * (lerpTab(AHW_BODY, bx2, 3) / AHW.kp + 0.004), ahz(lerpTab(AHW_BODY, bx2, 1)) - 0.10)));
+        /* (batch 4) seated at their own height (they stood 4-6 cm off) */
+        var hz2 = ahz(lerpTab(AHW_BODY, bx2, 1)) - 0.10;
+        K.ink.push(pin(box(0.10, 0.02, 0.05, ahx(bx2), s * (halfW(tabSec(AHW_BODY, bx2, ahz, AHW.kp, 0), hz2) + 0.004), hz2)));
       });
     }
     /* the wire-strike cutters over the canopy and under the nose (R9) */
-    K.metal.push(plateXZ([[ahx(870), ahz(845)], [ahx(905), ahz(805)], [ahx(912), ahz(808)], [ahx(880), ahz(848)]], 0.03, 0));
-    K.metal.push(plateXZ([[ahx(845), ahz(958)], [ahx(880), ahz(972)], [ahx(885), ahz(966)], [ahx(852), ahz(952)]], 0.03, 0));
+    /* (batch 4) both moved to where DW's side view draws them: the upper
+       on the canopy's rear top raking forward (px 1010-1045, py 772-807),
+       the lower under the chin behind the gun turret raking forward
+       (px 918-950, py 960-980; it hung 0.11 m under the nose before), each
+       root sunk into the skin */
+    K.metal.push(plateXZ([[ahx(1049), ahz(825)], [ahx(1038), ahz(816)], [ahx(1008), ahz(771)], [ahx(1013), ahz(769)]], 0.03, 0));
+    K.metal.push(plateXZ([[ahx(952), ahz(950)], [ahx(941), ahz(950)], [ahx(914), ahz(979)], [ahx(919), ahz(982)]], 0.03, 0));
     /* the anti-collision beacons on the pylon fairing's top and under the
        belly, the white tail lamp on the fin */
-    beacon(K, ahx(1250), 0, ahz(795), 1);
+    /* (batch 4) on the fairing's top at its own station (it stood 6 cm
+       above it) */
+    beacon(K, ahx(1250), 0, ahz(lerpTab(AHW_TOP, 1250, 1)) - 0.005, 1);
     beacon(K, ahx(1150), 0, ahz(958), -1);
-    K.metal.push(ball(0.03, ahx(1755), 0, ahz(860), 1.3, 0.8, 1.0));
+    /* (batch 4) on the fin's trailing edge (it hung 0.4 m behind it) */
+    K.metal.push(ball(0.03, ahx(lerpTab(AHW_FIN.slice().reverse(), 860, 2)) - 0.025, 0, ahz(860), 1.3, 0.8, 1.0));
     /* aerials: blades under the boom and on the pylon, the radar warning
        receivers' fairings on the nose sides */
     bladeAnt(K.skin2, ahx(1420), ahz(938), -0.18, 0.26);
-    bladeAnt(K.skin2, ahx(1290), ahz(812), 0.14, 0.20);
+    /* (batch 4) the blade on the fairing's top where DW draws it (px 1262,
+       py 808: it stood 0.21 m above the sloping fairing at px 1290), and
+       the L-shaped aerial on the fairing's front (DW: post px 1098, about
+       0.15 m tall, the arm aft to px 1112) */
+    bladeAnt(K.skin2, ahx(1262), ahz(lerpTab(AHW_TOP, 1269, 1)), 0.14, 0.20);
+    var aqz = ahz(lerpTab(AHW_TOP, 1098, 1));          /* (review) on the fairing top at px 1098, 0.15 m tall */
+    K.metal.push(rod([ahx(1098), 0, aqz - 0.02], [ahx(1098), 0, aqz + 0.15], 0.012, 5));
+    K.metal.push(rod([ahx(1098) + 0.012, 0, aqz + 0.15], [ahx(1112), 0, aqz + 0.15], 0.012, 5));
     for (s = -1; s <= 1; s += 2) K.ink.push(ball(0.04, ahx(820), s * 0.30, ahz(900), 1.6, 0.8, 0.8));
+
+    /* (batch 4) the panel breaks DW's side view draws, as dark seam
+       ribbons on the skin: the nose ammunition bay's door (px 874-1008,
+       py 893-948), the oval access door behind the stub wing (px
+       1230-1250, py 890-925), the frame at px 1300 and the tail boom's
+       two joints (px 1435, 1560, all round). Widths NOT measured. */
+    var DXA = DK(V);
+    function ahSide(px, py, s2) { var z = ahz(py); return [ahx(px), s2 * (halfW(tabSec(AHW_BODY, px, ahz, AHW.kp, 0), z) + 0.002), z]; }
+    function ahRing(px) {
+      var q = tabSec(AHW_BODY, px, ahz, AHW.kp, 0);
+      return DXA.hoop(function (a) {
+        var cy = Math.cos(a), sz = Math.sin(a);
+        return [ahx(px), q.w * Math.sign(cy) * Math.pow(Math.abs(cy), q.e),
+                q.zw + (sz >= 0 ? (q.zt - q.zw) : (q.zw - q.zb)) * Math.sign(sz) * Math.pow(Math.abs(sz), q.e)];
+      }, 0, 2 * PI, 28, function () { return [ahx(px), 0, q.zw]; }, 0.03, 0.003);
+    }
+    for (s = -1; s <= 1; s += 2) {
+      var ov = [];
+      for (k = 0; k <= 16; k++) ov.push([1240 + 10 * Math.cos(k * PI / 8), 907.5 + 17.5 * Math.sin(k * PI / 8)]);
+      [[[1008, 893], [880, 893], [874, 900], [875, 918], [900, 930], [908, 945], [1008, 948], [1008, 893]],
+       ov, [[1300, 880], [1300, 915], [1300, 950]]].forEach(function (pl2) {
+        K.seam.push(DXA.ribbon(pl2.map(function (q) { return ahSide(q[0], q[1], s); }), [0, s, 0], 0.03, 0.002));
+      });
+    }
+    [1435, 1560].forEach(function (px) { K.seam.push(ahRing(px)); });
 
     var mats = makeMats(C, P), root = new V.Group();
     root.name = "ah1w";
@@ -2035,13 +2272,21 @@ var HeroRocAir = (function () {
     hub.push(cylZ(0.18, 0.20, 0.16, 0, 0, 0, 14));
     hub.push(cylZ(0.09, 0.11, 0.14, 0, 0, 0.14, 10));
     for (k = 0; k < 2; k++) {
-      var g1 = box(R - 0.75, 0.86, 0.04, 0.75 + (R - 0.75) / 2, 0, 0.0); g1.rotateZ(k * PI + 0.35); bl.push(g1);
+      /* (batch 4) the blade as a 10 % section, not a slab (the two slabs'
+         undersides were one 11 m2 flat face) */
+      var g1 = surf([{ s: 0.75, le: 0.43, te: -0.43, t: 0.086, h: 0 }, { s: R, le: 0.43, te: -0.43, t: 0.086, h: 0 }]);
+      g1.rotateZ(-HALF_PI); g1.rotateZ(k * PI + 0.35); bl.push(g1);
       var grip = box(0.60, 0.30, 0.12, 0.45, 0, 0); grip.rotateZ(k * PI + 0.35); hub.push(grip);
-      var pl = rod([0.30, 0.20, -0.12], [0.30, 0.20, 0.05], 0.02, 5); pl.rotateZ(k * PI + 0.35); hub.push(pl);
+      /* the pitch link from the grip's horn down to the swashplate on the
+         fairing (DW side: the two links from py 725 to py 769) */
+      var pl = rod([0.30, 0.165, -0.04], [0.14, 0.165, ahz(768) - ahz(715)], 0.02, 5); pl.rotateZ(k * PI + 0.35); hub.push(pl);
       /* detail pass: the grip's two blade bolts and the bright tip cap */
       [cylZ(0.03, 0.03, 0.16, 0.66, 0.08, 0, 8), cylZ(0.03, 0.03, 0.16, 0.66, -0.08, 0, 8),
        box(0.16, 0.86, 0.05, R - 0.08, 0, 0)].forEach(function (q) { q.rotateZ(k * PI + 0.35); hub.push(q); });
     }
+    /* (batch 4) the rotating swashplate ring round the mast, on the
+       fairing's top (DW side: the links' feet), turning with the rotor */
+    hub.push(cylZ(0.21, 0.21, 0.05, 0, 0, ahz(768) - ahz(715) - 0.01, 16));
     rotor.add(new V.Mesh(merge(hub), mats.metal));
     rotor.add(new V.Mesh(merge(bl), mats.blade));
     var dsk = new V.CircleGeometry(R, 48); dsk.translate(0, 0, 0.03);

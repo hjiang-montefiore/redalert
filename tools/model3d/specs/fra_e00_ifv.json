@@ -1,0 +1,85 @@
+{
+ "key": "fra_e00_ifv",
+ "team": "nato",
+ "name": "VBCI (Vehicule Blinde de Combat d'Infanterie) with the Dragar one-man 25 mm turret",
+ "category": "veh",
+ "published": {
+  "width": 2.98,
+  "height": 3.0,
+  "source": "en.wikipedia 'VBCI' (raw page cached for js/hero/fr_armour2.js): 7.6 x 2.98 x 3 m. The length is not gated: 7.6 m is the hull; the model's 7.86 m X extent runs from the rear stowage box (x -4.05) to the bow (3.80)."
+ },
+ "len": 7.86,
+ "nodes": ["turret", "roadwheel"],
+ "engine_contract": {
+  "row": "js/eras.js row fra_e00_ifv; js/hero/fr_armour2.js registers UNIT_MODELS.fra_e00_ifv = { len 7.86, build HeroFrArmour2.vbci }; js/hero/skirmish_reuse.js points ifv_f at fra_e00_ifv",
+  "current_nodes": "one 'turret' group (origin on the ring at the deck, x -0.35 y +0.20 z 2.36; gun along +X) and four 'roadwheel' groups (one per axle, both tyres, origin on the axle, axle along Y)"
+ },
+ "references": [
+  {
+   "name": "[V1] VBCI '6094 0048' OURCQ 1918, dead side-on from starboard",
+   "image": "ref/fra_e00_ifv/v1_side.jpg",
+   "source": "Wikimedia Commons 'VBCI (Vehicule Blinde de Combat de l'Infanterie), French army licence registration '6094 0048', OURCQ 1918, photo-1.JPG', 1280 x 960 (thumb.php width 1280), cached in the scratchpad q_fra2_ref",
+   "view": "side",
+   "px_per_m": 137.6,
+   "origin_px": [662, 819],
+   "outline_m": [[-3.81, 1.52], [-3.81, 2.355], [-1.20, 2.355], [-1.20, 3.00], [-0.67, 3.00], [-0.65, 3.24], [-0.65, 3.53], [-0.41, 3.53], [-0.41, 3.24], [0.11, 3.24], [0.11, 3.00], [0.22, 3.00], [0.42, 2.72], [0.55, 2.36], [1.95, 2.33], [3.80, 1.77], [3.62, 1.52]],
+   "window_m": [-3.9, 1.55, 3.9, 3.6],
+   "ignore_m": [[0.45, 2.50, 2.45, 2.90], [-4.20, 1.85, -3.75, 2.35], [2.80, 1.90, 3.00, 2.70], [-3.30, 2.36, -3.10, 2.90]],
+   "align_m": 0.06,
+   "exact": false,
+   "note": "THE VBCI TABLE of fr_armour2.js. Long-lens photograph square to the starboard side, nose right, at 137.6 px a metre from the published 7.60 m hull, which makes the tyres 1.26 m (the 14.00 R 20's own size): two figures agree at one scale. X = (px - 662) / 137.6, Z = (819 - py) / 137.6. The outline is hand-traced over the upper hull and the turret only (trees behind: no mask), window_m keeps the tyres and the lower hull out; the gun, the Galix, the bow mirror post and the whip are left out by ignore_m. Read by eye at 2x: about +-0.04 m."
+  },
+  {
+   "name": "[V3] VBCI, Metz, 14 July, front left",
+   "image": "ref/fra_e00_ifv/v3_front_left.jpg",
+   "source": "Wikimedia Commons 'VBCI 14juillet Metz.jpg', 1280 x 1135",
+   "view": "quarter",
+   "exact": false,
+   "note": "For the reviewer: the boat bow with the lamp recesses behind wire mesh, the big mirror on its post at the bow corner, the bolt columns of the add-on armour, the step plates under the chine, the turret left of centre. Camouflage and numbers are not part of the spec."
+  },
+  {
+   "name": "[V2] VBCI in the Musee des Blindes, head on",
+   "image": "ref/fra_e00_ifv/v2_front.jpg",
+   "source": "Wikimedia Commons 'VBCI in the Musee des Blindes, France.JPG', 1280 x 961",
+   "view": "quarter",
+   "exact": false,
+   "note": "For the reviewer: the bow band with the two lamp recesses, the turret left of centre, the upper sides leaning in. No scale taken."
+  }
+ ],
+ "must_show": [
+  "eight big tyres on four axles at x +2.43, +0.86, -0.97, -2.66, the long gap between the second and third (1.83 m against 1.57 / 1.69 m) [V1]",
+  "the boat bow: the glacis from the roof at x 2.09 down to the bow at x 3.80, z 1.80, the lower nose plate raking back to the belly at x 2.90 [V1]",
+  "the upper sides vertical from the chine (z 1.52) to z 1.62 and then leaning in to the roof edge (half width 1.49 -> 1.22 at z 2.36) [V1, V2]",
+  "the small Dragar turret left of centre (ring at x -0.35, y +0.20), roof at z 3.03, the round sight head at x -0.65..-0.41 up to z 3.53, the 25 mm barrel to x 2.37 [V1, V2]",
+  "the add-on armour's bolt columns at about 0.6 m spacing along both upper sides, three bolts high (z 1.66 / 1.95 / 2.24), with the panel joints [V1, V3]",
+  "the three small access hatches with handles high on each side at x -3.48, -1.15, +1.15 [V1]",
+  "the step plates under the chine at x -0.40..0.47 and 1.27..2.11 [V1]",
+  "the bow band with the two lamp recesses behind wire mesh at y +-0.85..1.42, z 1.52..1.68, and the mirror posts at the bow corners (x 2.90) [V2, V3]",
+  "the Galix smoke launchers, three tubes at each corner of the rear plate below the roof edge, x -4.10..-3.80, z 1.93..2.30, firing back and out [V1]",
+  "plain paint: one coat of green, no camouflage, numbers or roundels; team colour in strips on the roof (x -3.55) and the turret roof (x -1.15)"
+ ],
+ "landmarks": [
+  { "name": "front axle", "ref": 0, "expect_m": [2.42, 0.63], "tol_m": 0.08, "model_at": { "node": "roadwheel", "index": 0 },
+    "note": "[V1] the front hub at px (995, 732)" },
+  { "name": "rear axle", "ref": 0, "expect_m": [-2.65, 0.63], "tol_m": 0.08, "model_at": { "node": "roadwheel", "index": 3 },
+    "note": "[V1] the rear hub at px (297, 732)" },
+  { "name": "hull roof at x -1.8", "ref": 0, "expect_m": [-1.8, 2.36], "tol_m": 0.08, "model_at": { "edge": "upper", "in_m": [-2.6, -1.0, 2.2, -1.5, 1.0, 2.6] },
+    "note": "[V1] the roof line at px (414, 494), between the troop hatches and the turret" },
+  { "name": "turret roof at x 0.0", "ref": 0, "expect_m": [0.0, 3.00], "tol_m": 0.08, "model_at": { "edge": "upper", "in_m": [-0.06, -0.3, 2.8, 0.25, 0.7, 3.2] },
+    "note": "[V1] the turret roof's front edge at px (662, 406)" },
+  { "name": "sight head top", "ref": 0, "expect_m": [-0.53, 3.53], "tol_m": 0.08, "model_at": { "edge": "upper", "in_m": [-0.70, -0.3, 3.3, -0.36, 0.2, 3.7] },
+    "note": "[V1] the cap of the round sight head at px (589, 333)" },
+  { "name": "bow tip", "ref": 0, "expect_m": [3.80, null], "tol_m": 0.08, "model_at": { "point": ["max", null] },
+    "note": "[V1] the bow at px (1185, 575)" },
+  { "name": "hull rear (upper hull)", "ref": 0, "expect_m": [-3.81, null], "tol_m": 0.08, "model_at": { "in_m": [-3.95, -1.0, 1.7, -3.70, -0.2, 2.3], "point": ["min", null] },
+    "note": "[V1] the rear plate at px (138, 450), on the right of the ramp (the ramp's handle stands 0.10 m proud on the left; the rear stowage box, to x -4.05, is below z 1.35; the Galix at y beyond 1.06)" }
+ ],
+ "not_confirmed": [
+  "the upper sides' lean (roof edge half width 1.22 m) and the bow's narrowing: no head-on drawing with a scale",
+  "the turret ring's place (x -0.35, y +0.20 left of centre) and the turret's length: V1 shows the turret body x -1.20..0.42; the model's loft runs x -1.21..0.47",
+  "the stowage rack behind the turret roof in V1 (x -1.6..-1.07, z 3.07..3.13): not identified, not drawn",
+  "the bolt columns' exact stations, the hatch and step sizes, the mesh bar count, the mirror head size: read by eye or by proportion",
+  "the green: the plain-paint policy's one coat (#414e35 authored, with weathering) - the real vehicles of the period wore the Centre-Europe three-tone (V1, V3)",
+  "the lower hull is painted the same green; V1 shows it black (part of the three-tone)"
+ ]
+}
