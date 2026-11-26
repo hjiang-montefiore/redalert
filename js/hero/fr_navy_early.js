@@ -45,6 +45,20 @@
    span (tips 4.4 m off the centreline, by ratio to the hull in [P2]); the hatch diameter (1.84 m
    lid); the free-flood holes' rows, the shutters' places (the cutaway's tubes only), the screw's
    seven blades (the profile shows two).
+   BATCH 4 (2026-11-26, the gate's floating-part and boxiness scan): fittings seated on the skin they
+   belong to by surface probes (hitY / hitZ): scuttles, hull ports, anchors (Arromanches' stood 3.6 m
+   off her bow), the subs' free-flood slots (they were buried in the hull or clear of the tapered
+   casing ends) and sail windows, the Redoutable's sail rungs; a cap plate at every lattice head (the
+   topmasts stood clear), yards on lattices carried on the mast's fore face; Colbert's two small
+   radomes on pedestals from the 02 roof [C1]; the 100 mm turntable raised to the shield's foot;
+   davits stood inboard on the deck (they stood over the water) with the falls to the gunwale;
+   Clemenceau's whip moved on to the bridge roof.  Hidden coincident faces left out (they were the
+   boxiness): house feet, a carrier hull's weather deck under the flight deck (drawn only where it
+   shows outboard), the flight deck's underside where it lies on hull or sponson, sponson tops,
+   faces inside the hull, the roof under the next island tier.  Added [K1][K2]: Clemenceau's
+   landing-area lines (port line, foul line 29.5 m off it, dashed centre line; lines only) and the
+   deck-edge lift's opening; Arromanches' island sponson carried up to the island's foot.
+   Spec: tools/model3d/specs/fra_e60_carrier.json.
    EXPORTED for the French late-period file: HeroClemenceau.build(THREE, M, C, variant) and
    HeroColbert.build(THREE, M, C, variant); both carry .len and .variants.  Clemenceau variants: "e60"
    (eight 100 mm on four sponsons), or an object { guns: [[d, side], ...] } listing the 100 mm mounts
@@ -276,16 +290,35 @@ var HeroFrNavyEarly = (function () {
               [0, 4, 7], [0, 7, 3], [0, 1, 5], [0, 5, 4], [3, 7, 6], [3, 6, 2]];
   /* eight corners: bottom 0-3, top 4-7, both counter-clockwise from above */
   function hexa(bin, P) { solid(bin, P, HEXF); }
+  var HEXF_OPEN = HEXF.slice(2);
+  /* batch 4: a solid against the hull side drawn without the face that lies in (or on) the hull: the
+     y0 face of box / the face through corners 0, 1, 4, 5 of a hexa */
+  var HEXF_NOY0 = HEXF.slice(0, 8).concat(HEXF.slice(10));
+  function boxOn(bin, x0, x1, y0, y1, z0, z1) {
+    solid(bin, [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0], [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]], HEXF_NOY0);
+  }
   function box(bin, x0, x1, y0, y1, z0, z1) {
     hexa(bin, [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0], [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]]);
   }
   /* a deckhouse: foot x0..x1 by +-hw at z0, roof z1, the roof set in by tk at the sides and by rf / ra
      at the fore / after faces (rake) */
-  function house(bin, x0, x1, hw, z0, z1, tk, rf, ra, yc) {
+  function houseP(x0, x1, hw, z0, z1, tk, rf, ra, yc) {
     var t = tk || 0, a = ra || 0, f = rf || 0, c = yc || 0;
-    hexa(bin, [[x0, c - hw, z0], [x1, c - hw, z0], [x1, c + hw, z0], [x0, c + hw, z0],
-               [x0 + a, c - hw + t, z1], [x1 - f, c - hw + t, z1], [x1 - f, c + hw - t, z1], [x0 + a, c + hw - t, z1]]);
+    return [[x0, c - hw, z0], [x1, c - hw, z0], [x1, c + hw, z0], [x0, c + hw, z0],
+            [x0 + a, c - hw + t, z1], [x1 - f, c - hw + t, z1], [x1 - f, c + hw - t, z1], [x0 + a, c + hw - t, z1]];
   }
+  /* batch 4: a deckhouse always stands on a deck or a roof, so its foot face (hidden, and flat area the
+     boxiness rule counted) is left out; houseC keeps it (exported to the late file as before) */
+  function house(bin, x0, x1, hw, z0, z1, tk, rf, ra, yc) { solid(bin, houseP(x0, x1, hw, z0, z1, tk, rf, ra, yc), HEXF_OPEN); }
+  /* a house with the next tier standing on it: its roof drawn as a frame round that tier's foot
+     (hx0..hx1 by +-hhw about yc), not under it */
+  function houseT(bin, x0, x1, hw, z0, z1, tk, rf, ra, yc, hx0, hx1, hhw) {
+    var V = houseP(x0, x1, hw, z0, z1, tk, rf, ra, yc), c = yc || 0, i;
+    solid(bin, V, HEXF.slice(4));
+    var T = [V[4], V[5], V[6], V[7]], Hh = [[hx0, c - hhw, z1], [hx1, c - hhw, z1], [hx1, c + hhw, z1], [hx0, c + hhw, z1]];
+    for (i = 0; i < 4; i++) { okTri(bin, T[i], T[(i + 1) % 4], Hh[(i + 1) % 4]); okTri(bin, T[i], Hh[(i + 1) % 4], Hh[i]); }
+  }
+  function houseC(bin, x0, x1, hw, z0, z1, tk, rf, ra, yc) { hexa(bin, houseP(x0, x1, hw, z0, z1, tk, rf, ra, yc)); }
   function cyl(bin, A, B, r0, r1, seg, noCap) {
     var ax = unit(sub(B, A)), t = Math.abs(ax[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
     var u = unit(cross(ax, t)), v = cross(ax, u), i, j, c, s, rn, P = [], Q = [], N = [];
@@ -394,6 +427,44 @@ var HeroFrNavyEarly = (function () {
   function sideSlab(bin, pts, y0, y1) {
     loft(bin, [pts.map(function (p) { return [p[0], y0, p[1]]; }), pts.map(function (p) { return [p[0], y1, p[1]]; })]);
   }
+  /* batch 4 (2026-11-26): surface probes, so a fitting is seated ON the skin it belongs to instead of
+     at a guessed offset (the gate found scuttles, slots, rungs and windows standing clear of hulls,
+     casings and sails).  hitY: the outermost |y| on side s (+1 port, -1 stbd) where the line x, z
+     meets the bin's triangles (null if none); hitZ: the highest z over (x, y). */
+  function hitY(bins, x, z, s) {
+    var best = null, L = Array.isArray(bins) ? bins : [bins], m, i, P;
+    for (m = 0; m < L.length; m++) {
+      P = L[m].P;
+      for (i = 0; i < P.length; i += 9) {
+        var ax = P[i], az = P[i + 2], bx = P[i + 3], bz = P[i + 5], cx = P[i + 6], cz = P[i + 8];
+        if ((x < ax && x < bx && x < cx) || (x > ax && x > bx && x > cx) || (z < az && z < bz && z < cz) || (z > az && z > bz && z > cz)) continue;
+        var det = (bx - ax) * (cz - az) - (cx - ax) * (bz - az);
+        if (Math.abs(det) < 1e-12) continue;
+        var u = ((x - ax) * (cz - az) - (cx - ax) * (z - az)) / det, v = ((bx - ax) * (z - az) - (x - ax) * (bz - az)) / det;
+        if (u < -1e-6 || v < -1e-6 || u + v > 1 + 1e-6) continue;
+        var y = P[i + 1] + u * (P[i + 4] - P[i + 1]) + v * (P[i + 7] - P[i + 1]);
+        if (y * s > 0 && (best === null || y * s > best)) best = y * s;
+      }
+    }
+    return best;
+  }
+  function hitZ(bins, x, y) {
+    var best = null, L = Array.isArray(bins) ? bins : [bins], m, i, P;
+    for (m = 0; m < L.length; m++) {
+      P = L[m].P;
+      for (i = 0; i < P.length; i += 9) {
+        var ax = P[i], ay = P[i + 1], bx = P[i + 3], by = P[i + 4], cx = P[i + 6], cy = P[i + 7];
+        if ((x < ax && x < bx && x < cx) || (x > ax && x > bx && x > cx) || (y < ay && y < by && y < cy) || (y > ay && y > by && y > cy)) continue;
+        var det = (bx - ax) * (cy - ay) - (cx - ax) * (by - ay);
+        if (Math.abs(det) < 1e-12) continue;
+        var u = ((x - ax) * (cy - ay) - (cx - ax) * (y - ay)) / det, v = ((bx - ax) * (y - ay) - (x - ax) * (by - ay)) / det;
+        if (u < -1e-6 || v < -1e-6 || u + v > 1 + 1e-6) continue;
+        var z = P[i + 2] + u * (P[i + 5] - P[i + 2]) + v * (P[i + 8] - P[i + 2]);
+        if (best === null || z > best) best = z;
+      }
+    }
+    return best;
+  }
   function flush(THREE, group, B) {
     var k, b, geo;
     for (k in B) {
@@ -403,7 +474,8 @@ var HeroFrNavyEarly = (function () {
       geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(b.P), 3));
       geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(b.N), 3));
       geo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(b.U), 2));
-      var me = new THREE.Mesh(geo, b.mat); me.castShadow = true; me.receiveShadow = true;
+      var me = new THREE.Mesh(geo, b.mat); me.castShadow = true; me.receiveShadow = k !== "shadow";
+      if (k === "shadow") me.name = "shadowcaster";
       group.add(me);
     }
   }
@@ -484,10 +556,14 @@ var HeroFrNavyEarly = (function () {
       metal: mk(P.metal || 0x5a6166, 0.5, 0.55),
       glass: mk(0x141c22, 0.15, 0.4),
       light: mk(P.light || 0xc9ccc8, 0.7, 0.05),
-      team: mk((C && C.team !== undefined) ? C.team : 0x3f7fd0, 0.84, 0.06)
+      team: mk((C && C.team !== undefined) ? C.team : 0x3f7fd0, 0.84, 0.06),
+      /* batch 4 review: a shadow-only material (never drawn: colorWrite off, opacity 0) for the
+         faces that cast a carrier's shadow but are hidden from every view (the flight deck's
+         underside over the hull); three.js casts a FrontSide material from its back faces only */
+      shadow: new THREE.MeshBasicMaterial({ color: 0x000000, colorWrite: false, depthWrite: false, transparent: true, opacity: 0 })
     };
   }
-  var BIN_NAMES = ["hull", "sup", "deck", "boot", "btop", "dark", "metal", "glass", "light", "team"];
+  var BIN_NAMES = ["hull", "sup", "deck", "boot", "btop", "dark", "metal", "glass", "light", "team", "shadow"];
   function bins(T) { var B = {}; BIN_NAMES.forEach(function (n) { B[n] = new Bin(T[n]); }); return B; }
   /* PAINT: Marine Nationale light grey sampled off [F1] / [E3] (#a9adae sunlit, #8a8f92 shade, drawn at
      about 0.85 of the sunlit value), the decks a dark grey, red-brown anti-fouling as [C1] draws it;
@@ -526,7 +602,7 @@ var HeroFrNavyEarly = (function () {
     var nDeck = rings[0].length - 1;
     loft(function (p, q, r, k) {
       var z = (p[2] + q[2] + r[2]) / 3, zmax = Math.max(p[2], q[2], r[2]), zmin = Math.min(p[2], q[2], r[2]);
-      if (k === nDeck) return B.deck;
+      if (k === nDeck) return H.covered ? null : B.deck;   /* batch 4: a carrier's flight deck covers it */
       if (k === -1) return z < 0 ? B.boot : B.hull;
       if (zmax <= 0.001) return B.boot;
       if (zmin >= -0.001 && zmax <= bt + 0.001) return B.btop;
@@ -607,15 +683,20 @@ var HeroFrNavyEarly = (function () {
     if (zd === undefined) return;
     var i;
     for (i = -1; i <= 1; i += 2) {
-      var xd = x + i * len * 0.33, yi = y + s * bm * 0.9;
+      /* batch 4: the davit stands INBOARD on the deck and reaches out over the boat (it stood over
+         the water, outboard of the hull), the falls run down to the boat's gunwale */
+      var xd = x + i * len * 0.33, yi = y - s * bm * 0.9;
       bar(B.metal, [xd, yi, zd], [xd, yi, z + 1.1], 0.07);
       bar(B.metal, [xd, yi, z + 1.1], [xd, y, z + 1.3], 0.06);
-      bar(B.metal, [xd, y, z + 1.3], [xd, y, z + 0.3], 0.015);
+      bar(B.metal, [xd, y, z + 1.3], [xd, y, z + 0.02], 0.015);
     }
   }
   /* anchor in its hawse on the hull side: x, half-breadth there yh, z, side s */
   function anchor(B, x, yh, z, s) {
-    var y = s * (yh + 0.02);
+    /* batch 4: the hawse found on the skin at (x, z) when the hull is drawn (Arromanches' anchors
+       stood 3.6 m clear of her bow) */
+    var ys = hitY([B.hull, B.btop], x, z, s);
+    var y = s * ((ys === null ? yh : ys) + 0.02);
     ellipsoid(B.dark, [x, y, z + 0.25], 0.6, 0.12, 0.45, 2, 10);
     box(B.metal, x - 0.12, x + 0.12, y - s * 0.04, y + s * 0.18, z - 0.9, z + 0.2);
     box(B.metal, x - 0.55, x + 0.55, y - s * 0.04, y + s * 0.2, z - 1.0, z - 0.75);
@@ -626,7 +707,9 @@ var HeroFrNavyEarly = (function () {
   function scuttles(B, H, d0, d1, z, dx) {
     var d, s;
     for (d = d0; d <= d1; d += dx) for (s = -1; s <= 1; s += 2) {
-      var yh = H.hW(d) + (H.hD(d) - H.hW(d)) * Math.min(1, z / Math.max(0.5, H.zD(d))) * 0.9 + 0.03;
+      /* batch 4: seated on the skin itself (the old estimate stood 2.4 m off Clemenceau's flared bow) */
+      var yh = hitY([B.hull, B.btop], H.X(d), z, s);
+      if (yh === null) continue;
       box(B.dark, H.X(d) - 0.17, H.X(d) + 0.17, s * yh - 0.04, s * yh + 0.04, z - 0.17, z + 0.17);
     }
   }
@@ -662,6 +745,13 @@ var HeroFrNavyEarly = (function () {
         bar(B.metal, [x + p[0] * wb, y + p[1] * wb, zb], [x + q[0] * wb, y + q[1] * wb, zb], 0.04);
       }
     }
+    /* batch 4: the masthead cap plate the topmast steps on (a pole over a lattice stood clear of it) */
+    box(B.metal, x - w1 - 0.1, x + w1 + 0.1, y - w1 - 0.1, y + w1 + 0.1, z1 - 0.06, z1 + 0.06);
+  }
+  /* a yard on a lattice mast: carried on the mast's fore face at z (a yard through the mast's open
+     middle touches nothing) */
+  function latYard(B, x, y, z0, z1, w0, w1, z, span) {
+    yard(B, x + lerp(w0, w1, (z - z0) / (z1 - z0)), z, span, y);
   }
   function pole(B, x, y, z0, z1, r0, r1) { cyl(B.metal, [x, y, z0], [x, y, z1], r0, r1 === undefined ? r0 * 0.6 : r1, 8); }
   function yard(B, x, z, span, y) { var c = y || 0; bar(B.metal, [x, c - span, z], [x, c + span, z], 0.06); }
@@ -733,7 +823,8 @@ var HeroFrNavyEarly = (function () {
   }
   /* 100 mm Mle 1953 / 1968 single [R1][F1][C1]: the rounded shield 3.6 x 2.7 x 2.4 m, 5.5 m barrel */
   function gun100(B) {
-    cylZ(B.sup, 0, 0, 0, 0.4, 1.5, 16);
+    /* batch 4: the turntable ring raised to the shield's foot (the shield stood 0.25 m clear of it) */
+    cylZ(B.sup, 0, 0, 0, 0.72, 1.5, 16);
     var rings = [], k, sec = [[-1.9, 1.15, 0.9, 1.25], [-1.2, 1.3, 1.05, 1.3], [0.2, 1.3, 1.0, 1.35], [1.2, 1.05, 0.85, 1.3], [1.85, 0.7, 0.55, 1.2]];
     for (k = 0; k < sec.length; k++) rings.push(sring(sec[k][0], sec[k][1], sec[k][2], 0, sec[k][3] + 0.4, 0.55, 16));
     loft(B.sup, rings);
@@ -1015,7 +1106,7 @@ var HeroFrNavyEarly = (function () {
     loft(B.dark, [hring(X(68.9), 0, 28.6, 1.95, 1.55, 0.75, 16), hring(X(68.85), 0, 29.3, 1.95, 1.55, 0.75, 16)]);
     lattice(B, X(69.3), 0, 29.0, 40.0, 0.9, 0.3, 4);
     pole(B, X(69.3), 0, 40.0, 45.4, 0.1, 0.04);
-    yard(B, X(69.3), 30.4, 4.0); yard(B, X(69.3), 35.5, 2.6); platform(B, X(69.3), 0, 37.5, 1.0);
+    latYard(B, X(69.3), 0, 29.0, 40.0, 0.9, 0.3, 30.4, 4.0); latYard(B, X(69.3), 0, 29.0, 40.0, 0.9, 0.3, 35.5, 2.6); platform(B, X(69.3), 0, 37.5, 1.0);
     /* main superstructure d 72.9 - 109.5: 01 to 11.0, the bridge levels to 16.8; the DRBI 23 radome
        (centre d 91.2, z 24.7, r 5.3) on its pedestal [F1][F2] */
     house(B.sup, X(60.0), X(109.5), 5.4, 6.0, 11.0, 0.1, 0.3, 0.3);
@@ -1137,7 +1228,7 @@ var HeroFrNavyEarly = (function () {
     cylZ(B.sup, X(42.0), 0, 17.5, 19.0, 1.2, 12); dish(B, X(43.0), 0, 20.6, 1.8, 0);
     /* mainmast lattice d 48.6 - 55.4 to 34; boats on davits d 49 - 61 [C1] */
     lattice(B, X(52.0), 0, 12.0, 30.0, 2.0, 0.6, 5);
-    pole(B, X(52.0), 0, 30.0, 34.0, 0.12, 0.05); platform(B, X(52.0), 0, 26.0, 1.4); yard(B, X(52.0), 28.0, 4.0);
+    pole(B, X(52.0), 0, 30.0, 34.0, 0.12, 0.05); platform(B, X(52.0), 0, 26.0, 1.4); latYard(B, X(52.0), 0, 12.0, 30.0, 2.0, 0.6, 28.0, 4.0);
     for (s = -1; s <= 1; s += 2) {
       boat(B, X(56.5), s * 8.0, 12.8, 9.5, 2.7, 12.0, s);
       cowl(B, X(63.0), s * 4.0, 12.0);
@@ -1162,7 +1253,9 @@ var HeroFrNavyEarly = (function () {
     platform(B, X(83.0), 0, 30.0, 2.0); platform(B, X(83.0), 0, 38.1, 1.5);
     bedstead(B, X(83.0), 0, 38.6, 7.5, 2.4, 0, 9, 3);
     pole(B, X(83.0), 0, 38.1, 46.0, 0.14, 0.05); yard(B, X(83.0), 42.0, 3.5);
-    radome(B, X(88.0), 4.2, 23.5, 1.2, 1.2); radome(B, X(88.0), -4.2, 23.5, 1.2, 1.2);
+    /* batch 4: the two small radomes [C1] px ~705 (d 89.4) stood 2.5 m clear of every roof: carried on
+       pedestals from the 02 roof (d 90 - 106.5, 19.4), at d 90.6 */
+    for (s = -1; s <= 1; s += 2) { cylZ(B.sup, X(90.6), s * 3.9, 19.35, 22.45, 0.5, 12); radome(B, X(90.6), s * 3.9, 23.5, 1.2, 1.2); }
     whip(B, X(92.0), 5.0, 16.0, 8.0); whip(B, X(92.0), -5.0, 16.0, 8.0);
     /* 100 mm B on its barbette house d 117 - 124 */
     house(B.sup, X(111.0), X(122.5), 4.0, 7.8, 10.8, 0.05, 0.5, 0);
@@ -1207,23 +1300,73 @@ var HeroFrNavyEarly = (function () {
     seam(bin, x0, y0, x0, y1, z, 0.12); seam(bin, x1, y0, x1, y1, z, 0.12);
   }
   /* the flight deck: plan polygon pts [[d, y]...] (anticlockwise from above) as a slab z0..z1 */
-  function flightDeck(B, X, pts, z0, z1) {
-    var P = pts.map(function (p) { return [X(p[0]), p[1]]; }), n = P.length, i;
+  /* batch 4: the underside is drawn only where the deck overhangs: a strip from the outline in to
+     inner(d, y) (the hull's deck edge or a sponson's outer edge, [d, y] back), the outline cut every
+     4 m and at the breaks listed so the strip follows the hull.  The hull's own weather deck under it
+     is not drawn (H.covered): both were hidden, coincident flat faces. */
+  function flightDeck(B, X, pts, z0, z1, inner, breaks) {
+    var P = pts.map(function (p) { return [X(p[0]), p[1]]; }), n = P.length, i, k;
     var cx = 0, cy = 0;
     for (i = 0; i < n; i++) { cx += P[i][0] / n; cy += P[i][1] / n; }
     for (i = 0; i < n; i++) {
       var a = P[i], b = P[(i + 1) % n];
       okTri(B.deck, [cx, cy, z1], [a[0], a[1], z1], [b[0], b[1], z1]);
-      okTri(B.sup, [cx, cy, z0], [b[0], b[1], z0], [a[0], a[1], z0]);
+      okTri(inner && B.shadow ? B.shadow : B.sup, [cx, cy, z0], [b[0], b[1], z0], [a[0], a[1], z0]);
       okTri(B.sup, [a[0], a[1], z0], [b[0], b[1], z0], [b[0], b[1], z1]);
       okTri(B.sup, [a[0], a[1], z0], [b[0], b[1], z1], [a[0], a[1], z1]);
+    }
+    if (!inner) return;
+    var O = [];
+    for (i = 0; i < n; i++) {
+      var p = pts[i], q = pts[(i + 1) % n], ts = [0], L = Math.sqrt(Math.pow(q[0] - p[0], 2) + Math.pow(q[1] - p[1], 2));
+      for (k = 1; k < Math.ceil(L / 4); k++) ts.push(k / Math.ceil(L / 4));
+      (breaks || []).forEach(function (d) { var t = (d - p[0]) / ((q[0] - p[0]) || 1e-9); if (t > 1e-4 && t < 1 - 1e-4) ts.push(t); });
+      ts.sort(function (u, v) { return u - v; });
+      ts.forEach(function (t) { O.push([lerp(p[0], q[0], t), lerp(p[1], q[1], t)]); });
+    }
+    var I = O.map(function (o) { return inner(o[0], o[1]); });
+    for (i = 0; i < O.length; i++) {
+      var j = (i + 1) % O.length;
+      var o0 = [X(O[i][0]), O[i][1], z0], o1 = [X(O[j][0]), O[j][1], z0], i0 = [X(I[i][0]), I[i][1], z0], i1 = [X(I[j][0]), I[j][1], z0];
+      /* facing down: the outline runs anticlockwise from above, the inner points lie to its left */
+      okTri(B.sup, o0, i1, o1); okTri(B.sup, o0, i0, i1);
+    }
+  }
+  /* the half-breadth of a flight-deck outline on side s at station d */
+  function deckEdge(pts, d, s) {
+    var side = pts.filter(function (p) { return p[1] * s > 0; }).map(function (p) { return [p[0], Math.abs(p[1])]; });
+    side.sort(function (a, b) { return a[0] - b[0]; });
+    return tbl(side, d);
+  }
+  /* with H.covered the hull's weather deck is drawn only where it shows outboard of the flight deck */
+  function exposedDeck(B, H, pts) {
+    var st = H.st, d0 = st[0][0], d1 = st[st.length - 1][0], n = Math.ceil((d1 - d0) / 2), i, s;
+    for (s = -1; s <= 1; s += 2) for (i = 0; i < n; i++) {
+      var da = lerp(d0, d1, i / n), db = lerp(d0, d1, (i + 1) / n);
+      var ha = H.hD(da), hb = H.hD(db), ea = Math.min(ha, deckEdge(pts, da, s)), eb = Math.min(hb, deckEdge(pts, db, s));
+      if (ha - ea < 0.01 && hb - eb < 0.01) continue;
+      var A = [H.X(da), s * ha, H.zD(da)], Bp = [H.X(db), s * hb, H.zD(db)], Cp = [H.X(db), s * eb, H.zD(db)], D = [H.X(da), s * ea, H.zD(da)];
+      if (s < 0) { okTri(B.deck, A, Bp, Cp); okTri(B.deck, A, Cp, D); } else { okTri(B.deck, A, Cp, Bp); okTri(B.deck, A, D, Cp); }
+    }
+  }
+  /* a sponson under an overhang: a plan polygon extruded z0..z1 with its foot drawn, its top left open
+     (the deck it carries closes it) */
+  function sponson(bin, pts, z0, z1) {
+    var r0 = pts.map(function (p) { return [p[0], p[1], z0]; }), r1 = pts.map(function (p) { return [p[0], p[1], z1]; }), n = pts.length, i;
+    loft(bin, [r0, r1], true);
+    var c = [0, 0, z0];
+    for (i = 0; i < n; i++) { c[0] += pts[i][0] / n; c[1] += pts[i][1] / n; }
+    for (i = 0; i < n; i++) {
+      var a = r0[i], b = r0[(i + 1) % n], f = cross(sub(a, c), sub(b, c));
+      if (dot(f, f) < 1e-12) continue;
+      if (f[2] > 0) bin.tri(c, b, a); else bin.tri(c, a, b);
     }
   }
   /* 100 mm on a deck-edge sponson: the sponson block from the hull side out to yo, the mount on it */
   function sponsonGun(B, X, H, d, s, zs, yo, yaw) {
     var yh = H.hD(d);
-    hexa(B.sup, [[X(d) - 3.2, s * (yh - 0.5), zs - 3.0], [X(d) + 3.2, s * (yh - 0.5), zs - 3.0], [X(d) + 3.2, s * yo, zs - 0.4], [X(d) - 3.2, s * yo, zs - 0.4],
-                 [X(d) - 3.2, s * (yh - 0.5), zs], [X(d) + 3.2, s * (yh - 0.5), zs], [X(d) + 3.2, s * yo, zs], [X(d) - 3.2, s * yo, zs]]);
+    solid(B.sup, [[X(d) - 3.2, s * (yh - 0.5), zs - 3.0], [X(d) + 3.2, s * (yh - 0.5), zs - 3.0], [X(d) + 3.2, s * yo, zs - 0.4], [X(d) - 3.2, s * yo, zs - 0.4],
+                 [X(d) - 3.2, s * (yh - 0.5), zs], [X(d) + 3.2, s * (yh - 0.5), zs], [X(d) + 3.2, s * yo, zs], [X(d) - 3.2, s * yo, zs]], HEXF_NOY0);
     railLine(B, [[X(d) - 3.1, s * yo, zs], [X(d) + 3.1, s * yo, zs]], 1.0);
     placed(B, X(d), s * (yo - 2.0), zs, yaw, gun100);
   }
@@ -1233,9 +1376,14 @@ var HeroFrNavyEarly = (function () {
      VARIANTS: e60 - Clemenceau as completed (eight 100 mm); a variant object may be handed in by another
      module ({ guns: [[d, side], ...] }) to draw a later fit. */
   var CLEM = hullFns({ L: 265.0, bt: 0.8, st: [
-    [10.4, 15.95, 11.0, 0.0, -12.0], [17, 15.95, 13.2, 0.0, -5.0], [23.5, 15.95, 14.6, 9.0, 0.6], [35, 15.95, 15.8, 14.0, 6.5],
+    [14.5, 15.95, 12.6, 8.4, 0.35], [19, 15.95, 13.8, 8.8, 0.45], [23.5, 15.95, 14.6, 9.6, 0.8], [35, 15.95, 15.8, 14.0, 6.5],
     [60, 15.95, 16.5, 15.6, 8.4], [150, 15.95, 16.5, 15.9, 8.6], [200, 15.95, 15.8, 14.2, 8.4], [225, 15.95, 13.4, 9.6, 7.6],
     [240, 15.95, 9.6, 3.2, 5.0], [242.7, 15.95, 8.4, 0.0, 0.0], [252, 15.95, 5.0, 0.0, -7.0], [261.7, 15.95, 0.6, 0.0, -14.8]] });
+  CLEM.covered = true;
+  /* review [K3]: the hull ends in a near-vertical transom at d 14.5 (x -118), the waterline running
+     out to it (it ended at x -110 under a long raked counter up to d 10.4); the loft's end cap is the
+     transom.  Half-breadths there NOT CONFIRMED (8.4 m at the water, the reviewer's 8 - 9 m off [K3]) */
+  var CLEM_T = 14.5;
   var CLEM_GUNS = [[24, 1], [41, 1], [24, -1], [41, -1], [193, 1], [209, 1], [193, -1], [209, -1]];
   var CLEM_VARIANTS = { e60: { guns: CLEM_GUNS } };
   var CLEM_DECK = [[0, -12.5], [20, -14.8], [100, -15.6], [106, -19.2], [170, -19.2], [176, -15.6], [238, -13.8],
@@ -1250,29 +1398,55 @@ var HeroFrNavyEarly = (function () {
     scuttles(B, H, 30, 230, 9.2, 3.5); scuttles(B, H, 40, 220, 5.6, 4.0);
     /* boats in their side recesses [K1] */
     for (s = -1; s <= 1; s += 2) {
-      box(B.dark, X(47), X(77), s * 16.3, s * 16.6, 7.2, 10.6);
+      boxOn(B.dark, X(47), X(77), s * 16.3, s * 16.6, 7.2, 10.6);
       boat(B, X(54), s * 16.0, 8.2, 9.0, 2.6); boat(B, X(69), s * 16.0, 8.2, 9.0, 2.6);
-      box(B.dark, X(167), X(187), s * 16.3, s * 16.6, 7.2, 10.6);
+      boxOn(B.dark, X(167), X(187), s * 16.3, s * 16.6, 7.2, 10.6);
       boat(B, X(177), s * 16.0, 8.2, 9.0, 2.6);
       anchor(B, X(247.5), H.hW(247.5) + 3.6, 11.5, s);
     }
     /* the angled-deck sponson under the port side, the island sponson, the stern overhang */
-    prism(B.sup, [[X(40), 15.0], [X(150), 15.0], [X(150), 31.4], [X(166), 29.0], [X(196), 15.0]].reverse(), 13.4, 15.95);
-    prism(B.sup, [[X(104), -15.0], [X(172), -15.0], [X(172), -18.8], [X(104), -18.8]], 13.0, 15.95);
-    box(B.sup, X(0.6), X(11.0), -11.6, 11.6, 14.0, 15.95);
-    flightDeck(B, X, CLEM_DECK, 15.95, ZF);
+    /* batch 4: the sponsons drawn open-topped and the flight deck's underside only where it
+       overhangs hull and sponsons (the hidden faces were 30 per cent of the area) */
+    exposedDeck(B, H, CLEM_DECK);
+    /* review: the angled deck's support restored along its whole run, d 40 - 196 (the band under the
+       port deck edge [K4]); open-topped as before */
+    sponson(B.sup, [[X(40), 15.0], [X(150), 15.0], [X(196), 15.0], [X(166), 29.0], [X(150), 31.4]], 13.4, 15.95);
+    sponson(B.sup, [[X(104), -15.0], [X(104), -18.8], [X(172), -18.8], [X(172), -15.0]], 13.0, 15.95);
+    sponson(B.sup, [[X(0.6), -11.6], [X(CLEM_T), -11.6], [X(CLEM_T), 11.6], [X(0.6), 11.6]], 14.0, 15.95);
+    function clemIn(d, y) {
+      var dd = clamp(d, CLEM_T, 261.7), w = H.hD(dd);
+      if (d < CLEM_T) w = Math.max(w, 11.6);
+      if (y > 0 && d >= 40 && d <= 196) w = Math.max(w, d <= 150 ? lerp(15.0, 31.4, (d - 40) / 110) : d <= 166 ? lerp(31.4, 29.0, (d - 150) / 16) : lerp(29.0, 15.0, (d - 166) / 30));
+      if (y < 0 && d >= 104 && d <= 172) w = Math.max(w, 18.8);
+      return [d < CLEM_T ? Math.max(d, 0.6) : dd, (y < 0 ? -1 : 1) * Math.min(Math.abs(y), w)];
+    }
+    flightDeck(B, X, CLEM_DECK, 15.95, ZF, clemIn, [0.6, CLEM_T, 40, 104, 150, 166, 172]);
     /* deck marks: the forward lift (starboard, d 180 - 196), the deck-edge lift aft of the island
        (d 92 - 104), the bow catapult to port and the angled-deck catapult [K2][K3] */
     liftMark(B.dark, X(180), X(196), -14.5, -2.0, ZF);
     liftMark(B.dark, X(92), X(104), -15.4, -3.5, ZF);
     seam(B.dark, X(196), 7.0, X(255), 3.2, ZF, 0.25);
     seam(B.dark, X(118), 20.5, X(166), 27.2, ZF, 0.25);
-    seam(B.light, X(14), 1.5, X(150), 20.6, ZF, 0.3);
+    /* batch 4 [K2]: the angled landing area's lines - the port line 1.2 m in from the port deck edge,
+       the starboard (foul) line 29.5 m from it (the published landing-area width), the dashed centre
+       line between them (it was one solid line 4.7 m to port of the middle); lines only, no
+       numbers or lettering */
+    seam(B.light, X(10.2), 11.4, X(150.2), 30.8, ZF, 0.35);
+    seam(B.light, X(36.0), -14.8, X(154.2), 1.6, ZF, 0.35);
+    for (i = 0; i < 14; i++) { var c0 = 20 + i * 9.4; seam(B.light, X(c0), lerp(-3.2, 16.2, (c0 - 12.2) / 140), X(c0 + 5), lerp(-3.2, 16.2, (c0 + 5 - 12.2) / 140), ZF, 0.3); }
     /* deck-edge catwalks: rails one level down round the deck edge */
     for (i = 0; i + 1 < CLEM_DECK.length; i++) {
       var a = CLEM_DECK[i], b = CLEM_DECK[i + 1];
       if (a[0] > 100 && a[0] < 176 && a[1] < 0) continue;
       railLine(B, [[X(a[0]), a[1], 15.2], [X(b[0]), b[1], 15.2]], 0.9);
+      /* review: the catwalk the rails stand on - an edge bar and a bracket in to the hull or sponson
+         every 4 m (the rails hung free under the deck lip) */
+      bar(B.metal, [X(a[0]), a[1], 15.2], [X(b[0]), b[1], 15.2], 0.05);
+      var nb = Math.max(1, Math.round(Math.sqrt(Math.pow(b[0] - a[0], 2) + Math.pow(b[1] - a[1], 2)) / 4)), kb;
+      for (kb = 0; kb <= nb; kb++) {
+        var pd = lerp(a[0], b[0], kb / nb), py = lerp(a[1], b[1], kb / nb), q = clemIn(pd, py);
+        if (Math.abs(q[1] - py) + Math.abs(q[0] - pd) > 0.1) bar(B.metal, [X(pd), py, 15.2], [X(q[0]), q[1] * 1.0 - (py > 0 ? 0.1 : -0.1), 15.2], 0.05);
+      }
     }
     /* the 100 mm battery on sponsons [K1][K2] */
     (V.guns || CLEM_GUNS).forEach(function (gp) {
@@ -1280,23 +1454,33 @@ var HeroFrNavyEarly = (function () {
     });
     /* the island d 112 - 166, y -14 .. -19 [K1][K3] */
     var yI = -16.6;
-    house(B.sup, X(116), X(162), 2.4, ZF, 24.0, 0.05, 0.2, 0.6, yI);
-    house(B.sup, X(118), X(160), 2.3, 24.0, 31.1, 0.05, 0.3, 0.4, yI);
+    /* review [K1][K2]: the second tier starts at d 126.5, so the radome stands free on the 24.0 roof
+       abaft it (it was buried in the tier) */
+    houseT(B.sup, X(116), X(162), 2.4, ZF, 24.0, 0.05, 0.2, 0.6, yI, X(126.5), X(160), 2.3);
+    houseT(B.sup, X(126.5), X(160), 2.3, 24.0, 31.1, 0.05, 0.3, 0.4, yI, X(128), X(152), 2.0);
     house(B.sup, X(128), X(152), 2.0, 31.1, 37.8, 0.05, 0.8, 0.3, yI);
+    /* batch 4 [K1] "3": the deck-edge lift's opening in the starboard hangar side abaft the island
+       (drawn px 575 - 665, rows 285 - 320: d 92.4 - 108, z 8.6 - 14.7) */
+    /* review: a dark recess flush with the skin (it was a grey plate 0.12 m proud), following the flare */
+    (function () {
+      var y0 = hitY(B.hull, X(100), 8.6, -1) || 16.3, y1 = hitY(B.hull, X(100), 14.7, -1) || 16.45;
+      solid(B.dark, [[X(92.4), -y0 + 0.05, 8.6], [X(108), -y0 + 0.05, 8.6], [X(108), -y0 - 0.015, 8.6], [X(92.4), -y0 - 0.015, 8.6],
+                     [X(92.4), -y1 + 0.05, 14.7], [X(108), -y1 + 0.05, 14.7], [X(108), -y1 - 0.015, 14.7], [X(92.4), -y1 - 0.015, 14.7]], HEXF_NOY0);
+    })();
     windowsX(B, X(152) - 0.8, yI - 1.8, yI + 1.8, 36.3, 37.3, 6);
-    windowsY(B, yI + 2.05, X(130), X(150), 36.4, 37.3, 12);
-    windowsY(B, yI + 2.33, X(122), X(158), 29.6, 30.4, 18);
+    windowsY(B, yI + 1.98, X(130), X(150), 36.4, 37.3, 12);
+    windowsY(B, yI + 2.26, X(128.5), X(158), 29.6, 30.4, 16);
     funnel(B, X(140.5), yI, 31.1, 37.4, 6.0, 1.8, 1.2, 1.2);
-    radome(B, X(121), yI, 28.0, 2.7, 2.7);
-    director(B, X(127), yI, 31.1, 1.1); director(B, X(172.7), -17.0, 15.95, 1.0);
+    radome(B, X(121), yI, 27.5, 3.8, 3.8);   /* review: about 7.8 m across [K1] */
+    director(B, X(129.0), yI, 31.1, 1.1); director(B, X(172.7), -17.0, 15.95, 1.0);
     lattice(B, X(150.5), yI, 37.8, 50.0, 1.4, 0.5, 4);
     pole(B, X(150.5), yI, 50.0, 58.7, 0.16, 0.05);
-    yard(B, X(150.5), 52.0, 4.0, yI); yard(B, X(150.5), 47.0, 3.0, yI);
+    yard(B, X(150.5), 52.0, 4.0, yI); latYard(B, X(150.5), yI, 37.8, 50.0, 1.4, 0.5, 47.0, 3.0);
     platform(B, X(140.5), yI, 41.0, 2.0);
     lattice(B, X(140.5), yI, 37.8, 41.0, 1.0, 0.8, 1);
     bedstead(B, X(140.5), yI, 41.5, 8.0, 6.0, 0, 10, 5);
-    roofRail(B, X(118), X(160), 2.2, 31.1, "", yI); roofRail(B, X(128), X(152), 1.9, 37.8, "", yI);
-    whip(B, X(156), yI, 37.8, 7.0); ladder(B, X(162.2), yI, ZF, 24.0, 0);
+    roofRail(B, X(126.9), X(160), 2.2, 31.1, "", yI); roofRail(B, X(128), X(152), 1.9, 37.8, "", yI);
+    whip(B, X(131), yI, 37.8, 7.0); ladder(B, X(162.2), yI, ZF, 24.0, 0);
     box(B.team, X(130), X(150), yI - 0.5, yI + 0.5, 37.8, 37.86);
     box(B.team, X(4), X(9), -0.3, 0.3, ZF, ZF + 0.02);
     flush(THREE, g, B);
@@ -1310,29 +1494,35 @@ var HeroFrNavyEarly = (function () {
     [6.0, 10.95, 9.0, 0.0, -9.0], [12, 10.95, 10.6, 6.0, 0.8], [25, 10.95, 12.0, 11.0, 5.6], [50, 10.95, 12.3, 12.2, 7.0],
     [150, 10.95, 12.3, 12.2, 7.2], [175, 10.95, 11.6, 10.2, 6.8], [190, 10.95, 9.8, 6.2, 5.2], [200, 10.95, 7.6, 0.0, 0.0],
     [205, 10.95, 5.2, 0.0, -6.0], [209.5, 10.95, 1.0, 0.0, -10.6]] });
+  ARRO.covered = true;
   var ARRO_DECK = [[0, -9.5], [4, -12.25], [196, -12.25], [208, -8.0], [212, -4.5], [212, 4.5], [208, 8.0], [196, 12.25], [4, 12.25], [0, 9.5]];
   function arromanches(THREE, M, C) {
     var g = new THREE.Group(), T = materials(THREE, C, GREY), B = bins(T), H = ARRO, X = H.X, s, i;
     var ZF = 11.9;
     shipHull(B, H);
     scuttles(B, H, 20, 190, 7.4, 3.5); scuttles(B, H, 30, 180, 4.0, 4.5);
-    box(B.sup, X(0.6), X(6.5), -9.0, 9.0, 9.6, 10.95);
+    exposedDeck(B, H, ARRO_DECK);
+    sponson(B.sup, [[X(0.6), -9.0], [X(6.5), -9.0], [X(6.5), 9.0], [X(0.6), 9.0]], 9.6, 10.95);
     for (s = -1; s <= 1; s += 2) {
       anchor(B, X(196.0), H.hW(196) + 2.6, 8.6, s);
-      box(B.dark, X(80), X(104), s * 12.35, s * 12.55, 6.0, 9.6);
+      boxOn(B.dark, X(80), X(104), s * 12.35, s * 12.55, 6.0, 9.6);
       boat(B, X(86), s * 12.2, 7.2, 8.0, 2.4); boat(B, X(98), s * 12.2, 7.2, 8.0, 2.4);
       /* 40 mm Bofors on deck-edge sponsons [A1][A3] */
       [30, 60, 120, 150, 178].forEach(function (d) {
         var yh = H.hD(d);
         /* the sponson a wedge with its underside sloping back to the hull [A1] (rework 2026-11-12) */
-        hexa(B.sup, [[X(d) - 2.6, s * (yh - 0.4), 6.6], [X(d) + 2.6, s * (yh - 0.4), 6.6], [X(d) + 2.0, s * (yh + 2.2), 9.6], [X(d) - 2.0, s * (yh + 2.2), 9.6],
-                     [X(d) - 2.6, s * (yh - 0.4), 10.2], [X(d) + 2.6, s * (yh - 0.4), 10.2], [X(d) + 2.0, s * (yh + 2.2), 10.2], [X(d) - 2.0, s * (yh + 2.2), 10.2]]);
+        solid(B.sup, [[X(d) - 2.6, s * (yh - 0.4), 6.6], [X(d) + 2.6, s * (yh - 0.4), 6.6], [X(d) + 2.0, s * (yh + 2.2), 9.6], [X(d) - 2.0, s * (yh + 2.2), 9.6],
+                     [X(d) - 2.6, s * (yh - 0.4), 10.2], [X(d) + 2.6, s * (yh - 0.4), 10.2], [X(d) + 2.0, s * (yh + 2.2), 10.2], [X(d) - 2.0, s * (yh + 2.2), 10.2]], HEXF_NOY0);
         box(B.metal, X(d) - 1.6, X(d) + 1.6, s > 0 ? yh + 2.15 : -yh - 2.3, s > 0 ? yh + 2.3 : -yh - 2.15, 10.2, 11.0);
         railLine(B, [[X(d) - 1.9, s * (yh + 2.2), 10.2], [X(d) + 1.9, s * (yh + 2.2), 10.2]], 0.9);
         gunLight(B, X(d) - 0.6, s * (yh + 1.0), 10.2, s * PI / 2); gunLight(B, X(d) + 0.8, s * (yh + 1.0), 10.2, s * PI / 2);
       });
     }
-    flightDeck(B, X, ARRO_DECK, 10.95, ZF);
+    flightDeck(B, X, ARRO_DECK, 10.95, ZF, function (d, y) {
+      var dd = clamp(d, 6.0, 209.5), w = H.hD(dd);
+      if (d < 6.5) w = Math.max(w, 9.0);
+      return [d < 6.5 ? Math.max(d, 0.6) : dd, (y < 0 ? -1 : 1) * Math.min(Math.abs(y), w)];
+    }, [0.6, 6.5]);
     liftMark(B.dark, X(48), X(62), -5.2, 5.2, ZF); liftMark(B.dark, X(150), X(164), -5.2, 5.2, ZF);
     seam(B.dark, X(170), 6.0, X(208), 4.0, ZF, 0.25);
     /* rework 2026-11-12: the arrester wires and the barrier across the
@@ -1350,9 +1540,12 @@ var HeroFrNavyEarly = (function () {
     /* the island d 65 - 97.5 on its sponson off the starboard deck edge [A1][A3]: bridge front, the
        funnel in its after half, the lattice tripod over the bridge, a pole mast abaft */
     var yI = -13.4;
-    prism(B.sup, [[X(62), -12.0], [X(100), -12.0], [X(100), -15.6], [X(62), -15.6]], 9.4, 10.95);
-    house(B.sup, X(66), X(97), 2.2, ZF, 17.5, 0.05, 0.2, 0.4, yI);
-    house(B.sup, X(82), X(96), 2.0, 17.5, 21.5, 0.05, 0.8, 0.0, yI);
+    /* batch 4: the island sponson carried up to the island's foot (ZF; the island stood 0.95 m over its
+       top with a slot under it), its inboard face (inside the hull) left out */
+    solid(B.sup, [[X(62), -12.0, 9.4], [X(100), -12.0, 9.4], [X(100), -15.6, 9.4], [X(62), -15.6, 9.4],
+                  [X(62), -12.0, ZF], [X(100), -12.0, ZF], [X(100), -15.6, ZF], [X(62), -15.6, ZF]], HEXF_NOY0);
+    houseT(B.sup, X(66), X(97), 2.2, ZF, 17.5, 0.05, 0.2, 0.4, yI, X(82), X(96), 2.0);
+    houseT(B.sup, X(82), X(96), 2.0, 17.5, 21.5, 0.05, 0.8, 0.0, yI, X(89.5), X(95.2), 1.7);
     windowsX(B, X(96) - 0.8, yI - 1.7, yI + 1.7, 20.4, 21.1, 6);
     windowsY(B, yI + 2.05, X(84), X(94), 20.4, 21.1, 6);
     funnel(B, X(73.5), yI, 17.5, 23.5, 5.5, 1.9, 0.8, 1.3);
@@ -1373,11 +1566,11 @@ var HeroFrNavyEarly = (function () {
       windowsY(B, yy, X(67), X(81), 15.6, 16.2, 10);
       doors(B, yy, [X(70), X(77), X(90)], ZF);
     });
-    for (i = 0; i < 2; i++) rafts(B, X(67.5), 9, yI - 2.55, 12.6 + i * 1.5, 1.45);
-    rafts(B, X(70.5), 4, yI + 2.55, 17.6, 1.4);
+    for (i = 0; i < 2; i++) rafts(B, X(67.5), 9, yI - 2.48, 12.6 + i * 1.5, 1.45);
+    rafts(B, X(70.5), 4, yI + 2.0, 17.5, 1.4);
     for (s = -1; s <= 1; s += 2) {
       for (i = 0; i < 22; i++) {
-        var px = X(24 + i * 7.6), py = s * (H.hD(24 + i * 7.6) + 0.04);
+        var px = X(24 + i * 7.6), py = s * (hitY([B.hull, B.btop], px, 9.0, s) || H.hD(24 + i * 7.6));
         if (i % 4 !== 1) box(B.dark, px - 0.5, px + 0.5, py - 0.05, py + 0.05, 8.6, 9.4);
       }
       [83.5, 92.5, 101.5].forEach(function (d) {
@@ -1386,7 +1579,7 @@ var HeroFrNavyEarly = (function () {
       box(B.dark, X(6.4), X(10.0), s * 4.0, s * 8.4, 9.2, 10.9);
     }
     director(B, X(91.0), yI, 21.5, 0.9);
-    pole(B, X(120.0), -12.6, ZF, 18.0, 0.08);
+    pole(B, X(120.0), -12.0, ZF, 18.0, 0.08);
     box(B.team, X(84), X(94), yI - 0.5, yI + 0.5, 21.5, 21.56);
     box(B.team, X(3), X(8), -0.3, 0.3, ZF, ZF + 0.02);
     flush(THREE, g, B);
@@ -1484,6 +1677,11 @@ var HeroFrNavyEarly = (function () {
       R.push(r);
     }
     loft(bin, R);
+  }
+  /* a dark slot on the skin of B.hull at x, half-length hx, z0..z1, side s (batch 4) */
+  function slot(B, x, hx, z0, z1, s, on, mat) {
+    var y = hitY(on || B.hull, x, (z0 + z1) / 2, s);
+    if (y !== null) box(mat || B.dark, x - hx, x + hx, s * y - 0.04, s * y + 0.04, z0, z1);
   }
   function periscopes(B, x, z, list) { list.forEach(function (p) { cylZ(B.metal, x + p[0], p[1] || 0, z, z + p[2], p[3] || 0.12, 8); }); }
   function cleat(B, x, y, z) { box(B.metal, x - 0.25, x + 0.25, y - 0.06, y + 0.06, z, z + 0.12); }
@@ -1730,13 +1928,15 @@ var HeroFrNavyEarly = (function () {
     /* the casing d 3 - 55.5: vertical sides, the flat walking top [D1] */
     casing(B.hull, X, 3.0, 55.5, 1.05, 1.05, 5.0, 1.3);
     box(B.deck, X(3.5), X(55.0), -0.75, 0.75, 1.02, 1.08);
-    for (s = -1; s <= 1; s += 2) for (i = 0; i < 30; i++) box(B.dark, X(5 + i * 1.65), X(5.5 + i * 1.65), s * 1.0 - 0.05, s * 1.0 + 0.05, 0.4, 0.7);
+    /* batch 4: the free-flood slots seated on the skin under the casing's top edge [D1] (they stood
+       buried in the hull, or clear of the tapered casing ends) */
+    for (s = -1; s <= 1; s += 2) for (i = 0; i < 30; i++) slot(B, X(5.25 + i * 1.65), 0.25, 0.80, 0.98, s);
     /* the sail d 22.45 - 31.45 to 5.9 [D1]: near-rectangular, vertical
        after edge, the fore top rounded; its window rows and the rails on
        the casing abaft it */
     sailSq(B.sup, X(27.0), 0.9, 5.9, 4.5, 0.95, 0.0, 0.45);
     for (s = -1; s <= 1; s += 2) {
-      for (i = 0; i < 3; i++) box(B.dark, X(29.8 + i * 0.5), X(30.1 + i * 0.5), s * 0.93 - 0.04, s * 0.93 + 0.04, 5.0, 5.35);
+      for (i = 0; i < 3; i++) slot(B, X(29.95 + i * 0.5), 0.15, 5.0, 5.35, s, B.sup);
       railLine(B, [[X(13.0), s * 0.7, 1.08], [X(22.0), s * 0.7, 1.08]], 0.9);
     }
     box(B.dark, X(29.6), X(31.0), -0.6, 0.6, 5.6, 5.92);
@@ -1769,12 +1969,12 @@ var HeroFrNavyEarly = (function () {
     /* the casing with its vertical sides along the whole back [N1] (rework 2026-11-12) */
     casing(B.hull, X, 2.5, 76.5, 1.45, 1.6, 6.0, 1.6);
     box(B.deck, X(3.0), X(76.0), -1.3, 1.3, 1.42, 1.48);
-    for (s = -1; s <= 1; s += 2) for (i = 0; i < 40; i++) box(B.dark, X(4 + i * 1.8), X(4.6 + i * 1.8), s * 1.55 - 0.05, s * 1.55 + 0.05, 0.75, 1.1);
+    for (s = -1; s <= 1; s += 2) for (i = 0; i < 40; i++) slot(B, X(4.3 + i * 1.8), 0.3, 1.15, 1.38, s);   /* batch 4, as Daphne's */
     /* the bow buoyancy knob over the stem [N1] */
     ellipsoid(B.hull, [X(76.0), 0, 1.3], 2.4, 1.3, 1.1, 5, 14, -0.3, PI / 2);
     /* sail d 34.5 - 45.1 to 6.9, streamlined [N1][N3] */
     sailSq(B.sup, X(39.8), 1.3, 6.9, 5.3, 1.25, 0.6, 0.6);
-    for (s = -1; s <= 1; s += 2) for (i = 0; i < 4; i++) box(B.dark, X(42.4 + i * 0.55), X(42.7 + i * 0.55), s * 1.12 - 0.04, s * 1.12 + 0.04, 6.0, 6.35);
+    for (s = -1; s <= 1; s += 2) for (i = 0; i < 4; i++) slot(B, X(42.55 + i * 0.55), 0.15, 6.0, 6.35, s, B.sup);
     periscopes(B, X(39.5), 6.9, [[0, 0, 2.6, 0.12], [-1.4, 0, 2.0, 0.11], [-2.8, 0, 1.6, 0.2]]);
     whip(B, X(37.0), 0, 6.9, 2.5);
     plane(B.hull, X(66.0), X(67.8), 0.2, 3.9, 0.08);
@@ -1848,7 +2048,8 @@ var HeroFrNavyEarly = (function () {
       for (i = 0; i < 4; i++) box(B.glass, X(92.3 + i * 0.5), X(92.65 + i * 0.5), s > 0 ? 1.495 : -1.515, s > 0 ? 1.515 : -1.495, 7.5, 7.85);
       box(B.dark, X(88.0), X(94.3), s > 0 ? 1.495 : -1.51, s > 0 ? 1.51 : -1.495, 7.18, 7.22);
       foil(B.sup, X(90.0), X(93.3), X(90.5), X(92.5), s * 1.42, s * 4.4, 0.34, false, 5.9);
-      for (i = 0; i < 6; i++) box(B.metal, X(84.0) - 0.04, X(84.0) + 0.04, s > 0 ? 1.0 : -1.06, s > 0 ? 1.06 : -1.0, 2.9 + i * 0.75, 2.95 + i * 0.75);
+      /* the sail's step rungs, seated on its tapered tail (batch 4: they stood up to 0.7 m clear) */
+      for (i = 0; i < 6; i++) slot(B, X(84.0), 0.04, 2.9 + i * 0.75, 2.95 + i * 0.75, s, B.sup, B.metal);
     }
     box(B.dark, X(93.4), X(95.0), -0.9, 0.9, 8.08, 8.36);
     box(B.glass, X(94.9), X(95.05), -0.75, 0.75, 8.36, 8.6);
@@ -1887,7 +2088,7 @@ var HeroFrNavyEarly = (function () {
               secPts: secPts, subHull2: subHull2, stations: stations, seam2: seam2, arcAtZ: arcAtZ, slopePt: slopePt,
               panelOn: panelOn, sail2: sail2, foil: foil, screw2: screw2, tubeHatch: tubeHatch, roundHatch: roundHatch,
               hatch: hatch, cleat: cleat, bollard: bollard, whip: whip, periscopes: periscopes, railLine: railLine,
-              box: box, cylZ: cylZ, cyl: cyl, house: house, ellipsoid: ellipsoid }
+              box: box, cylZ: cylZ, cyl: cyl, house: houseC, ellipsoid: ellipsoid }
   };
 })();
 
